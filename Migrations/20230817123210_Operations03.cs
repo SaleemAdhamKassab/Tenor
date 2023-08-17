@@ -5,24 +5,25 @@
 namespace Tenor.Migrations
 {
     /// <inheritdoc />
-    public partial class updateMainSetTableAddParentId : Migration
+    public partial class Operations03 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<int>(
-                name: "ParentId",
-                table: "TenorMetaMainSets",
+                name: "Type",
+                table: "TenorMetaOperations",
                 type: "int",
-                nullable: true);
+                nullable: false,
+                defaultValue: 0);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "ParentId",
-                table: "TenorMetaMainSets");
+                name: "Type",
+                table: "TenorMetaOperations");
         }
     }
 }

@@ -1,8 +1,14 @@
-﻿namespace Tenor.Models
+﻿using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Tenor.Models
 {
     public class Counter
     {
-        public long Id { get; set; }
+        [Key]
+        public int Id { get; set; }
+        public string SupplerId { get; set; }
         public string Name { get; set; }
         public string Code { get; set; }
         public string ColumnName { get; set; }
@@ -11,12 +17,10 @@
         public string Aggregation { get; set; }
         public bool IsDeleted { get; set; }
 
+        public virtual Collection<Operation> Operations { get; set; }
 
-
-        public long SubsetId { get; set; }
-        public virtual Subset subset { get; set; }
-
-        public int TenantId { get; set; }
-        public virtual Tenant Tenant { get; set; }
+        [ForeignKey("Subset")]
+        public int SubsetId { get; set; }
+        public virtual Subset Subset { get; set; }
     }
 }

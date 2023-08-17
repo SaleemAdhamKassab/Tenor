@@ -8,13 +8,12 @@ namespace Tenor.Models
         public string Name { get; set; }
         public string Description { get; set; }
         public bool IsDeleted { get; set; }
+
+        [ForeignKey("Parent")]
         public int? ParentId { get; set; }
+        public virtual MainSet Parent { get; set; }
+        public virtual ICollection<MainSet> Childs { get; set; }
 
-
-
-        public virtual List<Subset> Subsets { get; set; }
-
-        public int TenantId { get; set; }
-        public virtual Tenant Tenant { get; set; }
+        public virtual ICollection<Subset> Subsets { get; set; }
     }
 }

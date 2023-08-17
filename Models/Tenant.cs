@@ -1,12 +1,11 @@
-﻿namespace Tenor.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Tenor.Models
 {
     public class Tenant
     {
+        [Key]
         public int Id { get; set; }
         public string Description { get; set; }
-
-
-
-        public virtual List<MainSet> MainSets { get; set; }
     }
 }

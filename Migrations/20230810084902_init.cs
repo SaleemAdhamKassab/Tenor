@@ -11,6 +11,27 @@ namespace Tenor.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "TenorMetaMainSets",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    ParentId = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TenorMetaMainSets", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_TenorMetaMainSets_TenorMetaMainSets_ParentId",
+                        column: x => x.ParentId,
+                        principalTable: "TenorMetaMainSets",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "TenorMetaTenants",
                 columns: table => new
                 {
@@ -24,33 +45,12 @@ namespace Tenor.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "TenorMetaMainSets",
+                name: "TenorMetaSubsets",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    TenantId = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_TenorMetaMainSets", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_TenorMetaMainSets_TenorMetaTenants_TenantId",
-                        column: x => x.TenantId,
-                        principalTable: "TenorMetaTenants",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "TenorMetaSubsets",
-                columns: table => new
-                {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    SupplerId = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     TableName = table.Column<string>(type: "nvarchar(max)", nullable: false),
@@ -61,9 +61,9 @@ namespace Tenor.Migrations
                     DataTS = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     IndexTS = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     DbLink = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    RefDbLink = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    MainSetId = table.Column<int>(type: "int", nullable: false),
-                    TenantId = table.Column<int>(type: "int", nullable: false)
+                    MainSetId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -73,12 +73,6 @@ namespace Tenor.Migrations
                         column: x => x.MainSetId,
                         principalTable: "TenorMetaMainSets",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);
-                    table.ForeignKey(
-                        name: "FK_TenorMetaSubsets_TenorMetaTenants_TenantId",
-                        column: x => x.TenantId,
-                        principalTable: "TenorMetaTenants",
-                        principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -86,8 +80,9 @@ namespace Tenor.Migrations
                 name: "TenorMetaCounters",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    SupplerId = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Code = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ColumnName = table.Column<string>(type: "nvarchar(max)", nullable: false),
@@ -95,8 +90,7 @@ namespace Tenor.Migrations
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Aggregation = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    SubsetId = table.Column<long>(type: "bigint", nullable: false),
-                    TenantId = table.Column<int>(type: "int", nullable: false)
+                    SubsetId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -106,13 +100,7 @@ namespace Tenor.Migrations
                         column: x => x.SubsetId,
                         principalTable: "TenorMetaSubsets",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);
-                    table.ForeignKey(
-                        name: "FK_TenorMetaCounters_TenorMetaTenants_TenantId",
-                        column: x => x.TenantId,
-                        principalTable: "TenorMetaTenants",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.NoAction);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
@@ -121,24 +109,14 @@ namespace Tenor.Migrations
                 column: "SubsetId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_TenorMetaCounters_TenantId",
-                table: "TenorMetaCounters",
-                column: "TenantId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_TenorMetaMainSets_TenantId",
+                name: "IX_TenorMetaMainSets_ParentId",
                 table: "TenorMetaMainSets",
-                column: "TenantId");
+                column: "ParentId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TenorMetaSubsets_MainSetId",
                 table: "TenorMetaSubsets",
                 column: "MainSetId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_TenorMetaSubsets_TenantId",
-                table: "TenorMetaSubsets",
-                column: "TenantId");
         }
 
         /// <inheritdoc />
@@ -148,13 +126,13 @@ namespace Tenor.Migrations
                 name: "TenorMetaCounters");
 
             migrationBuilder.DropTable(
+                name: "TenorMetaTenants");
+
+            migrationBuilder.DropTable(
                 name: "TenorMetaSubsets");
 
             migrationBuilder.DropTable(
                 name: "TenorMetaMainSets");
-
-            migrationBuilder.DropTable(
-                name: "TenorMetaTenants");
         }
     }
 }
