@@ -12,6 +12,8 @@ namespace Tenor.Models
         public int Order { get; set; }
         public string? Value { get; set; }
         public enOPerationTypes Type { get; set; }
+        public enAggregation Aggregation { get; set; }
+
 
         [ForeignKey("Counter")]
         public int? CounterId { get; set; }
