@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using System.Runtime.CompilerServices;
+﻿using Microsoft.AspNetCore.Mvc;
 using Tenor.Services;
 
 namespace Tenor.Controllers
@@ -14,8 +12,8 @@ namespace Tenor.Controllers
         public CountersController(ICounterService counterService) => _counterService = counterService;
 
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
+        [HttpGet("GetAllSets")]
+        public async Task<IActionResult> GetAllSets()
         {
 
             var result = await _counterService.GetAllSets();
@@ -28,5 +26,17 @@ namespace Tenor.Controllers
             return Ok(result.Data);
         }
 
+        [HttpGet("GetAllCounters/{subsetId}")]
+        public async Task<IActionResult> GettAllCounters(long subsetId)
+        {
+            var result = await _counterService.GetAllCounters(subsetId);
+
+            if (!string.IsNullOrEmpty(result.Message))
+            {
+                return BadRequest(result.Message);
+            }
+
+            return Ok(result.Data);
+        }
     }
 }
