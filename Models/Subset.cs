@@ -7,14 +7,11 @@ namespace Tenor.Models
     {
         [Key]
         public int Id { get; set; }
-        public string SupplerId { get; set; }
-        [Required]
+        public string SupplierId { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
-        [Required]
         public string TableName { get; set; }
         public string RefTableName { get; set; }
-        [Required]
         public string Schema { get; set; }
         public int MaxDataDate { get; set; }
         public bool IsLoad { get; set; }

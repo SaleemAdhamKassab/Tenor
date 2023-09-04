@@ -60,7 +60,7 @@ namespace Tenor.Migrations
                     b.Property<int>("SubsetId")
                         .HasColumnType("int");
 
-                    b.Property<string>("SupplerId")
+                    b.Property<string>("SupplierId")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -138,6 +138,10 @@ namespace Tenor.Migrations
                     b.Property<int?>("ParentId")
                         .HasColumnType("int");
 
+                    b.Property<string>("SupplierId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ParentId");
@@ -152,6 +156,9 @@ namespace Tenor.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Aggregation")
+                        .HasColumnType("int");
 
                     b.Property<int?>("CounterId")
                         .HasColumnType("int");
@@ -261,7 +268,7 @@ namespace Tenor.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("SupplerId")
+                    b.Property<string>("SupplierId")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 

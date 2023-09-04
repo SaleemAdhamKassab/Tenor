@@ -6,7 +6,6 @@ namespace Tenor.Models
     {
         [Key]
         public int Id { get; set; }
-        [Required]
         public string Name { get; set; }
         public int ArgumentsCount { get; set; }
         public bool IsBool { get; set; }

@@ -26,10 +26,10 @@ namespace Tenor.Controllers
             return Ok(result.Data);
         }
 
-        [HttpGet("GetAllCounters/{subsetId}")]
-        public async Task<IActionResult> GettAllCounters(long subsetId)
+        [HttpGet("GetBySubsetId/{subsetId}")]
+        public async Task<IActionResult> GetBySubsetId(long subsetId)
         {
-            var result = await _counterService.GetAllCounters(subsetId);
+            var result = await _counterService.GetBySubsetId(subsetId);
 
             if (!string.IsNullOrEmpty(result.Message))
             {

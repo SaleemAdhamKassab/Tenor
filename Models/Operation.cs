@@ -14,6 +14,7 @@ namespace Tenor.Models
         public enOPerationTypes Type { get; set; }
         public enAggregation Aggregation { get; set; }
 
+        public virtual ICollection<Operation>? Childs { get; set; }
 
         [ForeignKey("Counter")]
         public int? CounterId { get; set; }
@@ -32,12 +33,10 @@ namespace Tenor.Models
 
 
 
-
         public virtual Function? Function { get; set; }
         public virtual Counter? Counter { get; set; }
         public virtual KPI? KPI { get; set; }
         public virtual Operator? Operator { get; set; }
         public virtual Operation? Parent { get; set; }
-        public virtual ICollection<Operation>? Childs { get; set; }
     }
 }

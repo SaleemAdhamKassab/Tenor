@@ -8,8 +8,10 @@ namespace Tenor.Services
     public interface ICounterService
     {
         Task<ResultWithMessage> GetAllSets();
-        Task<ResultWithMessage> GetAllCounters(long subsetId);
+        Task<ResultWithMessage> GetBySubsetId(long subsetId);
     }
+
+
     public class CountersService : ICounterService
     {
         private readonly TenorDbContext _db;
@@ -39,15 +41,27 @@ namespace Tenor.Services
         public async Task<ResultWithMessage> GetAllSets()
         {
             var sets = recSetChilds(_db.MainSets.Include(x => x.Subsets).Where(x => x.ParentId == null).ToList());
-            return new ResultWithMessage(sets.ToList(), "");
+            return new ResultWithMessage(sets, "");
         }
-        public async Task<ResultWithMessage> GetAllCounters(long subsetId)
+        public async Task<ResultWithMessage> GetBySubsetId(long subsetId)
         {
-            List<Counter> counters = await _db.Counters.Where(e => e.SubsetId == subsetId).OrderBy(e => e.Id).ToListAsync();
+            //here we will use AutoMapper Later
+
+            List<CounterDetailsViewModel> counters = await _db.Counters.
+                Where(e => e.SubsetId == subsetId)
+                .Select(e => new CounterDetailsViewModel()
+                {
+                    SupplierId = e.SupplierId,
+                    Name = e.Name,
+                    Code = e.Code,
+                    ColumnName = e.ColumnName,
+                    Description = e.Description,
+                    Aggregation = e.Aggregation
+                })
+                .OrderBy(e => e.SupplierId)
+                .ToListAsync();
 
             return new ResultWithMessage(counters, "");
         }
-
-
     }
 }
