@@ -19,9 +19,9 @@ namespace Tenor.Controllers
 
         [HttpPost]
 
-        public ActionResult CreateKpi(KPI model)
+        public ActionResult CreateKpi(Kpi model)
         {
-            _db.KPIs.Add(model);
+            _db.Kpis.Add(model);
             _db.SaveChanges();
             return Ok(model);
         }

@@ -8,7 +8,6 @@ namespace Tenor.Models
     {
         [Key]
         public int Id { get; set; }
-
         public int Order { get; set; }
         public string? Value { get; set; }
         public enOPerationTypes Type { get; set; }
@@ -19,7 +18,7 @@ namespace Tenor.Models
         [ForeignKey("Counter")]
         public int? CounterId { get; set; }
 
-        [ForeignKey("KPI")]
+        [ForeignKey("Kpi")]
         public int? KpiId { get; set; }
 
         [ForeignKey("Function")]
@@ -35,7 +34,7 @@ namespace Tenor.Models
 
         public virtual Function? Function { get; set; }
         public virtual Counter? Counter { get; set; }
-        public virtual KPI? KPI { get; set; }
+        public virtual Kpi? Kpi { get; set; }
         public virtual Operator? Operator { get; set; }
         public virtual Operation? Parent { get; set; }
     }

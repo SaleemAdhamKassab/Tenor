@@ -1,0 +1,29 @@
+{
+    "Id": 0,
+    "Name": "Kpi1",
+    "Operation": {
+        "Id": 0,
+        "Type": 4,
+        "Order": 0,
+        "Childs": [
+            {
+                "Id": 0,
+                "Type": 0,
+                "CounterId": 1,
+                "Order": 0
+            },
+            {
+                "Id": 0,
+                "Type": 3,
+                "OperatorId": 1,
+                "Order": 1
+            },
+            {
+               "Id": 0,
+               "Type": 0,
+                "CounterId": 2,
+                "Order": 2
+            }
+        ]
+    }
+}

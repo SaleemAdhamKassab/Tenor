@@ -68,7 +68,7 @@ namespace Tenor.Migrations
 
                     b.HasIndex("SubsetId");
 
-                    b.ToTable("TenorMetaCounters");
+                    b.ToTable("Counters");
                 });
 
             modelBuilder.Entity("Tenor.Models.Function", b =>
@@ -91,10 +91,10 @@ namespace Tenor.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TenorMetaFunctions");
+                    b.ToTable("Functions");
                 });
 
-            modelBuilder.Entity("Tenor.Models.KPI", b =>
+            modelBuilder.Entity("Tenor.Models.Kpi", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -113,7 +113,7 @@ namespace Tenor.Migrations
 
                     b.HasIndex("OperationId");
 
-                    b.ToTable("TenorMetaKPIs");
+                    b.ToTable("Kpis");
                 });
 
             modelBuilder.Entity("Tenor.Models.MainSet", b =>
@@ -146,7 +146,7 @@ namespace Tenor.Migrations
 
                     b.HasIndex("ParentId");
 
-                    b.ToTable("TenorMetaMainSets");
+                    b.ToTable("MainSets");
                 });
 
             modelBuilder.Entity("Tenor.Models.Operation", b =>
@@ -196,7 +196,7 @@ namespace Tenor.Migrations
 
                     b.HasIndex("ParentId");
 
-                    b.ToTable("TenorMetaOperations");
+                    b.ToTable("Operations");
                 });
 
             modelBuilder.Entity("Tenor.Models.Operator", b =>
@@ -213,7 +213,7 @@ namespace Tenor.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TenorMetaOperators");
+                    b.ToTable("Operators");
                 });
 
             modelBuilder.Entity("Tenor.Models.Subset", b =>
@@ -280,7 +280,7 @@ namespace Tenor.Migrations
 
                     b.HasIndex("MainSetId");
 
-                    b.ToTable("TenorMetaSubsets");
+                    b.ToTable("Subsets");
                 });
 
             modelBuilder.Entity("Tenor.Models.Tenant", b =>
@@ -297,7 +297,7 @@ namespace Tenor.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TenorMetaTenants");
+                    b.ToTable("Tenants");
                 });
 
             modelBuilder.Entity("Tenor.Models.Counter", b =>
@@ -311,7 +311,7 @@ namespace Tenor.Migrations
                     b.Navigation("Subset");
                 });
 
-            modelBuilder.Entity("Tenor.Models.KPI", b =>
+            modelBuilder.Entity("Tenor.Models.Kpi", b =>
                 {
                     b.HasOne("Tenor.Models.Operation", "Operation")
                         .WithMany()
@@ -341,7 +341,7 @@ namespace Tenor.Migrations
                         .WithMany("Operations")
                         .HasForeignKey("FunctionId");
 
-                    b.HasOne("Tenor.Models.KPI", "KPI")
+                    b.HasOne("Tenor.Models.Kpi", "Kpi")
                         .WithMany()
                         .HasForeignKey("KpiId");
 
@@ -357,7 +357,7 @@ namespace Tenor.Migrations
 
                     b.Navigation("Function");
 
-                    b.Navigation("KPI");
+                    b.Navigation("Kpi");
 
                     b.Navigation("Operator");
 

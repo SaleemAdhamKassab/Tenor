@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Tenor.Models
 {
-    public class KPI
+    public class Kpi
     {
         [Key]
         public int Id { get; set; }
@@ -13,7 +13,7 @@ namespace Tenor.Models
         public int OperationId { get; set; }
 
 
-
+        
         public virtual Operation Operation { get; set; }
     }
 }
