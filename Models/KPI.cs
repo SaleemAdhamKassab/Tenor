@@ -8,7 +8,6 @@ namespace Tenor.Models
         [Key]
         public int Id { get; set; }
         public string Name { get; set; }
-
         [ForeignKey("Operation")]
         public int OperationId { get; set; }
 

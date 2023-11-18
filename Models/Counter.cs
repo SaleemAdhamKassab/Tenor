@@ -15,12 +15,11 @@ namespace Tenor.Models
         public string RefColumnName { get; set; }
         public string Description { get; set; }
         public string Aggregation { get; set; }
-        public bool IsDeleted { get; set; }
-
-        public virtual Collection<Operation> Operations { get; set; }
-
         [ForeignKey("Subset")]
         public int SubsetId { get; set; }
+        public bool IsDeleted { get; set; }
+
+        public virtual Collection<Operation> Operations { get; set; }       
         public virtual Subset Subset { get; set; }
     }
 }
