@@ -9,6 +9,7 @@ namespace Tenor.Models
         public int Id { get; set; }
         [Required]
         public string SupplierId { get; set; }
+        [StringLength(50, MinimumLength = 2, ErrorMessage = "Name must be between 2 and 50 char")]
         [Required]
         public string Name { get; set; }
         public string Description { get; set; }
