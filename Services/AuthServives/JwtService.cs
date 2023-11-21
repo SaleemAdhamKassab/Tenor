@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -100,12 +101,38 @@ namespace Tenor.Services.AuthServives
             }
             
         }
+
         public TenantDto TokenConverter(string token)
         {
-            var tenantAuth = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.AuthorizationDecision);
-            TenantDto TenantDtoObj = JsonConvert.DeserializeObject<TenantDto>(tenantAuth);
-            return TenantDtoObj;
+            try
+            {
+                var hmac = new HMACSHA512(Encoding.UTF8.GetBytes(_config["JWT:Secret"]));
+                var tokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(hmac.Key),
+                    ClockSkew = TimeSpan.Zero
+                };
 
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
+                JwtSecurityToken jwtSecurityToken = securityToken as JwtSecurityToken;
+                if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha512, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return null;
+                }
+
+                var tenantAuth = jwtSecurityToken.Claims.FirstOrDefault(x => x.Type.ToLower().Contains("authorizationdecision")).Value;
+                TenantDto TenantDtoObj = JsonConvert.DeserializeObject<TenantDto>(tenantAuth);
+                return TenantDtoObj;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
         }
         public bool CheckExpiredRefreshToken()
         {
@@ -117,7 +144,6 @@ namespace Tenor.Services.AuthServives
             return true;
 
         }
-
         public TokenDto RefreshToken(string userName)
         {
             string cookiesToken = _httpContextAccessor.HttpContext.Request.Cookies["refreshToken"];
@@ -129,10 +155,6 @@ namespace Tenor.Services.AuthServives
             return null;
 
         }
-
-
-
-
 
         private RefreshToken GenerateRefreshToken()
         {
@@ -169,7 +191,7 @@ namespace Tenor.Services.AuthServives
             TenantDto tenantDto = new TenantDto();
             List<TenantAccess> tenantAccList = new List<TenantAccess>();
             // List<string> userGroups = _windowsAuthService.GetUserGroupsFromAD(userName);
-            List<string> userGroups=new List<string>();
+            List<string> userGroups=new List<string>() {"MIS-TECH" };
             List<UserTenantDto> userTenant = _mapper.Map<List<UserTenantDto>>(_dbcontext.UserTenantRoles.Include(x => x.Tenant).Include(y => y.Role).Where(x => x.UserName == userName).ToList());
             List<GroupTenantDto> groupTenant = _mapper.Map<List<GroupTenantDto>>(_dbcontext.GroupTenantRoles.Include(x => x.Tenant).Include(y => y.Role).Where(x => userGroups.Contains(x.GroupName)).ToList());
             //-----------------------------------------------

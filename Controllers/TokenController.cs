@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Reflection.PortableExecutable;
 using Tenor.ActionFilters;
 using Tenor.Services.AuthServives;
 
@@ -37,7 +38,6 @@ namespace Tenor.Controllers
         }
 
         [HttpGet("refreshToken")]
-
         public ActionResult refreshToken()
         {
             string userName = _windowsAuthService.GetLoggedUser();
@@ -54,7 +54,9 @@ namespace Tenor.Controllers
         [ServiceFilter(typeof(AuthTenant))]
         public ActionResult TestToken()
         {
-            return Ok();
+            string Header = _contextAccessor.HttpContext.Request.Headers["Authorization"];       
+            var token = Header.Split(' ').Last();
+            return Ok(_jwtService.TokenConverter(token));
         }
     }
 }
