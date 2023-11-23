@@ -7,24 +7,24 @@ using Tenor.Services;
 
 namespace Tenor.Controllers
 {
-    [Route("api/Counters")]
+    [Route("api/subsets")]
     [ApiController]
-    public class CountersController : Controller
+    public class SubsetsController : Controller
     {
-        private readonly ICountersService _Counterservice;
-        public CountersController(ICountersService Counterservice) => _Counterservice = Counterservice;
+        private readonly ISubsetsService _Subsetservice;
+        public SubsetsController(ISubsetsService Subsetservice) => _Subsetservice = Subsetservice;
 
         [HttpPost("Get")]
-        public async Task<IActionResult> Get([FromBody] CounterFilterModel CounterFilterModel)
+        public async Task<IActionResult> Get([FromBody] SubsetFilterModel SubsetFilterModel)
         {
             try
             {
-                List<CounterDto> result = await _Counterservice.GetAsync(CounterFilterModel);
+                List<SubsetDto> result = await _Subsetservice.GetAsync(SubsetFilterModel);
 
                 if (result is null)
                     return NotFound(new ResultWithMessage(null, "No Data Found"));
 
-                return Ok(new DataWithSize<CounterDto>(result.Count, result));
+                return Ok(new DataWithSize<SubsetDto>(result.Count, result));
             }
             catch (Exception e)
             {
@@ -35,7 +35,7 @@ namespace Tenor.Controllers
         [HttpGet("Get/{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var result = await _Counterservice.GetAsync(id);
+            var result = await _Subsetservice.GetAsync(id);
 
             if (!string.IsNullOrEmpty(result.Message))
             {
@@ -46,9 +46,9 @@ namespace Tenor.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post(CounterDto CounterDto)
+        public async Task<IActionResult> Post(SubsetDto SubsetDto)
         {
-            var result = await _Counterservice.Add(CounterDto);
+            var result = await _Subsetservice.Add(SubsetDto);
 
             if (!string.IsNullOrEmpty(result.Message))
                 return BadRequest(result.Message);
@@ -57,9 +57,9 @@ namespace Tenor.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> Put(int id, CounterDto CounterDto)
+        public async Task<IActionResult> Put(int id, SubsetDto SubsetDto)
         {
-            var result = await _Counterservice.Update(id, CounterDto);
+            var result = await _Subsetservice.Update(id, SubsetDto);
 
             if (!string.IsNullOrEmpty(result.Message))
                 return BadRequest(result.Message);
@@ -70,7 +70,7 @@ namespace Tenor.Controllers
         [HttpDelete]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _Counterservice.Delete(id);
+            var result = await _Subsetservice.Delete(id);
 
             if (!string.IsNullOrEmpty(result.Message))
                 return BadRequest(result.Message);

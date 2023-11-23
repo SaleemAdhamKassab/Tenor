@@ -12,7 +12,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<TenorDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddScoped<ICounterService, CountersService>();
+
+builder.Services.AddScoped<IDevicesService, DevicesService>();
+builder.Services.AddScoped<ISubsetsService, SubsetsService>();
+builder.Services.AddScoped<ICountersService, CountersService>();
 builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
 

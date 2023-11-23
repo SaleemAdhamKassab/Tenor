@@ -7,24 +7,24 @@ using Tenor.Services;
 
 namespace Tenor.Controllers
 {
-    [Route("api/Counters")]
+    [Route("api/devices")]
     [ApiController]
-    public class CountersController : Controller
+    public class DevicesController : Controller
     {
-        private readonly ICountersService _Counterservice;
-        public CountersController(ICountersService Counterservice) => _Counterservice = Counterservice;
+        private readonly IDevicesService _deviceService;
+        public DevicesController(IDevicesService deviceService) => _deviceService = deviceService;
 
         [HttpPost("Get")]
-        public async Task<IActionResult> Get([FromBody] CounterFilterModel CounterFilterModel)
+        public async Task<IActionResult> Get([FromBody] DeviceFilterModel deviceFilterModel)
         {
             try
             {
-                List<CounterDto> result = await _Counterservice.GetAsync(CounterFilterModel);
+                List<DeviceDto> result = await _deviceService.GetAsync(deviceFilterModel);
 
                 if (result is null)
                     return NotFound(new ResultWithMessage(null, "No Data Found"));
 
-                return Ok(new DataWithSize<CounterDto>(result.Count, result));
+                return Ok(new DataWithSize<DeviceDto>(result.Count, result));
             }
             catch (Exception e)
             {
@@ -35,7 +35,21 @@ namespace Tenor.Controllers
         [HttpGet("Get/{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var result = await _Counterservice.GetAsync(id);
+            var result = await _deviceService.GetAsync(id);
+
+            if (!string.IsNullOrEmpty(result.Message))
+            {
+                return BadRequest(result.Message);
+            }
+
+            return Ok(result.Data);
+        }
+
+        [HttpGet("GetSubsets")]
+        public async Task<IActionResult> GetSubsets()
+        {
+
+            var result = await _deviceService.GetSubsetsAsync();
 
             if (!string.IsNullOrEmpty(result.Message))
             {
@@ -46,9 +60,9 @@ namespace Tenor.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post(CounterDto CounterDto)
+        public async Task<IActionResult> Post(DeviceDto deviceDto)
         {
-            var result = await _Counterservice.Add(CounterDto);
+            var result = await _deviceService.Add(deviceDto);
 
             if (!string.IsNullOrEmpty(result.Message))
                 return BadRequest(result.Message);
@@ -57,9 +71,9 @@ namespace Tenor.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> Put(int id, CounterDto CounterDto)
+        public async Task<IActionResult> Put(int id, DeviceDto deviceDto)
         {
-            var result = await _Counterservice.Update(id, CounterDto);
+            var result = await _deviceService.Update(id, deviceDto);
 
             if (!string.IsNullOrEmpty(result.Message))
                 return BadRequest(result.Message);
@@ -70,7 +84,7 @@ namespace Tenor.Controllers
         [HttpDelete]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _Counterservice.Delete(id);
+            var result = await _deviceService.Delete(id);
 
             if (!string.IsNullOrEmpty(result.Message))
                 return BadRequest(result.Message);

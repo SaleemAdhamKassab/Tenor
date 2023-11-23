@@ -9,7 +9,6 @@ namespace Tenor.Models
         [Required]
         public string Name { get; set; }
 
-
         public virtual ICollection<Operation> Operations { get; set; }
     }
 }

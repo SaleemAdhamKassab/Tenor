@@ -1,9 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
-namespace Tenor.Models
+﻿namespace Tenor.Dtos
 {
-    public class Subset
+    public class SubsetDto
     {
         public int Id { get; set; }
         public string SupplierId { get; set; }
@@ -19,13 +16,6 @@ namespace Tenor.Models
         public string DbLink { get; set; }
         public string RefDbLink { get; set; }
         public bool IsDeleted { get; set; }
-
-
-
-        public virtual ICollection<Counter> Counters { get; set; }
-
-        [ForeignKey("Device")]
         public int DeviceId { get; set; }
-        public virtual Device Device { get; set; }
     }
 }

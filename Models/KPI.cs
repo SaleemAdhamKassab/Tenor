@@ -12,8 +12,6 @@ namespace Tenor.Models
         [ForeignKey("Operation")]
         public int OperationId { get; set; }
 
-
-        
         public virtual Operation Operation { get; set; }
     }
 }

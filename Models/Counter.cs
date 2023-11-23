@@ -6,7 +6,6 @@ namespace Tenor.Models
 {
     public class Counter
     {
-        [Key]
         public int Id { get; set; }
         public string SupplierId { get; set; }
         public string Name { get; set; }
