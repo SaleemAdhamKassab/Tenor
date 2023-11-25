@@ -15,14 +15,13 @@ namespace Tenor.Data
         public DbSet<Kpi> Kpis { get; set; }
         public DbSet<Function> Functions { get; set; }
         public DbSet<Operator> Operators { get; set; }
-    }
-}
         public DbSet<Role> Roles { get; set; }
         public DbSet<Permission> Permissions { get; set; }
         public DbSet<RolePermission> RolePermissions { get; set; }
         public DbSet<GroupTenantRole> GroupTenantRoles { get; set; }
         public DbSet<UserTenantRole> UserTenantRoles { get; set; }
         public DbSet<AccessLog> AccessLogs { get; set; }
+
         //Entity Config
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -32,4 +31,8 @@ namespace Tenor.Data
 
         }
     }
+    
 }
+       
+        
+    
