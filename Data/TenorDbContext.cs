@@ -21,7 +21,7 @@ namespace Tenor.Data
         public DbSet<GroupTenantRole> GroupTenantRoles { get; set; }
         public DbSet<UserTenantRole> UserTenantRoles { get; set; }
         public DbSet<AccessLog> AccessLogs { get; set; }
-
+        public DbSet<UserToken> UserTokens { get;set; }
         //Entity Config
         protected override void OnModelCreating(ModelBuilder builder)
         {

@@ -53,12 +53,11 @@ builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme).AddNe
 builder.Services.AddHttpContextAccessor();
 //-------------------------------------
 builder.Services.AddDbContext<TenorDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// add services
 
 builder.Services.AddScoped<IDevicesService, DevicesService>();
 builder.Services.AddScoped<ISubsetsService, SubsetsService>();
 builder.Services.AddScoped<ICountersService, CountersService>();
-// add services
-builder.Services.AddScoped<ICounterService, CountersService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IWindowsAuthService, WindowsAuthService>();
 builder.Services.AddScoped<AuthTenant>();

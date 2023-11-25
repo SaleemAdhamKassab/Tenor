@@ -149,7 +149,7 @@ namespace Tenor.Services
                 TableName = subset.TableName,
                 RefTableName = subset.RefTableName,
                 SchemaName = subset.SchemaName,
-                MaxDataDate = subset.MaxDataDate,
+                MaxDataDate = (int)subset.MaxDataDate,
                 IsLoad = subset.IsLoad,
                 DataTS = subset.DataTS,
                 IndexTS = subset.IndexTS,

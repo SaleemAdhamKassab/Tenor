@@ -158,6 +158,34 @@ namespace Tenor.Migrations
                     b.ToTable("Functions");
                 });
 
+            modelBuilder.Entity("Tenor.Models.GroupTenantRole", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("GroupName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("RoleId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("GroupTenantRoles");
+                });
+
             modelBuilder.Entity("Tenor.Models.Kpi", b =>
                 {
                     b.Property<int>("Id")
@@ -347,7 +375,7 @@ namespace Tenor.Migrations
                     b.Property<bool>("IsLoad")
                         .HasColumnType("bit");
 
-                    b.Property<int>("MaxDataDate")
+                    b.Property<int?>("MaxDataDate")
                         .HasColumnType("int");
 
                     b.Property<string>("Name")
@@ -364,6 +392,10 @@ namespace Tenor.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("RefTableName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Schema")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -432,6 +464,43 @@ namespace Tenor.Migrations
                     b.ToTable("UserTenantRoles");
                 });
 
+            modelBuilder.Entity("Tenor.Models.UserToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("RefreshToken")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("RefreshTokenExpired")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("TokenExpired")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UserTokens");
+                });
+
             modelBuilder.Entity("Tenor.Models.Counter", b =>
                 {
                     b.HasOne("Tenor.Models.Subset", "Subset")
@@ -450,6 +519,25 @@ namespace Tenor.Migrations
                         .HasForeignKey("ParentId");
 
                     b.Navigation("Parent");
+                });
+
+            modelBuilder.Entity("Tenor.Models.GroupTenantRole", b =>
+                {
+                    b.HasOne("Tenor.Models.Role", "Role")
+                        .WithMany("GroupTenantRoles")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Tenor.Models.Tenant", "Tenant")
+                        .WithMany("GroupTenantRoles")
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+
+                    b.Navigation("Tenant");
                 });
 
             modelBuilder.Entity("Tenor.Models.Kpi", b =>

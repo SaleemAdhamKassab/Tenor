@@ -41,7 +41,9 @@ namespace Tenor.Controllers
         public ActionResult refreshToken()
         {
             string userName = _windowsAuthService.GetLoggedUser();
-            var refresh = _jwtService.RefreshToken(userName);
+            string Header = _contextAccessor.HttpContext.Request.Headers["Authorization"];
+            var token = Header.Split(' ').Last();
+            var refresh = _jwtService.RefreshToken(userName,token);
             if(refresh==null)
             {
                 return Unauthorized();
@@ -58,5 +60,12 @@ namespace Tenor.Controllers
             var token = Header.Split(' ').Last();
             return Ok(_jwtService.TokenConverter(token));
         }
+        [HttpGet("RevokeToken")]
+        [Authorize]
+        public ActionResult RevokeToken(string userName)
+        {
+            return Ok(_jwtService.RevokeToken(userName));
+        }
+
     }
 }

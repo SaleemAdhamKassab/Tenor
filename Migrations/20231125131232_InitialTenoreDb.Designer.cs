@@ -12,8 +12,8 @@ using Tenor.Data;
 namespace Tenor.Migrations
 {
     [DbContext(typeof(TenorDbContext))]
-    [Migration("20231120101831_AddAcesslogsEntity")]
-    partial class AddAcesslogsEntity
+    [Migration("20231125131232_InitialTenoreDb")]
+    partial class InitialTenoreDb
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -103,6 +103,40 @@ namespace Tenor.Migrations
                     b.ToTable("Counters");
                 });
 
+            modelBuilder.Entity("Tenor.Models.Device", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SupplierId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentId");
+
+                    b.ToTable("Devices");
+                });
+
             modelBuilder.Entity("Tenor.Models.Function", b =>
                 {
                     b.Property<int>("Id")
@@ -176,40 +210,6 @@ namespace Tenor.Migrations
                     b.HasIndex("OperationId");
 
                     b.ToTable("Kpis");
-                });
-
-            modelBuilder.Entity("Tenor.Models.MainSet", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int?>("ParentId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("SupplierId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ParentId");
-
-                    b.ToTable("MainSets");
                 });
 
             modelBuilder.Entity("Tenor.Models.Operation", b =>
@@ -365,6 +365,9 @@ namespace Tenor.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("DeviceId")
+                        .HasColumnType("int");
+
                     b.Property<string>("IndexTS")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -374,9 +377,6 @@ namespace Tenor.Migrations
 
                     b.Property<bool>("IsLoad")
                         .HasColumnType("bit");
-
-                    b.Property<int>("MainSetId")
-                        .HasColumnType("int");
 
                     b.Property<int?>("MaxDataDate")
                         .HasColumnType("int");
@@ -402,6 +402,10 @@ namespace Tenor.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("SchemaName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("SupplierId")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -412,7 +416,7 @@ namespace Tenor.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MainSetId");
+                    b.HasIndex("DeviceId");
 
                     b.ToTable("Subsets");
                 });
@@ -463,6 +467,43 @@ namespace Tenor.Migrations
                     b.ToTable("UserTenantRoles");
                 });
 
+            modelBuilder.Entity("Tenor.Models.UserToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("RefreshToken")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("RefreshTokenExpired")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("TokenExpired")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UserTokens");
+                });
+
             modelBuilder.Entity("Tenor.Models.Counter", b =>
                 {
                     b.HasOne("Tenor.Models.Subset", "Subset")
@@ -472,6 +513,15 @@ namespace Tenor.Migrations
                         .IsRequired();
 
                     b.Navigation("Subset");
+                });
+
+            modelBuilder.Entity("Tenor.Models.Device", b =>
+                {
+                    b.HasOne("Tenor.Models.Device", "Parent")
+                        .WithMany("Childs")
+                        .HasForeignKey("ParentId");
+
+                    b.Navigation("Parent");
                 });
 
             modelBuilder.Entity("Tenor.Models.GroupTenantRole", b =>
@@ -502,15 +552,6 @@ namespace Tenor.Migrations
                         .IsRequired();
 
                     b.Navigation("Operation");
-                });
-
-            modelBuilder.Entity("Tenor.Models.MainSet", b =>
-                {
-                    b.HasOne("Tenor.Models.MainSet", "Parent")
-                        .WithMany("Childs")
-                        .HasForeignKey("ParentId");
-
-                    b.Navigation("Parent");
                 });
 
             modelBuilder.Entity("Tenor.Models.Operation", b =>
@@ -567,13 +608,13 @@ namespace Tenor.Migrations
 
             modelBuilder.Entity("Tenor.Models.Subset", b =>
                 {
-                    b.HasOne("Tenor.Models.MainSet", "MainSet")
+                    b.HasOne("Tenor.Models.Device", "Device")
                         .WithMany("Subsets")
-                        .HasForeignKey("MainSetId")
+                        .HasForeignKey("DeviceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("MainSet");
+                    b.Navigation("Device");
                 });
 
             modelBuilder.Entity("Tenor.Models.UserTenantRole", b =>
@@ -600,16 +641,16 @@ namespace Tenor.Migrations
                     b.Navigation("Operations");
                 });
 
-            modelBuilder.Entity("Tenor.Models.Function", b =>
-                {
-                    b.Navigation("Operations");
-                });
-
-            modelBuilder.Entity("Tenor.Models.MainSet", b =>
+            modelBuilder.Entity("Tenor.Models.Device", b =>
                 {
                     b.Navigation("Childs");
 
                     b.Navigation("Subsets");
+                });
+
+            modelBuilder.Entity("Tenor.Models.Function", b =>
+                {
+                    b.Navigation("Operations");
                 });
 
             modelBuilder.Entity("Tenor.Models.Operation", b =>

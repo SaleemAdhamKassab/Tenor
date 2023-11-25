@@ -24,9 +24,10 @@ namespace Tenor.Services.AuthServives
         TokenDto GenerateToken(string userName);
         bool CheckExpiredToken(string token);
         TenantDto TokenConverter(string token);
-        bool CheckExpiredRefreshToken();
-        TokenDto RefreshToken(string userName);
-
+        bool CheckExpiredCookiesRefreshToken();
+        bool CheckExpiredUserRefreshToken(string username, string refreshtoken);
+        TokenDto RefreshToken(string userName, string reftoken);
+        bool RevokeToken(string username);
     }
     public class JwtService: IJwtService
     {
@@ -50,6 +51,14 @@ namespace Tenor.Services.AuthServives
         {
             try
             {
+                //Check if user has active token
+                var userToken = _dbcontext.UserTokens.FirstOrDefault(x=>x.UserName==userName && x.IsActive);
+                if(userToken!=null)
+                {
+                    return null;
+
+                }
+
                 TenantDto TenantAccessData = CovertToTenantDto(userName);
                 if(TenantAccessData==null)
                 {
@@ -58,6 +67,7 @@ namespace Tenor.Services.AuthServives
                 string jwtToken = BuildToken(TenantAccessData);
                 RefreshToken refTokent = GenerateRefreshToken();
                 SetRefreshToken(refTokent);
+                SetUserTokensCfg(userName, jwtToken, refTokent.Token);
                 return new TokenDto {userInfo= TenantAccessData,
                     token = jwtToken,
                     refreshToken = refTokent.Token,
@@ -101,7 +111,6 @@ namespace Tenor.Services.AuthServives
             }
             
         }
-
         public TenantDto TokenConverter(string token)
         {
             try
@@ -134,7 +143,7 @@ namespace Tenor.Services.AuthServives
                 return null;
             }
         }
-        public bool CheckExpiredRefreshToken()
+        public bool CheckExpiredCookiesRefreshToken()
         {
             string cookiesToken = _httpContextAccessor.HttpContext.Request.Cookies["refreshToken"];
             if(!user.refreshToken.Equals(cookiesToken) || (user.tokenExpired < DateTime.Now))
@@ -144,18 +153,46 @@ namespace Tenor.Services.AuthServives
             return true;
 
         }
-        public TokenDto RefreshToken(string userName)
+        public bool CheckExpiredUserRefreshToken(string username,string refreshtoken)
         {
-            string cookiesToken = _httpContextAccessor.HttpContext.Request.Cookies["refreshToken"];
-            if (!user.refreshToken.Equals(cookiesToken) || (user.tokenExpired < DateTime.Now))
+            var activeRefTokent = _dbcontext.UserTokens.FirstOrDefault(x=>x.UserName==username && x.IsActive);
+            if (activeRefTokent == null || !activeRefTokent.RefreshToken.Equals(refreshtoken))
             {
-                return GenerateToken(userName);
+                return false;
             }
-
-            return null;
-
+            if (activeRefTokent.RefreshTokenExpired < DateTime.Now)
+            {
+                RevokeToken(username);
+                return false;
+            }
+           
+            return true;
         }
-
+        public TokenDto RefreshToken(string userName,string reftoken)
+        {
+            var userToken = _dbcontext.UserTokens.FirstOrDefault(x=>x.UserName==userName && x.RefreshToken==reftoken);
+            if (userToken == null)
+            {
+                return null;
+            }
+            userToken.IsActive = false;
+            _dbcontext.Entry(userToken).State = EntityState.Modified;
+            _dbcontext.SaveChanges();
+             return GenerateToken(userName);
+           
+        }
+        public bool RevokeToken(string username)
+        {
+            UserToken userToken = _dbcontext.UserTokens.FirstOrDefault(x => x.UserName == username && x.IsActive);
+            if (userToken != null)
+            {
+                userToken.IsActive = false;
+                _dbcontext.Entry(userToken).State = EntityState.Modified;
+                _dbcontext.SaveChanges();
+                return true;
+            }
+            return false;
+        }
         private RefreshToken GenerateRefreshToken()
         {
             var refreshToken = new RefreshToken()
@@ -228,7 +265,15 @@ namespace Tenor.Services.AuthServives
             user.tokenCreated = newRefreshToken.Created;
             user.tokenExpired = newRefreshToken.Expired;
         }
+        private void SetUserTokensCfg(string userName,string token,string refreshToken)
+        {
+            UserToken userToken = new UserToken(userName,token,
+            DateTime.Now.AddMinutes(Convert.ToDouble(_config["JWT:TokenValidityInMinutes"])),
+            refreshToken,DateTime.Now.AddHours(Convert.ToDouble(_config["JWT:RefreshTokenValidityInHour"])));
 
+            _dbcontext.UserTokens.Add(userToken);
+            _dbcontext.SaveChanges();
+        }
     }
 }
 

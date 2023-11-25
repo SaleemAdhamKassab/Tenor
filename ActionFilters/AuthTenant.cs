@@ -39,7 +39,7 @@ namespace Tenor.ActionFilters
                     return;
                 }
 
-                if (!_jwtService.CheckExpiredRefreshToken())
+                if (!_jwtService.CheckExpiredUserRefreshToken(winUser, token))
                 {
                     context.Result = new UnauthorizedObjectResult("Token Expired");
                     return;

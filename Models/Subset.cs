@@ -16,7 +16,6 @@ namespace Tenor.Models
         public string TableName { get; set; }
         public string RefTableName { get; set; }
         public string SchemaName { get; set; }
-        public int MaxDataDate { get; set; }
         public string Schema { get; set; }
         public string RefSchema { get; set; }
         public int? MaxDataDate { get; set; }
@@ -25,18 +24,12 @@ namespace Tenor.Models
         public string IndexTS { get; set; }
         public string DbLink { get; set; }
         public string RefDbLink { get; set; }
-        [ForeignKey("MainSet")]
-        public int MainSetId { get; set; }
+        [ForeignKey("Device")]
+        public int DeviceId { get; set; }
         public bool IsDeleted { get; set; }
 
 
-
-        public virtual ICollection<Counter> Counters { get; set; }
-
-        [ForeignKey("Device")]
-        public int DeviceId { get; set; }
         public virtual Device Device { get; set; }
         public virtual ICollection<Counter> Counters { get; set; }    
-        public virtual MainSet MainSet { get; set; }
     }
 }
