@@ -58,6 +58,7 @@ builder.Services.AddDbContext<TenorDbContext>(options => options.UseSqlServer(bu
 builder.Services.AddScoped<IDevicesService, DevicesService>();
 builder.Services.AddScoped<ISubsetsService, SubsetsService>();
 builder.Services.AddScoped<ICountersService, CountersService>();
+builder.Services.AddScoped<IKpisService, KpisService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IWindowsAuthService, WindowsAuthService>();
 builder.Services.AddScoped<AuthTenant>();

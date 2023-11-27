@@ -12,4 +12,5 @@
     public class DeviceFilterModel : GeneralFilterModel { }
     public class SubsetFilterModel : GeneralFilterModel { }
     public class CounterFilterModel : GeneralFilterModel { }
+    public class KpiFilterModel : GeneralFilterModel { }
 }
