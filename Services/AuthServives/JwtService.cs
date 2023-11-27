@@ -22,12 +22,13 @@ namespace Tenor.Services.AuthServives
     public interface IJwtService
     {
         TokenDto GenerateToken(string userName);
-        bool CheckExpiredToken(string token);
+        bool CheckExpiredToken(string username, string token);
         TenantDto TokenConverter(string token);
         bool CheckExpiredCookiesRefreshToken();
         bool CheckExpiredUserRefreshToken(string username, string refreshtoken);
         TokenDto RefreshToken(string userName, string reftoken);
         bool RevokeToken(string username);
+        bool IsGrantAccess(string userName,string tenant,List<string> roles);
     }
     public class JwtService: IJwtService
     {
@@ -55,8 +56,8 @@ namespace Tenor.Services.AuthServives
                 var userToken = _dbcontext.UserTokens.FirstOrDefault(x=>x.UserName==userName && x.IsActive);
                 if(userToken!=null)
                 {
-                    return null;
 
+                    RevokeToken(userName);
                 }
 
                 TenantDto TenantAccessData = CovertToTenantDto(userName);
@@ -80,10 +81,16 @@ namespace Tenor.Services.AuthServives
                 return null;
             }
         }
-        public bool CheckExpiredToken(string token)
+        public bool CheckExpiredToken(string username, string token)
         {
             try
             {
+                var userToken = _dbcontext.UserTokens.FirstOrDefault(x=>x.UserName==username && x.Token==token && x.IsActive);
+                if(userToken==null)
+                {
+                    return false;
+                }
+
                 var hmac = new HMACSHA512(Encoding.UTF8.GetBytes(_config["JWT:Secret"]));
                 var tokenValidationParameters = new TokenValidationParameters
                 {
@@ -183,14 +190,37 @@ namespace Tenor.Services.AuthServives
         }
         public bool RevokeToken(string username)
         {
-            UserToken userToken = _dbcontext.UserTokens.FirstOrDefault(x => x.UserName == username && x.IsActive);
-            if (userToken != null)
+           List<UserToken> userTokens = _dbcontext.UserTokens.Where(x => x.UserName == username && x.IsActive).ToList();
+            if (userTokens != null || userTokens.Count!=0)
             {
-                userToken.IsActive = false;
-                _dbcontext.Entry(userToken).State = EntityState.Modified;
-                _dbcontext.SaveChanges();
+                 foreach(UserToken userToken in userTokens)
+                {
+                    userToken.IsActive = false;
+                    _dbcontext.Entry(userToken).State = EntityState.Modified;
+                    _dbcontext.SaveChanges();
+                }
+               
                 return true;
             }
+            return false;
+        }
+
+        public bool IsGrantAccess(string userName, string tenant, List<string> roles)
+        {
+            TenantDto tenantDto = CovertToTenantDto(userName);
+            if(tenantDto!=null)
+            {
+                var userData = tenantDto.tenantAccesses.FirstOrDefault(x => x.tenantName == tenant);
+                if (userData != null)
+                {
+                    var userRoles = roles.Intersect(userData.RoleList).ToList();
+                    if (userRoles.Count()>0)
+                    {
+                        return true;
+                    }
+                }
+            }
+                     
             return false;
         }
         private RefreshToken GenerateRefreshToken()

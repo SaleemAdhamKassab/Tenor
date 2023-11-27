@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
 using Tenor.ActionFilters;
 using Tenor.Data;
+using Tenor.Helper;
 using Tenor.Services;
 using Tenor.Services.AuthServives;
 
@@ -22,6 +23,7 @@ builder.Services.AddEndpointsApiExplorer();
 //builder.Services.AddSwaggerGen();
 builder.Services.AddSwaggerGen(setup =>
 {
+    
     // Include 'SecurityScheme' to use JWT Authentication
     var jwtSecurityScheme = new OpenApiSecurityScheme
     {
@@ -46,6 +48,8 @@ builder.Services.AddSwaggerGen(setup =>
         { jwtSecurityScheme, Array.Empty<string>() }
     });
 
+    setup.OperationFilter<SwaggerTenantParam>();
+
 });
 //Add Windows auth-----------------------
 builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme).AddNegotiate();
@@ -60,7 +64,6 @@ builder.Services.AddScoped<ISubsetsService, SubsetsService>();
 builder.Services.AddScoped<ICountersService, CountersService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IWindowsAuthService, WindowsAuthService>();
-builder.Services.AddScoped<AuthTenant>();
 //-------------
 builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 

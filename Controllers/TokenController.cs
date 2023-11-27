@@ -3,34 +3,33 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Reflection.PortableExecutable;
 using Tenor.ActionFilters;
+using Tenor.Models;
 using Tenor.Services.AuthServives;
 
 namespace Tenor.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-
+    [Authorize]
     public class TokenController : ControllerBase
     {
         private readonly IHttpContextAccessor _contextAccessor;
         private readonly IJwtService _jwtService;
-        private readonly IWindowsAuthService _windowsAuthService;
+        public readonly IWindowsAuthService _windowsAuthService;
 
         public TokenController(IHttpContextAccessor contextAccessor, IJwtService jwtService, IWindowsAuthService windowsAuthService)
         {
-            _contextAccessor=contextAccessor;
-            _jwtService=jwtService;
-            _windowsAuthService=windowsAuthService;
+            _contextAccessor = contextAccessor;
+            _jwtService = jwtService;
+            _windowsAuthService = windowsAuthService;
         }
 
         [HttpGet]
-        [Authorize]
-
         public ActionResult Get()
         {
-            string userName=_windowsAuthService.GetLoggedUser();
-            var responseToken=_jwtService.GenerateToken(userName);
-            if(responseToken==null)
+            string userName = _windowsAuthService.GetLoggedUser();
+            var responseToken = _jwtService.GenerateToken(userName);
+            if (responseToken == null)
             {
                 return Unauthorized();
             }
@@ -43,8 +42,8 @@ namespace Tenor.Controllers
             string userName = _windowsAuthService.GetLoggedUser();
             string Header = _contextAccessor.HttpContext.Request.Headers["Authorization"];
             var token = Header.Split(' ').Last();
-            var refresh = _jwtService.RefreshToken(userName,token);
-            if(refresh==null)
+            var refresh = _jwtService.RefreshToken(userName, token);
+            if (refresh == null)
             {
                 return Unauthorized();
             }
@@ -52,16 +51,18 @@ namespace Tenor.Controllers
         }
 
         [HttpGet("TestToken")]
-        [Authorize]
-        [ServiceFilter(typeof(AuthTenant))]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,Editor" })]
         public ActionResult TestToken()
         {
-            string Header = _contextAccessor.HttpContext.Request.Headers["Authorization"];       
+            string Header = _contextAccessor.HttpContext.Request.Headers["Authorization"];
+            if(Header==null)
+            {
+                return Unauthorized();
+            }
             var token = Header.Split(' ').Last();
             return Ok(_jwtService.TokenConverter(token));
         }
         [HttpGet("RevokeToken")]
-        [Authorize]
         public ActionResult RevokeToken(string userName)
         {
             return Ok(_jwtService.RevokeToken(userName));
