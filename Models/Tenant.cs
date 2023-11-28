@@ -10,7 +10,7 @@ namespace Tenor.Models
         public string Name { get; set; }
         public virtual ICollection<GroupTenantRole> GroupTenantRoles { get; set; }
         public virtual ICollection<UserTenantRole> UserTenantRoles { get; set; }
-
+        public virtual ICollection<TenantDevice> TenantDevices { get; set; }
 
     }
 }

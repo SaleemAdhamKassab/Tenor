@@ -18,7 +18,8 @@ namespace Tenor.Models
 
 
         public virtual ICollection<Subset> Subsets { get; set; }           
-        public virtual ICollection<Device> Childs { get; set; }   
+        public virtual ICollection<Device> Childs { get; set; }
+        public virtual ICollection<TenantDevice> TenantDevices { get; set; }
         public virtual Device Parent { get; set; }
     }
 }
