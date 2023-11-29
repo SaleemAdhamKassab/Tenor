@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Tenor.Dtos;
 using Tenor.Dtos.AuthDto;
 using Tenor.Models;
 
@@ -19,6 +20,11 @@ namespace Tenor.Mapper
                 .ForMember(dest => dest.TenantName, opt => opt.MapFrom(src => src.Tenant.Name))
                 .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.Role.Name))
                 .ReverseMap();
+
+            CreateMap<Operation, OperationDto>().ReverseMap();
+            CreateMap<Kpi, CreateKpi>().ReverseMap();
+            CreateMap<Kpi, UpdateKpi>().ReverseMap();
+
         }
     }
 }

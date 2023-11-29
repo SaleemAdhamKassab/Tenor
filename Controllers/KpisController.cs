@@ -25,7 +25,7 @@ namespace Tenor.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Post(Kpi kpi)
+        public async Task<IActionResult> Post(CreateKpi kpi)
         {
             var result = await _kpiservice.Add(kpi);
 
@@ -35,10 +35,19 @@ namespace Tenor.Controllers
             return Ok(result.Data);
         }
 
-        [HttpPut]
-        public async Task<IActionResult> Put(int id, Kpi kpi)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Put(int id, UpdateKpi kpi)
         {
-            return Ok(null);
+            if(id!=kpi.Id)
+            {
+                return BadRequest();
+            }
+            var result = await _kpiservice.Update(kpi);
+
+            if (!string.IsNullOrEmpty(result.Message))
+                return BadRequest(result.Message);
+
+            return Ok(result.Data);
         }
 
         [HttpDelete]

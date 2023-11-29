@@ -25,7 +25,6 @@ namespace Tenor.Models
         [ForeignKey("Operator")]
         public int? OperatorId { get; set; }
 
-        [ForeignKey("Parent")]
         public int? ParentId { get; set; } //Self Join
 
 
