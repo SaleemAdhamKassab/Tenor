@@ -48,7 +48,7 @@ namespace Tenor.Services
             if (!String.IsNullOrEmpty(deviceFilterModel.SearchQuery))
                 devices = devices.Where(s => s.Name.Trim().ToLower().Contains(deviceFilterModel.SearchQuery.Trim().ToLower()));
 
-            if (String.IsNullOrEmpty(deviceFilterModel.SortDirection))
+            if (!String.IsNullOrEmpty(deviceFilterModel.SortDirection))
                 devices = devices.OrderBy(s => s.Name);
             else
                 devices = devices.OrderByDescending(s => s.Name);
