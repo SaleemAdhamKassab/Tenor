@@ -24,6 +24,6 @@ namespace Tenor.Models
         public virtual Subset Subset { get; set; }
 
         public virtual Collection<Operation> Operations { get; set; }       
-        
+        public virtual ICollection<CounterFieldValue> CounterFieldValues { get; set; }
     }
 }

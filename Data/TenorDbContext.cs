@@ -22,12 +22,25 @@ namespace Tenor.Data
         public DbSet<UserTenantRole> UserTenantRoles { get; set; }
         public DbSet<AccessLog> AccessLogs { get; set; }
         public DbSet<UserToken> UserTokens { get;set; }
+        public DbSet<ExtraField> ExtraFields { get; set; }
+        public DbSet<KpiField> KpiFields { get; set; }
+        public DbSet<CounterField> CounterFields { get; set; }
+        public DbSet<ReportField> ReportFields { get; set; }
+        public DbSet<DashboardField> DashboardFields { get; set; }
+        public DbSet<KpiFieldValue> KpiFieldValues { get; set; }
+        public DbSet<CounterFieldValue> CounterFieldValues { get; set; }
+        public DbSet<ReportFieldValue> ReportFieldValues { get; set; }
+        public DbSet<DashboardFieldValue> DashboardFieldValues { get; set; }
+        public DbSet<Report> Reports { get; set; }
+        public DbSet<Dashboard> Dashboards { get; set; }
+
         //Entity Config
         protected override void OnModelCreating(ModelBuilder builder)
         {
             //Add Entities Configuration
             builder.ApplyConfiguration(new RoleCfg());
             builder.ApplyConfiguration(new PermissionCfg());
+            builder.ApplyConfiguration(new ExtraFieldCfg());
 
         }
     }

@@ -14,5 +14,6 @@ namespace Tenor.Models
         public int OperationId { get; set; }
 
         public virtual Operation Operation { get; set; }
+        public virtual ICollection<KpiFieldValue> KpiFieldValues { get; set; }
     }
 }
