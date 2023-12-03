@@ -14,5 +14,16 @@ namespace Tenor.Models
          
         public virtual Kpi Kpi { get; set; }
         public virtual KpiField  KpiField { get; set; }
+
+
+        public KpiFieldValue() { }
+        public KpiFieldValue(int kpiId, int kpiFieldId, string? fieldValue)
+        {
+            KpiId=kpiId;
+            KpiFieldId=kpiFieldId;
+            FieldValue=fieldValue;
+        }
+
+
     }
 }

@@ -1,8 +1,13 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Extensions;
+using System.Text.Json;
 using System.Data;
+using System.Transactions;
 using Tenor.Data;
 using Tenor.Dtos;
+using Tenor.Dtos.FieldDto;
+using Tenor.Dtos.KpiDto;
 using Tenor.Models;
 
 namespace Tenor.Services
@@ -14,6 +19,8 @@ namespace Tenor.Services
         Task<ResultWithMessage> Add(CreateKpi kpiModel);
         Task<ResultWithMessage> Update(UpdateKpi Kpi);
         Task<ResultWithMessage> Delete(int id);
+        Task<ResultWithMessage> GetExtraFields();
+
     }
 
     public class KpisService : IKpisService
@@ -43,19 +50,28 @@ namespace Tenor.Services
 
         public async Task<ResultWithMessage> Add(CreateKpi kpi)
         {
-            try
+            using (TransactionScope transaction = new TransactionScope())
             {
-                Kpi newKpi = _mapper.Map<Kpi>(kpi);
-                _db.Kpis.Add(newKpi);
-                _db.SaveChanges();
-                return new ResultWithMessage(kpi, "");
-            }
-            catch(Exception ex)
-            {
-                return new ResultWithMessage(null, ex.Message);
+                try
+                {
+                    Kpi newKpi = _mapper.Map<Kpi>(kpi);
+                    _db.Kpis.Add(newKpi);
+                    _db.SaveChanges();
 
-            }
+                    if (kpi.ExtraField.Count != 0)
+                    {
+                        AddExtraFields(newKpi.Id, kpi.ExtraField);
+                    }
+                    transaction.Complete();
+                    return new ResultWithMessage(kpi,null);
+                }
+                catch (Exception ex)
+                {
+                    
+                    return new ResultWithMessage(null, ex.Message);
 
+                }
+            }
         }
 
         public async Task<ResultWithMessage> Update(UpdateKpi Kpi)
@@ -88,6 +104,12 @@ namespace Tenor.Services
             return new ResultWithMessage(null, "");
         }
 
+        public async Task<ResultWithMessage> GetExtraFields()
+        {
+            var extraFields = _mapper.Map<List<KpiExtraField>>(_db.KpiFields.Where(x=>x.IsActive).Include(x => x.ExtraField).ToList());
+            return new ResultWithMessage(extraFields,null);
+
+        }   
         private bool DeleteSelfRelation(int? parentid,List<int> childid)
         {
             List<Operation> childOpt = new List<Operation>();
@@ -118,5 +140,35 @@ namespace Tenor.Services
             return true;
         }
 
+        private bool AddExtraFields(int kpiId,List<ExtraFieldValue> extFields)
+        {
+            foreach (var s in extFields)
+            {
+
+                var extField = _db.KpiFields.Include(x => x.ExtraField).FirstOrDefault(x=>x.Id==s.FieldId && x.IsActive);
+                if(extField!=null)
+                {
+                    if(extField.ExtraField.Type.GetDisplayName()=="List")
+                    {
+                        string fileds = Convert.ToString(string.Join(",", s.Value));
+                        string convertFields = fileds.Replace("\",\"", ",").Replace("[\"", "").Replace("\"]", "");
+                        var ListValue = new KpiFieldValue(kpiId, s.FieldId, convertFields);
+                        _db.KpiFieldValues.Add(ListValue);
+                        _db.SaveChanges();
+
+                    }
+                    else
+                    {
+                       var StringValue = new KpiFieldValue(kpiId, s.FieldId,Convert.ToString(s.Value));
+                        _db.KpiFieldValues.Add(StringValue);
+                        _db.SaveChanges();
+
+                    }
+
+                }
+               
+            }
+            return true;
+        }
     }
 }

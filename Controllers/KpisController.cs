@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Tenor.Dtos;
+using Tenor.Dtos.KpiDto;
 using Tenor.Models;
 using Tenor.Services;
 
@@ -55,5 +56,16 @@ namespace Tenor.Controllers
         {
             return Ok(null);
         }
+
+        [HttpGet("GetExtraFields")]
+        public async Task<IActionResult> GetExtraFields()
+        {
+            var result = await _kpiservice.GetExtraFields();
+            if (!string.IsNullOrEmpty(result.Message))
+                return BadRequest(result.Message);
+
+            return Ok(result.Data);
+        }
+
     }
 }

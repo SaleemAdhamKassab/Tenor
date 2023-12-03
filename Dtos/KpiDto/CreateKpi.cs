@@ -1,13 +1,16 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Dynamic;
+using Tenor.Dtos.FieldDto;
 using static Tenor.Helper.Constant;
 
-namespace Tenor.Dtos
+namespace Tenor.Dtos.KpiDto
 {
     public class CreateKpi
     {
         [StringLength(50, MinimumLength = 2, ErrorMessage = "Name must be between 2 and 50 char")]
         [Required]
         public string Name { get; set; }
+        public List<ExtraFieldValue> ? ExtraField { get; set; }
         public OperationDto Operation { get; set; }
 
     }
@@ -23,7 +26,7 @@ namespace Tenor.Dtos
         public int? FunctionId { get; set; }
         public int? OperatorId { get; set; }
         public int? ParentId { get; set; } //Self Join
-        public  List<OperationDto>? Childs { get; set; }
+        public List<OperationDto>? Childs { get; set; }
 
     }
 

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Tenor.Dtos
+namespace Tenor.Dtos.KpiDto
 {
     public class UpdateKpi
     {
