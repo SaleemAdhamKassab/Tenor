@@ -18,19 +18,20 @@ namespace Tenor.Controllers
         [HttpPost("Get")]
         public async Task<IActionResult> Get([FromBody] CounterFilterModel CounterFilterModel)
         {
-            try
-            {
-                List<CounterDto> result = await _Counterservice.GetAsync(CounterFilterModel);
+            //try
+            //{
+            //    List<CounterDto> result = await _Counterservice.GetAsync(CounterFilterModel);
 
-                if (result is null)
-                    return NotFound(new ResultWithMessage(null, "No Data Found"));
+            //    if (result is null)
+            //        return NotFound(new ResultWithMessage(null, "No Data Found"));
 
-                return Ok(new DataWithSize<CounterDto>(result.Count, result));
-            }
-            catch (Exception e)
-            {
-                return BadRequest(new ResultWithMessage(null, e.Message));
-            }
+            //    return Ok(new DataWithSize<CounterDto>(result.Count, result));
+            //}
+            //catch (Exception e)
+            //{
+            //    return BadRequest(new ResultWithMessage(null, e.Message));
+            //}
+            return Ok();
         }
 
         [HttpGet("Get/{id}")]

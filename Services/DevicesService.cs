@@ -7,8 +7,8 @@ namespace Tenor.Services
 {
     public interface IDevicesService
     {
-        Task<List<DeviceDto>> GetAsync(DeviceFilterModel deviceFilterModel);
-        //Task<ResultWithMessage> GetAsync(long subsetId);
+        //Task<List<DeviceDto>> GetAsync(DeviceFilterModel deviceFilterModel);
+        public ResultWithMessage getDevicesByFilter(DeviceFilterModel deviceFilterModel);
         Task<ResultWithMessage> GetAsync(int id);
         Task<ResultWithMessage> GetSubsetsAsync();
         Task<ResultWithMessage> Add(DeviceDto subsetDto);
@@ -41,31 +41,80 @@ namespace Tenor.Services
         }
 
 
-        public async Task<List<DeviceDto>> GetAsync(DeviceFilterModel deviceFilterModel)
+        //public async Task<List<DeviceDto>> GetAsync(DeviceFilterModel deviceFilterModel)
+        //{
+        //    IQueryable<Device> devices = _db.Devices;
+
+        //    if (!String.IsNullOrEmpty(deviceFilterModel.SearchQuery))
+        //        devices = devices.Where(s => s.Name.Trim().ToLower().Contains(deviceFilterModel.SearchQuery.Trim().ToLower()));
+
+        //    if (!String.IsNullOrEmpty(deviceFilterModel.SortDirection))
+        //        devices = devices.OrderBy(s => s.Name);
+        //    else
+        //        devices = devices.OrderByDescending(s => s.Name);
+
+        //    return await devices
+        //       .Select(e => new DeviceDto()
+        //       {
+        //           Id = e.Id,
+        //           SupplierId = e.SupplierId,
+        //           Description = e.Description,
+        //           Name = e.Name,
+        //           IsDeleted = e.IsDeleted,
+        //           ParentId = e.ParentId
+        //       })
+        //       .Skip((deviceFilterModel.PageIndex - 1) * deviceFilterModel.PageSize)
+        //       .Take(deviceFilterModel.PageSize)
+        //       .ToListAsync();
+        //}
+
+        private IQueryable<Device> getDevicesData(DeviceFilterModel filter)
         {
-            IQueryable<Device> devices = _db.Devices;
+            // 1- sortActive
+            filter.SortActive = filter.SortActive == null ? "Id" : "here";
 
-            if (!String.IsNullOrEmpty(deviceFilterModel.SearchQuery))
-                devices = devices.Where(s => s.Name.Trim().ToLower().Contains(deviceFilterModel.SearchQuery.Trim().ToLower()));
+            //2- searchquery
+            IQueryable<Device> qeury = _db.Devices.Where(e => true);
 
-            if (!String.IsNullOrEmpty(deviceFilterModel.SortDirection))
-                devices = devices.OrderBy(s => s.Name);
+            if (!string.IsNullOrEmpty(filter.Name))
+                qeury = qeury.Where(e => e.Name.Trim().ToLower().Contains(filter.Name.Trim().ToLower()));
+
+
+            if (filter.IsDeleted)
+                qeury = qeury.Where(e => e.IsDeleted);
             else
-                devices = devices.OrderByDescending(s => s.Name);
+                qeury = qeury.Where(e => !e.IsDeleted);
 
-            return await devices
-               .Select(e => new DeviceDto()
-               {
-                   Id = e.Id,
-                   SupplierId = e.SupplierId,
-                   Description = e.Description,
-                   Name = e.Name,
-                   IsDeleted = e.IsDeleted,
-                   ParentId = e.ParentId
-               })
-               .Skip((deviceFilterModel.PageIndex - 1) * deviceFilterModel.PageSize)
-               .Take(deviceFilterModel.PageSize)
-               .ToListAsync();
+            return qeury;
+        }
+
+        private IQueryable<DeviceListViewModel> convertDevicesToViewModel(IQueryable<Device> model) =>
+          model.Select(e => new DeviceListViewModel
+          {
+              Id = e.Id,
+              Name = e.Name,
+              Description = e.Description,
+              IsDeleted = e.IsDeleted
+          });
+
+        public ResultWithMessage getDevicesByFilter(DeviceFilterModel filter)
+        {
+            //1- Apply Filters
+            var query = getDevicesData(filter);
+
+            //2- Generate List View Model
+            var queryViewModel = convertDevicesToViewModel(query);
+
+            //3- Sorting using our extension
+
+
+
+            //4- pagination
+            int resultSize = queryViewModel.Count();
+            var resultData = queryViewModel.Skip(filter.PageSize * filter.PageIndex).Take(filter.PageSize).ToList();
+
+            //5- return 
+            return new ResultWithMessage(new DataWithSize(resultSize, resultData), "");
         }
 
         public async Task<ResultWithMessage> GetAsync(int id)

@@ -14,22 +14,15 @@ namespace Tenor.Controllers
         private readonly IDevicesService _deviceService;
         public DevicesController(IDevicesService deviceService) => _deviceService = deviceService;
 
-        [HttpPost("Get")]
-        public async Task<IActionResult> Get([FromBody] DeviceFilterModel deviceFilterModel)
+        [HttpPost("getDevicesByFilter")]
+        public async Task<IActionResult> getDevicesByFilter([FromBody] DeviceFilterModel filter)
         {
-            try
-            {
-                List<DeviceDto> result = await _deviceService.GetAsync(deviceFilterModel);
+            ResultWithMessage result = _deviceService.getDevicesByFilter(filter);
 
-                if (result is null)
-                    return NotFound(new ResultWithMessage(null, "No Data Found"));
+            if (!string.IsNullOrEmpty(result.Message))
+                return BadRequest(result.Message);
 
-                return Ok(new DataWithSize<DeviceDto>(result.Count, result));
-            }
-            catch (Exception e)
-            {
-                return BadRequest(new ResultWithMessage(null, e.Message));
-            }
+            return Ok(result.Data);
         }
 
         [HttpGet("Get/{id}")]
