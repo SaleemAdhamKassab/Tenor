@@ -10,6 +10,7 @@ using Tenor.Data;
 using Tenor.Helper;
 using Tenor.Services;
 using Tenor.Services.AuthServives;
+using Tenor.Services.DevicesService;
 
 var builder = WebApplication.CreateBuilder(args);
 

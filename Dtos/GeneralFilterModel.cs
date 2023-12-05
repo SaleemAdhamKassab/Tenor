@@ -9,13 +9,6 @@
         public string? SortDirection { get; set; }
     }
 
-    public class DeviceFilterModel : GeneralFilterModel
-    {
-        public string Name { get; set; }
-        public bool IsDeleted { get; set; }
-    }
-
-
     public class SubsetFilterModel : GeneralFilterModel { }
     public class CounterFilterModel : GeneralFilterModel { }
     public class KpiFilterModel : GeneralFilterModel { }

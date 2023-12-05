@@ -1,4 +1,4 @@
-﻿namespace Tenor.Dtos
+﻿namespace Tenor.Services.DevicesService.ViewModels
 {
     public class DeviceListViewModel
     {
