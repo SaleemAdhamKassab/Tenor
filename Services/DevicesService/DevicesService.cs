@@ -80,7 +80,6 @@ namespace Tenor.Services.DevicesService
             filter.SortActive = filter.SortActive == string.Empty ? "Id" : filter.SortActive;// "update here"
 
             //sort Direction
-
             if (filter.PageSize == 0)
                 filter.PageSize = 1;
 
