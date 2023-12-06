@@ -28,11 +28,8 @@ namespace Tenor.Services.SubsetsService
         {
             IQueryable<Subset> qeury = _db.Subsets.Where(e => true);
 
-            if (!string.IsNullOrEmpty(filter.TableName))
-                qeury = qeury.Where(e => e.Name.Trim().ToLower().Contains(filter.TableName.Trim().ToLower()));
-
-            if (!string.IsNullOrEmpty(filter.RefTableName))
-                qeury = qeury.Where(e => e.Name.Trim().ToLower().Contains(filter.RefTableName.Trim().ToLower()));
+            if (!string.IsNullOrEmpty(filter.SearchQuery))
+                qeury = qeury.Where(e => e.Name.Trim().ToLower().Contains(filter.SearchQuery.Trim().ToLower()));
 
             return qeury;
         }
@@ -192,7 +189,6 @@ namespace Tenor.Services.SubsetsService
             subset.LoadPriorety = model.LoadPriorety;
             subset.SummaryType = model.SummaryType;
             subset.IsDeleted = model.IsDeleted;
-
 
             try
             {

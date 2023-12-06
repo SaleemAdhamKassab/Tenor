@@ -25,8 +25,5 @@ namespace Tenor.Services.DevicesService.ViewModels
         public int? ParentId { get; set; }
     }
 
-    public class DeviceFilterModel : GeneralFilterModel
-    {
-        public string Name { get; set; }
-    }
+    public class DeviceFilterModel : GeneralFilterModel { }
 }

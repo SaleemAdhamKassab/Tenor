@@ -48,8 +48,8 @@ namespace Tenor.Services.DevicesService
         {
             IQueryable<Device> qeury = _db.Devices.Where(e => true);
 
-            if (!string.IsNullOrEmpty(filter.Name))
-                qeury = qeury.Where(e => e.Name.Trim().ToLower().Contains(filter.Name.Trim().ToLower()));
+            if (!string.IsNullOrEmpty(filter.SearchQuery))
+                qeury = qeury.Where(e => e.Name.Trim().ToLower().Contains(filter.SearchQuery.Trim().ToLower()));
 
             return qeury;
         }

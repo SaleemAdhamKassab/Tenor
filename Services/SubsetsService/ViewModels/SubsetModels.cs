@@ -58,9 +58,5 @@ namespace Tenor.Services.SubsetsService.ViewModels
         public int DeviceId { get; set; }
     }
 
-    public class SubsetFilterModel : GeneralFilterModel
-    {
-        public string TableName { get; set; }
-        public string RefTableName { get; set; }
-    }
+    public class SubsetFilterModel : GeneralFilterModel { }
 }
