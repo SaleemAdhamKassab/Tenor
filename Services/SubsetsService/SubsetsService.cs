@@ -43,7 +43,14 @@ namespace Tenor.Services.SubsetsService
               TableName = e.TableName,
               RefTableName = e.RefTableName,
               IsLoad = e.IsLoad,
-              Technology = e.Technology
+              DataTS = e.DataTS,
+              DbLink = e.DbLink,
+              IndexTS = e.IndexTS,
+              IsDeleted = e.IsDeleted,
+              MaxDataDate = e.MaxDataDate,
+              RefDbLink = e.RefDbLink,
+              RefSchema = e.RefSchema,
+              SchemaName = e.SchemaName
           });
 
 
@@ -70,15 +77,13 @@ namespace Tenor.Services.SubsetsService
                     DimensionTable = e.DimensionTable,
                     JoinExpression = e.JoinExpression,
                     StartChar = e.StartChar,
-                    Technology = e.Technology,
                     FactDimensionReference = e.FactDimensionReference,
                     TechnologyId = e.TechnologyId,
                     LoadPriorety = e.LoadPriorety,
                     SummaryType = e.SummaryType,
                     IsDeleted = e.IsDeleted,
                     DeviceId = e.DeviceId,
-                    DeviceName = e.Device.Name,
-                    Counters = e.Counters.ToList()
+                    DeviceName = e.Device.Name
                 })
                 .First(e => e.Id == id);
 
@@ -91,9 +96,6 @@ namespace Tenor.Services.SubsetsService
             var queryViewModel = convertSubsetsToViewModel(query);
 
             filter.SortActive = filter.SortActive == string.Empty ? "Id" : filter.SortActive;
-
-            if (filter.PageSize == 0)
-                filter.PageSize = 1;
 
             if (filter.SortDirection == enSortDirection.desc.ToString())
                 queryViewModel = queryViewModel.OrderByDescending(filter.SortActive);
@@ -131,7 +133,6 @@ namespace Tenor.Services.SubsetsService
                 DimensionTable = model.DimensionTable,
                 JoinExpression = model.JoinExpression,
                 StartChar = model.StartChar,
-                Technology = model.Technology,
                 FactDimensionReference = model.FactDimensionReference,
                 TechnologyId = model.TechnologyId,
                 LoadPriorety = model.LoadPriorety,
@@ -145,9 +146,13 @@ namespace Tenor.Services.SubsetsService
             {
                 _db.Add(subset);
                 _db.SaveChanges();
-                model.Id = subset.Id;
 
-                return new ResultWithMessage(model, "");
+                SubsetViewModel subsetViewModel = new()
+                {
+                    //Auto mapper
+                };
+
+                return new ResultWithMessage(subsetViewModel, "");
             }
             catch (Exception e)
             {
@@ -182,7 +187,6 @@ namespace Tenor.Services.SubsetsService
             subset.DimensionTable = model.DimensionTable;
             subset.JoinExpression = model.JoinExpression;
             subset.StartChar = model.StartChar;
-            subset.Technology = model.Technology;
             subset.FactDimensionReference = model.FactDimensionReference;
             subset.TechnologyId = model.TechnologyId;
             subset.LoadPriorety = model.LoadPriorety;
@@ -194,7 +198,12 @@ namespace Tenor.Services.SubsetsService
                 _db.Update(subset);
                 _db.SaveChanges();
 
-                return new ResultWithMessage(model, "");
+                SubsetViewModel subsetViewModel = new()
+                {
+                    //Auto mapper
+                };
+
+                return new ResultWithMessage(subsetViewModel, "");
             }
 
             catch (Exception e)

@@ -60,7 +60,9 @@ namespace Tenor.Services.DevicesService
               Id = e.Id,
               Name = e.Name,
               Description = e.Description,
-              IsDeleted = e.IsDeleted
+              IsDeleted = e.IsDeleted,
+              SupplierId = e.SupplierId,
+              ParentId = e.ParentId
           });
 
 
@@ -76,8 +78,7 @@ namespace Tenor.Services.DevicesService
                     IsDeleted = e.IsDeleted,
                     SupplierId = e.SupplierId,
                     ParentId = e.ParentId,
-                    ParentName = e.Parent.Name,
-                    Subsets = e.Subsets.ToList()
+                    ParentName = e.Parent.Name
                 })
                 .First(e => e.Id == id);
 
@@ -95,9 +96,6 @@ namespace Tenor.Services.DevicesService
 
             //3- Sorting using our extension
             filter.SortActive = filter.SortActive == string.Empty ? "Id" : filter.SortActive;
-
-            if (filter.PageSize == 0)
-                filter.PageSize = 1;
 
             if (filter.SortDirection == enSortDirection.desc.ToString())
                 queryViewModel = queryViewModel.OrderByDescending(filter.SortActive);
@@ -139,10 +137,19 @@ namespace Tenor.Services.DevicesService
                 _db.Add(device);
                 _db.SaveChanges();
 
-                model.Id = device.Id;
-                model.ParentId = model.ParentId == 0 ? null : model.ParentId;
+                DeviceViewModel deviceViewModel = new()
+                {
+                    Id = device.Id,
+                    Name = device.Name,
+                    Description = device.Description,
+                    IsDeleted = device.IsDeleted,
+                    ParentId = device.ParentId,
+                    ParentName = device.Parent.Name,
+                    SupplierId = device.SupplierId
+                };
 
-                return new ResultWithMessage(model, "");
+
+                return new ResultWithMessage(deviceViewModel, "");
             }
             catch (Exception e)
             {
@@ -172,9 +179,18 @@ namespace Tenor.Services.DevicesService
                 _db.Update(device);
                 _db.SaveChanges();
 
-                model.ParentId = model.ParentId == 0 ? null : model.ParentId;
+                DeviceViewModel deviceViewModel = new()
+                {
+                    Id = device.Id,
+                    Name = device.Name,
+                    Description = device.Description,
+                    IsDeleted = device.IsDeleted,
+                    ParentId = device.ParentId,
+                    ParentName = device.Parent.Name,
+                    SupplierId = device.SupplierId
+                };
 
-                return new ResultWithMessage(model, "");
+                return new ResultWithMessage(deviceViewModel, "");
             }
 
             catch (Exception e)

@@ -67,9 +67,7 @@ namespace Tenor.Services.CountersService
                     GroupCategoryId = e.GroupCategoryId,
                     GroupLevelId = e.GroupLevelId,
                     SubsetId = e.SubsetId,
-                    SubsetName = e.Subset.Name,
-                    Operations = e.Operations.ToList(),
-                    CounterFieldValues = e.CounterFieldValues.ToList()
+                    SubsetName = e.Subset.Name
                 })
                 .First(e => e.Id == id);
 
@@ -82,9 +80,6 @@ namespace Tenor.Services.CountersService
             var queryViewModel = convertCountersToViewModel(query);
 
             filter.SortActive = filter.SortActive == string.Empty ? "Id" : filter.SortActive;
-
-            if (filter.PageSize == 0)
-                filter.PageSize = 1;
 
             if (filter.SortDirection == enSortDirection.desc.ToString())
                 queryViewModel = queryViewModel.OrderByDescending(filter.SortActive);
@@ -124,9 +119,13 @@ namespace Tenor.Services.CountersService
             {
                 _db.Add(counter);
                 _db.SaveChanges();
-                model.Id = counter.Id;
 
-                return new ResultWithMessage(model, "");
+                CounterViewModel counterViewModel = new()
+                {
+                    //Auto Mapper
+                };
+
+                return new ResultWithMessage(counterViewModel, "");
             }
             catch (Exception e)
             {
@@ -164,7 +163,12 @@ namespace Tenor.Services.CountersService
                 _db.Update(counter);
                 _db.SaveChanges();
 
-                return new ResultWithMessage(model, "");
+                CounterViewModel counterViewModel = new()
+                {
+                    //Auto Mapper
+                };
+
+                return new ResultWithMessage(counterViewModel, "");
             }
 
             catch (Exception e)

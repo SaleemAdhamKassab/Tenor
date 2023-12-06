@@ -29,7 +29,6 @@ namespace Tenor.Models
         public string DimensionTable { get; set; }
         public string JoinExpression { get; set; }
         public char? StartChar { get; set; }
-        public string? Technology { get; set; }
         public string? FactDimensionReference { get; set; }
         public int? TechnologyId { get; set; }
         public int? LoadPriorety { get; set; }
