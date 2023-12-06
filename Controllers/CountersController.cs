@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Tenor.Dtos;
 using Tenor.Services.CountersService;
+using Tenor.Services.CountersService.ViewModels;
 
 namespace Tenor.Controllers
 {

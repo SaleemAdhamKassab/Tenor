@@ -2,6 +2,7 @@
 using Tenor.Dtos;
 using Tenor.Helper;
 using Tenor.Models;
+using Tenor.Services.CountersService.ViewModels;
 using static Tenor.Helper.Constant;
 
 namespace Tenor.Services.CountersService

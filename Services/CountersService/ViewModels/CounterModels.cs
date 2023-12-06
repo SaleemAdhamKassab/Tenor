@@ -1,7 +1,7 @@
 ﻿using Tenor.Dtos;
 using Tenor.Models;
 
-namespace Tenor.Services.CountersService
+namespace Tenor.Services.CountersService.ViewModels
 {
     public class CounterListViewModel
     {
