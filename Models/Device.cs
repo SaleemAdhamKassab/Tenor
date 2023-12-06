@@ -15,9 +15,11 @@ namespace Tenor.Models
 
         public bool IsDeleted { get; set; } //Without Gloable filter
 
+
         [Required]
         public string SupplierId { get; set; } //set Id from Hawawi
         
+
         [ForeignKey("Parent")]
         public int? ParentId { get; set; }
         public virtual Device Parent { get; set; }

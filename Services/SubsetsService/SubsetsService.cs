@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Tenor.Data;
+﻿using Tenor.Data;
 using Tenor.Dtos;
 using Tenor.Helper;
 using Tenor.Models;
@@ -11,7 +10,7 @@ namespace Tenor.Services.SubsetsService
     public interface ISubsetsService
     {
         ResultWithMessage getById(int id);
-        ResultWithMessage getSubsetsByFilter(SubsetFilterModel filter);
+        ResultWithMessage getByFilter(SubsetFilterModel filter);
         ResultWithMessage addSubset(SubsetBindingModel model);
         ResultWithMessage updateSubset(SubsetBindingModel subsetDto);
         ResultWithMessage deleteSubset(int id);
@@ -86,7 +85,7 @@ namespace Tenor.Services.SubsetsService
             return new ResultWithMessage(Subset, "");
         }
 
-        public ResultWithMessage getSubsetsByFilter(SubsetFilterModel filter)
+        public ResultWithMessage getByFilter(SubsetFilterModel filter)
         {
             var query = getSubsetsData(filter);
             var queryViewModel = convertSubsetsToViewModel(query);

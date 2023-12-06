@@ -11,7 +11,7 @@ namespace Tenor.Services.DevicesService
     public interface IDevicesService
     {
         ResultWithMessage getById(int id);
-        ResultWithMessage getDevicesByFilter(DeviceFilterModel filter);
+        ResultWithMessage getByFilter(DeviceFilterModel filter);
         ResultWithMessage getSubsets();
         ResultWithMessage addDevice(DeviceBindingModel model);
         ResultWithMessage updateDevice(DeviceBindingModel subsetDto);
@@ -85,7 +85,7 @@ namespace Tenor.Services.DevicesService
         }
 
 
-        public ResultWithMessage getDevicesByFilter(DeviceFilterModel filter)
+        public ResultWithMessage getByFilter(DeviceFilterModel filter)
         {
             //1- Apply Filters just search query
             var query = getDevicesData(filter);

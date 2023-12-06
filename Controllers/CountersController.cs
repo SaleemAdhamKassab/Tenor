@@ -1,10 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.VisualBasic;
-using System.Net;
+﻿using Microsoft.AspNetCore.Mvc;
 using Tenor.Dtos;
-using Tenor.Models;
-using Tenor.Services;
+using Tenor.Services.CountersService;
 
 namespace Tenor.Controllers
 {
@@ -12,72 +8,30 @@ namespace Tenor.Controllers
     [ApiController]
     public class CountersController : Controller
     {
-        private readonly ICountersService _Counterservice;
-        public CountersController(ICountersService Counterservice) => _Counterservice = Counterservice;
+        private readonly ICountersService _counterservice;
+        public CountersController(ICountersService counterservice) => _counterservice = counterservice;
 
-        [HttpPost("Get")]
-        public async Task<IActionResult> Get([FromBody] CounterFilterModel CounterFilterModel)
-        {
-            //try
-            //{
-            //    List<CounterDto> result = await _Counterservice.GetAsync(CounterFilterModel);
+        private IActionResult _returnResult(ResultWithMessage result) => !string.IsNullOrEmpty(result.Message) ? BadRequest(new ResultWithMessage(null, result.Message)) : Ok(new ResultWithMessage(result.Data, string.Empty));
 
-            //    if (result is null)
-            //        return NotFound(new ResultWithMessage(null, "No Data Found"));
 
-            //    return Ok(new DataWithSize<CounterDto>(result.Count, result));
-            //}
-            //catch (Exception e)
-            //{
-            //    return BadRequest(new ResultWithMessage(null, e.Message));
-            //}
-            return Ok();
-        }
+        [HttpGet("getById/{id}")]
+        public IActionResult getById(int id) => _returnResult(_counterservice.getById(id));
 
-        [HttpGet("Get/{id}")]
-        public async Task<IActionResult> GetById(int id)
-        {
-            var result = await _Counterservice.GetAsync(id);
 
-            if (!string.IsNullOrEmpty(result.Message))
-            {
-                return BadRequest(result.Message);
-            }
+        [HttpPost("getByFilter")]
+        public IActionResult getSubsetsByFilter([FromBody] CounterFilterModel filter) => _returnResult(_counterservice.getByFilter(filter));
 
-            return Ok(result.Data);
-        }
 
-        [HttpPost]
-        public async Task<IActionResult> Post(CounterDto CounterDto)
-        {
-            var result = await _Counterservice.Add(CounterDto);
+        [HttpPost("addCounter")]
+        public IActionResult addCounter(CounterBindingModel model) => _returnResult(_counterservice.addCounter(model));
 
-            if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(result.Message);
 
-            return Ok(result.Data);
-        }
+        [HttpPut("updateCounter")]
+        public IActionResult updateCounter(CounterBindingModel model) => _returnResult(_counterservice.updateCounter(model));
 
-        [HttpPut]
-        public async Task<IActionResult> Put(int id, CounterDto CounterDto)
-        {
-            var result = await _Counterservice.Update(id, CounterDto);
 
-            if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(result.Message);
+        [HttpDelete("deleteCounter")]
+        public IActionResult deleteSubset(int id) => _returnResult(_counterservice.deleteCounter(id));
 
-            return Ok(result.Data);
-        }
-
-        [HttpDelete]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var result = await _Counterservice.Delete(id);
-
-            if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(result.Message);
-
-            return Ok(result.Data);
-        }
     }
 }

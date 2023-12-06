@@ -8,9 +8,6 @@ namespace Tenor.Models
         [Key]
         public int Id { get; set; }
 
-        [Required]
-        public string SupplierId { get; set; }
-
         [Required, StringLength(100, MinimumLength = 2, ErrorMessage = "Name must be between 2 and 100 char")]
         public string Name { get; set; }
 
@@ -18,7 +15,6 @@ namespace Tenor.Models
 
         [Required]
         public string TableName { get; set; }
-
 
         public string RefTableName { get; set; }
         public string SchemaName { get; set; }
@@ -40,9 +36,15 @@ namespace Tenor.Models
         public string? SummaryType { get; set; }
         public bool IsDeleted { get; set; }
 
+
+        [Required]
+        public string SupplierId { get; set; }
+
+
         [ForeignKey("Device")]
         public int DeviceId { get; set; }
         public virtual Device Device { get; set; }
+
 
         public virtual ICollection<Counter> Counters { get; set; }
     }
