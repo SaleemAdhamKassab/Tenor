@@ -13,8 +13,8 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Tenor.Data;
-using Tenor.Dtos.AuthDto;
 using Tenor.Models;
+using static Tenor.Services.AuthServives.ViewModels.AuthModels;
 
 namespace Tenor.Services.AuthServives
 {

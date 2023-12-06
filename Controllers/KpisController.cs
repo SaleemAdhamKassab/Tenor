@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Tenor.Dtos;
-using Tenor.Dtos.KpiDto;
 using Tenor.Models;
-using Tenor.Services;
+using Tenor.Services.KpisService;
+using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
 namespace Tenor.Controllers
 {
@@ -22,7 +22,12 @@ namespace Tenor.Controllers
         [HttpGet("Get/{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            return Ok(null);
+            var result = await _kpiservice.GetByIdAsync(id);
+
+            if (!string.IsNullOrEmpty(result.Message))
+                return BadRequest(result.Message);
+
+            return Ok(result.Data);
         }
 
         [HttpPost]
@@ -37,7 +42,7 @@ namespace Tenor.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, UpdateKpi kpi)
+        public async Task<IActionResult> Put(int id, CreateKpi kpi)
         {
             if(id!=kpi.Id)
             {

@@ -12,8 +12,11 @@ namespace Tenor.Models
         public string Name { get; set; }
         [ForeignKey("Operation")]
         public int OperationId { get; set; }
+        [ForeignKey("Device")]
+        public int? DeviceId { get; set; }
 
         public virtual Operation Operation { get; set; }
+        public virtual Device? Device { get; set; }
         public virtual ICollection<KpiFieldValue> KpiFieldValues { get; set; }
     }
 }

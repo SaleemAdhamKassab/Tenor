@@ -9,5 +9,4 @@
         public string? SortDirection { get; set; } //desc
     }
     public class CounterFilterModel : GeneralFilterModel { }
-    public class KpiFilterModel : GeneralFilterModel { }
 }

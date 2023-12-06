@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 using System.DirectoryServices;
 using System.DirectoryServices.AccountManagement;
 using System.Security.Claims;
-using Tenor.Dtos.AuthDto;
+using static Tenor.Services.AuthServives.ViewModels.AuthModels;
 
 namespace Tenor.Services.AuthServives
 {

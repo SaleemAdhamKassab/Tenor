@@ -11,6 +11,7 @@ using Tenor.Helper;
 using Tenor.Services;
 using Tenor.Services.AuthServives;
 using Tenor.Services.DevicesService;
+using Tenor.Services.KpisService;
 using Tenor.Services.SubsetsService;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,7 +26,7 @@ builder.Services.AddEndpointsApiExplorer();
 //builder.Services.AddSwaggerGen();
 builder.Services.AddSwaggerGen(setup =>
 {
-
+    
     // Include 'SecurityScheme' to use JWT Authentication
     var jwtSecurityScheme = new OpenApiSecurityScheme
     {
