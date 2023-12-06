@@ -12,7 +12,9 @@ namespace Tenor.Controllers
         private readonly IDevicesService _deviceService;
         public DevicesController(IDevicesService deviceService) => _deviceService = deviceService;
 
-        private IActionResult _returnResult(ResultWithMessage result) => !string.IsNullOrEmpty(result.Message) ? BadRequest(new ResultWithMessage(null, result.Message)) : Ok(new ResultWithMessage(result.Data, string.Empty));
+        private IActionResult _returnResult(ResultWithMessage result) => 
+            !string.IsNullOrEmpty(result.Message) ? BadRequest(new ResultWithMessage(null, result.Message)) :
+            Ok(new ResultWithMessage(result.Data, string.Empty));
 
 
         [HttpGet("getById/{id}")]
