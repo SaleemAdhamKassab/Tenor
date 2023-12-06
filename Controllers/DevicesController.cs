@@ -12,10 +12,11 @@ namespace Tenor.Controllers
         private readonly IDevicesService _deviceService;
         public DevicesController(IDevicesService deviceService) => _deviceService = deviceService;
 
-        [HttpPost("getDevicesByFilter")]
-        public async Task<IActionResult> getDevicesByFilter([FromBody] DeviceFilterModel filter)
+
+        [HttpGet("getById/{id}")]
+        public async Task<IActionResult> getById(int id)
         {
-            ResultWithMessage result = _deviceService.getDevicesByFilter(filter);
+            ResultWithMessage result = _deviceService.getById(id);
 
             if (!string.IsNullOrEmpty(result.Message))
                 return BadRequest(new ResultWithMessage(null, result.Message));
@@ -23,10 +24,10 @@ namespace Tenor.Controllers
             return Ok(new ResultWithMessage(result.Data, string.Empty));
         }
 
-        [HttpGet("getById/{id}")]
-        public async Task<IActionResult> getById(int id)
+        [HttpPost("getDevicesByFilter")]
+        public async Task<IActionResult> getDevicesByFilter([FromBody] DeviceFilterModel filter)
         {
-            ResultWithMessage result = _deviceService.getById(id);
+            ResultWithMessage result = _deviceService.getDevicesByFilter(filter);
 
             if (!string.IsNullOrEmpty(result.Message))
                 return BadRequest(new ResultWithMessage(null, result.Message));

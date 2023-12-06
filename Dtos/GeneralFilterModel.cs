@@ -8,8 +8,6 @@
         public string? SortActive { get; set; }
         public string? SortDirection { get; set; }
     }
-
-    public class SubsetFilterModel : GeneralFilterModel { }
     public class CounterFilterModel : GeneralFilterModel { }
     public class KpiFilterModel : GeneralFilterModel { }
 }

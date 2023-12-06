@@ -10,8 +10,8 @@ namespace Tenor.Services.DevicesService
 {
     public interface IDevicesService
     {
-        ResultWithMessage getDevicesByFilter(DeviceFilterModel filter);
         ResultWithMessage getById(int id);
+        ResultWithMessage getDevicesByFilter(DeviceFilterModel filter);
         ResultWithMessage getSubsets();
         ResultWithMessage addDevice(DeviceBindingModel model);
         ResultWithMessage updateDevice(DeviceBindingModel subsetDto);
@@ -65,6 +65,26 @@ namespace Tenor.Services.DevicesService
 
 
 
+        public ResultWithMessage getById(int id)
+        {
+            DeviceViewModel device = _db.Devices
+                .Select(e => new DeviceViewModel()
+                {
+                    Id = e.Id,
+                    Name = e.Name,
+                    Description = e.Description,
+                    IsDeleted = e.IsDeleted,
+                    SupplierId = e.SupplierId,
+                    ParentId = e.ParentId,
+                    ParentName = e.Parent.Name,
+                    Subsets = e.Subsets.ToList()
+                })
+                .First(e => e.Id == id);
+
+            return new ResultWithMessage(device, "");
+        }
+
+
         public ResultWithMessage getDevicesByFilter(DeviceFilterModel filter)
         {
             //1- Apply Filters just search query
@@ -91,25 +111,6 @@ namespace Tenor.Services.DevicesService
 
             //5- return 
             return new ResultWithMessage(new DataWithSize(resultSize, resultData), "");
-        }
-
-        public ResultWithMessage getById(int id)
-        {
-            DeviceViewModel device = _db.Devices
-                .Select(e => new DeviceViewModel()
-                {
-                    Id = e.Id,
-                    Name = e.Name,
-                    Description = e.Description,
-                    IsDeleted = e.IsDeleted,
-                    SupplierId = e.SupplierId,
-                    ParentId = e.ParentId,
-                    ParentName = e.Parent.Name,
-                    Subsets = e.Subsets.ToList()
-                })
-                .First(e => e.Id == id);
-
-            return new ResultWithMessage(device, "");
         }
 
         public ResultWithMessage getSubsets()

@@ -3,7 +3,10 @@ using Microsoft.VisualBasic;
 using System.Net;
 using Tenor.Dtos;
 using Tenor.Models;
-using Tenor.Services;
+using Tenor.Services.DevicesService;
+using Tenor.Services.DevicesService.ViewModels;
+using Tenor.Services.SubsetsService;
+using Tenor.Services.SubsetsService.ViewModels;
 
 namespace Tenor.Controllers
 {
@@ -11,72 +14,62 @@ namespace Tenor.Controllers
     [ApiController]
     public class SubsetsController : Controller
     {
-        private readonly ISubsetsService _Subsetservice;
-        public SubsetsController(ISubsetsService Subsetservice) => _Subsetservice = Subsetservice;
+        private readonly ISubsetsService _subsetservice;
+        public SubsetsController(ISubsetsService Subsetservice) => _subsetservice = Subsetservice;
 
-        [HttpPost("Get")]
-        public async Task<IActionResult> Get([FromBody] SubsetFilterModel SubsetFilterModel)
+        [HttpGet("getById/{id}")]
+        public async Task<IActionResult> getById(int id)
         {
-            //try
-            //{
-            //    List<SubsetDto> result = await _Subsetservice.GetAsync(SubsetFilterModel);
-
-            //    if (result is null)
-            //        return NotFound(new ResultWithMessage(null, "No Data Found"));
-
-            //    return Ok(new DataWithSize<SubsetDto>(result.Count, result));
-            //}
-            //catch (Exception e)
-            //{
-            //    return BadRequest(new ResultWithMessage(null, e.Message));
-            //}
-            return Ok();
-        }
-
-        [HttpGet("Get/{id}")]
-        public async Task<IActionResult> GetById(int id)
-        {
-            var result = await _Subsetservice.GetAsync(id);
+            ResultWithMessage result = _subsetservice.getById(id);
 
             if (!string.IsNullOrEmpty(result.Message))
-            {
-                return BadRequest(result.Message);
-            }
+                return BadRequest(new ResultWithMessage(null, result.Message));
 
-            return Ok(result.Data);
+            return Ok(new ResultWithMessage(result.Data, string.Empty));
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Post(SubsetDto SubsetDto)
+        [HttpPost("getSubsetsByFilter")]
+        public async Task<IActionResult> getSubsetsByFilter([FromBody] SubsetFilterModel filter)
         {
-            var result = await _Subsetservice.Add(SubsetDto);
+            ResultWithMessage result = _subsetservice.getSubsetsByFilter(filter);
 
             if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(result.Message);
+                return BadRequest(new ResultWithMessage(null, result.Message));
 
-            return Ok(result.Data);
+            return Ok(new ResultWithMessage(result.Data, string.Empty));
         }
 
-        [HttpPut]
-        public async Task<IActionResult> Put(int id, SubsetDto SubsetDto)
+        [HttpPost("addSubset")]
+        public async Task<IActionResult> addSubset(SubsetBindingModel model)
         {
-            var result = await _Subsetservice.Update(id, SubsetDto);
+            var result = _subsetservice.addSubset(model);
 
             if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(result.Message);
+                return BadRequest(new ResultWithMessage(null, result.Message));
 
-            return Ok(result.Data);
+            return Ok(new ResultWithMessage(result.Data, string.Empty));
         }
 
-        [HttpDelete]
-        public async Task<IActionResult> Delete(int id)
+        [HttpPut("updateSubset")]
+        public async Task<IActionResult> updateSubset(SubsetBindingModel model)
         {
-            var result = await _Subsetservice.Delete(id);
+            var result = _subsetservice.updateSubset(model);
 
             if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(result.Message);
+                return BadRequest(new ResultWithMessage(null, result.Message));
 
-            return Ok(result.Data);
+            return Ok(new ResultWithMessage(result.Data, string.Empty));
+        }
+
+        [HttpDelete("deleteSubset")]
+        public IActionResult deleteSubset(int id)
+        {
+            var result = _subsetservice.deleteSubset(id);
+
+            if (!string.IsNullOrEmpty(result.Message))
+                return BadRequest(new ResultWithMessage(null, result.Message));
+
+            return Ok(new ResultWithMessage(null, string.Empty));
         }
     }
 }
