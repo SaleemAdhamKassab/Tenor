@@ -58,9 +58,9 @@ namespace Tenor.Services
                     _db.Kpis.Add(newKpi);
                     _db.SaveChanges();
 
-                    if (kpi.ExtraField.Count != 0)
+                    if (kpi.KpiFields.Count != 0)
                     {
-                        AddExtraFields(newKpi.Id, kpi.ExtraField);
+                        AddExtraFields(newKpi.Id, kpi.KpiFields);
                     }
                     transaction.Complete();
                     return new ResultWithMessage(kpi,null);
