@@ -10,7 +10,7 @@ namespace Tenor.Dtos.KpiDto
         [StringLength(50, MinimumLength = 2, ErrorMessage = "Name must be between 2 and 50 char")]
         [Required]
         public string Name { get; set; }
-        public List<ExtraFieldValue> ? ExtraField { get; set; }
+        public List<ExtraFieldValue> ? KpiFields { get; set; }
         public OperationDto Operation { get; set; }
 
     }
