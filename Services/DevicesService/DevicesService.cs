@@ -10,7 +10,6 @@ namespace Tenor.Services.DevicesService
 {
     public interface IDevicesService
     {
-        //Task<List<DeviceDto>> GetAsync(DeviceFilterModel deviceFilterModel);
         ResultWithMessage getDevicesByFilter(DeviceFilterModel filter);
         ResultWithMessage getById(int id);
         ResultWithMessage getSubsets();
@@ -47,7 +46,6 @@ namespace Tenor.Services.DevicesService
 
         private IQueryable<Device> getDevicesData(DeviceFilterModel filter)
         {
-            //seacrch query
             IQueryable<Device> qeury = _db.Devices.Where(e => true);
 
             if (!string.IsNullOrEmpty(filter.Name))
@@ -76,21 +74,18 @@ namespace Tenor.Services.DevicesService
             var queryViewModel = convertDevicesToViewModel(query);
 
             //3- Sorting using our extension
-            //sort Active
-            filter.SortActive = filter.SortActive == string.Empty ? "Id" : filter.SortActive;// "update here"
+            filter.SortActive = filter.SortActive == string.Empty ? "Id" : filter.SortActive;
 
-            //sort Direction
             if (filter.PageSize == 0)
                 filter.PageSize = 1;
 
             if (filter.SortDirection == enSortDirection.desc.ToString())
-                queryViewModel = IQueryableExtensions.OrderByDescending(queryViewModel, filter.SortActive);
+                queryViewModel = queryViewModel.OrderByDescending(filter.SortActive);
             else
-                queryViewModel = IQueryableExtensions.OrderBy(queryViewModel, filter.SortActive);
+                queryViewModel = queryViewModel.OrderBy(filter.SortActive);
 
 
             //4- pagination
-            // pageindex + pagesize
             int resultSize = queryViewModel.Count();
             var resultData = queryViewModel.Skip(filter.PageSize * filter.PageIndex).Take(filter.PageSize).ToList();
 
@@ -108,8 +103,6 @@ namespace Tenor.Services.DevicesService
                     Description = e.Description,
                     IsDeleted = e.IsDeleted,
                     SupplierId = e.SupplierId,
-
-                    //navigation properties
                     ParentId = e.ParentId,
                     ParentName = e.Parent.Name,
                     Subsets = e.Subsets.ToList()
