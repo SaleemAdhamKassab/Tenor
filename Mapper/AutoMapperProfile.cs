@@ -56,6 +56,8 @@ namespace Tenor.Mapper
                 .ForMember(dest => dest.DeviceName, opt => opt.MapFrom(src => src.Device.Name))
                 .ReverseMap();
 
+            
+
         }
 
 

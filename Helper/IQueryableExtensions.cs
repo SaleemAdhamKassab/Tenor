@@ -6,12 +6,12 @@ namespace Tenor.Helper
 {
     public static class IQueryableExtensions
     {
-        public static IOrderedQueryable<T> OrderBy<T>(this IQueryable<T> source, string propertyName)
+        public static IOrderedQueryable<T> OrderBy2<T>(this IQueryable<T> source, string propertyName)
         {
             return source.OrderBy(toLambda<T>(propertyName));
         }
 
-        public static IOrderedQueryable<T> OrderByDescending<T>(this IQueryable<T> source, string propertyName)
+        public static IOrderedQueryable<T> OrderByDescending2<T>(this IQueryable<T> source, string propertyName)
         {
             return source.OrderByDescending(toLambda<T>(propertyName));
         }

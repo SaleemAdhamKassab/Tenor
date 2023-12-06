@@ -98,9 +98,9 @@ namespace Tenor.Services.DevicesService
             filter.SortActive = filter.SortActive == string.Empty ? "Id" : filter.SortActive;
 
             if (filter.SortDirection == enSortDirection.desc.ToString())
-                queryViewModel = queryViewModel.OrderByDescending(filter.SortActive);
+                queryViewModel = queryViewModel.OrderByDescending2(filter.SortActive);
             else
-                queryViewModel = queryViewModel.OrderBy(filter.SortActive);
+                queryViewModel = queryViewModel.OrderBy2(filter.SortActive);
 
 
             //4- pagination

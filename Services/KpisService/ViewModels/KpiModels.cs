@@ -94,5 +94,14 @@ namespace Tenor.Services.KpisService.ViewModels
             public List<OperationBinding>? Childs { get; set; }
 
         }
+        public class KpiListViewModel
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+            public int? DeviceId { get; set; }
+            public string? DeviceName { get; set; }
+            public List<KpiFieldValueViewModel> KpiFileds { get; set; }
+
+        }
     }
 }

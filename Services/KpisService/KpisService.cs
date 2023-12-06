@@ -8,12 +8,16 @@ using Tenor.Data;
 using Tenor.Dtos;
 using Tenor.Models;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
+using System.DirectoryServices.Protocols;
+using Microsoft.IdentityModel.Tokens;
+using System.Reflection;
+using Tenor.Helper;
 
 namespace Tenor.Services.KpisService
 {
     public interface IKpisService
     {
-        Task<List<KpiViewModel>> GetListAsync(KpiFilterModel kpiFilterModel);
+        Task<DataWithSize> GetListAsync(KpiFilterModel kpiFilterModel);
         Task<ResultWithMessage> GetByIdAsync(int id);
         Task<ResultWithMessage> Add(CreateKpi kpiModel);
         Task<ResultWithMessage> Update(CreateKpi Kpi);
@@ -31,9 +35,86 @@ namespace Tenor.Services.KpisService
             _db = tenorDbContext;
             _mapper = mapper;
         }
-        public async Task<List<KpiViewModel>> GetListAsync(KpiFilterModel kpiFilterModel)
+        public async Task<DataWithSize> GetListAsync(KpiFilterModel kpiFilterModel)
         {
-            return null;
+            try
+            {
+
+                var kpis = _db.Kpis.Include(x => x.KpiFieldValues).ThenInclude(x=>x.KpiField).
+                    ThenInclude(x=>x.ExtraField).AsQueryable();
+
+                if (!string.IsNullOrEmpty(kpiFilterModel.SearchQuery))
+                {
+                    kpis = kpis.Where(x => x.Name.ToLower().StartsWith(kpiFilterModel.SearchQuery.ToLower()));
+                }
+                var kpiList = kpis.Select(x => new KpiListViewModel()
+                {
+                    Id=x.Id,
+                    Name=x.Name,
+                    DeviceId=x.DeviceId,
+                    DeviceName=x.Device.Name,
+                    KpiFileds=_mapper.Map<List<KpiFieldValueViewModel>>(x.KpiFieldValues)
+                });
+
+                if (kpiFilterModel.filters.Count != 0)
+                {
+                    foreach (var c in kpiFilterModel.filters)
+                    {
+                        var filterKeyProperty = typeof(KpiListViewModel).GetProperty(c.key);
+                       
+                        if (filterKeyProperty.PropertyType == typeof(string))
+                        {
+                            string dataValues = Convert.ToString(c.values);
+
+                            kpiList = kpiList.Where(x => filterKeyProperty.GetValue(x).ToString().ToLower().StartsWith(dataValues.ToLower()));
+
+                          
+                        }
+                        else
+                        {
+                            string dataValues = Convert.ToString(string.Join(",", c.values));
+                            kpiList = kpiList.Where(x => dataValues.Contains(filterKeyProperty.GetValue(x).ToString()));
+
+                        }
+
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(kpiFilterModel.SortActive))
+                {
+
+                    var sortProperty = typeof(KpiViewModel).GetProperty(kpiFilterModel.SortActive);
+                    if (sortProperty != null && kpiFilterModel.SortDirection == "asc")
+                        kpiList = kpiList.OrderBy2(kpiFilterModel.SortActive);
+
+                    else if (sortProperty != null && kpiFilterModel.SortDirection == "desc")
+                        kpiList = kpiList.OrderByDescending2(kpiFilterModel.SortActive);
+
+                    int Count = kpiList.Count();
+
+                    var result = kpiList.Skip((kpiFilterModel.PageIndex - 1) * kpiFilterModel.PageSize)
+                    .Take(kpiFilterModel.PageSize).ToList();
+
+                    return new DataWithSize(Count,result);
+                }
+
+
+                else
+                {
+                    int Count = kpiList.Count();
+
+                    var result = kpiList.Skip((kpiFilterModel.PageIndex - 1) * kpiFilterModel.PageSize)
+                    .Take(kpiFilterModel.PageSize).ToList();
+
+                    return new DataWithSize(Count, result);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return new DataWithSize(0,ex.Message);
+
+            }
         }
 
         public async Task<ResultWithMessage> GetByIdAsync(int id)
