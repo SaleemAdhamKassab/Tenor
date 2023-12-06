@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tenor.Data;
 
@@ -11,9 +12,11 @@ using Tenor.Data;
 namespace Tenor.Migrations
 {
     [DbContext(typeof(TenorDbContext))]
-    partial class TenorDbContextModelSnapshot : ModelSnapshot
+    [Migration("20231206090308_UpdateCountersTable")]
+    partial class UpdateCountersTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -347,10 +350,6 @@ namespace Tenor.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("DeviceId")
-                        .IsRequired()
-                        .HasColumnType("int");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -360,8 +359,6 @@ namespace Tenor.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("DeviceId");
 
                     b.HasIndex("OperationId");
 
@@ -921,19 +918,11 @@ namespace Tenor.Migrations
 
             modelBuilder.Entity("Tenor.Models.Kpi", b =>
                 {
-                    b.HasOne("Tenor.Models.Device", "Device")
-                        .WithMany("Kpis")
-                        .HasForeignKey("DeviceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Tenor.Models.Operation", "Operation")
                         .WithMany()
                         .HasForeignKey("OperationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Device");
 
                     b.Navigation("Operation");
                 });
@@ -1124,8 +1113,6 @@ namespace Tenor.Migrations
             modelBuilder.Entity("Tenor.Models.Device", b =>
                 {
                     b.Navigation("Childs");
-
-                    b.Navigation("Kpis");
 
                     b.Navigation("Subsets");
 

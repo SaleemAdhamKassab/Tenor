@@ -1,10 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.VisualBasic;
-using System.Net;
 using Tenor.Dtos;
-using Tenor.Models;
-using Tenor.Services.DevicesService;
-using Tenor.Services.DevicesService.ViewModels;
 using Tenor.Services.SubsetsService;
 using Tenor.Services.SubsetsService.ViewModels;
 
@@ -17,59 +12,27 @@ namespace Tenor.Controllers
         private readonly ISubsetsService _subsetservice;
         public SubsetsController(ISubsetsService Subsetservice) => _subsetservice = Subsetservice;
 
+
+        private IActionResult _returnResult(ResultWithMessage result) => !string.IsNullOrEmpty(result.Message) ? BadRequest(new ResultWithMessage(null, result.Message)) : Ok(new ResultWithMessage(result.Data, string.Empty));
+
+
         [HttpGet("getById/{id}")]
-        public async Task<IActionResult> getById(int id)
-        {
-            ResultWithMessage result = _subsetservice.getById(id);
+        public IActionResult getById(int id) => _returnResult(_subsetservice.getById(id));
 
-            if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(new ResultWithMessage(null, result.Message));
 
-            return Ok(new ResultWithMessage(result.Data, string.Empty));
-        }
+        [HttpPost("getByFilter")]
+        public IActionResult getByFilter([FromBody] SubsetFilterModel filter) => _returnResult(_subsetservice.getByFilter(filter));
 
-        [HttpPost("getSubsetsByFilter")]
-        public async Task<IActionResult> getSubsetsByFilter([FromBody] SubsetFilterModel filter)
-        {
-            ResultWithMessage result = _subsetservice.getSubsetsByFilter(filter);
-
-            if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(new ResultWithMessage(null, result.Message));
-
-            return Ok(new ResultWithMessage(result.Data, string.Empty));
-        }
 
         [HttpPost("addSubset")]
-        public async Task<IActionResult> addSubset(SubsetBindingModel model)
-        {
-            var result = _subsetservice.addSubset(model);
+        public IActionResult addSubset(SubsetBindingModel model) => _returnResult(_subsetservice.addSubset(model));
 
-            if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(new ResultWithMessage(null, result.Message));
-
-            return Ok(new ResultWithMessage(result.Data, string.Empty));
-        }
 
         [HttpPut("updateSubset")]
-        public async Task<IActionResult> updateSubset(SubsetBindingModel model)
-        {
-            var result = _subsetservice.updateSubset(model);
+        public IActionResult updateSubset(SubsetBindingModel model) => _returnResult(_subsetservice.updateSubset(model));
 
-            if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(new ResultWithMessage(null, result.Message));
-
-            return Ok(new ResultWithMessage(result.Data, string.Empty));
-        }
 
         [HttpDelete("deleteSubset")]
-        public IActionResult deleteSubset(int id)
-        {
-            var result = _subsetservice.deleteSubset(id);
-
-            if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(new ResultWithMessage(null, result.Message));
-
-            return Ok(new ResultWithMessage(null, string.Empty));
-        }
+        public IActionResult deleteSubset(int id) => _returnResult(_subsetservice.deleteSubset(id));
     }
 }
