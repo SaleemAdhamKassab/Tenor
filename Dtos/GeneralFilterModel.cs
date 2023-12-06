@@ -9,7 +9,6 @@
         public string? SortDirection { get; set; } //desc
     }
 
-    public class DeviceFilterModel : GeneralFilterModel { }
     public class SubsetFilterModel : GeneralFilterModel { }
     public class CounterFilterModel : GeneralFilterModel { }
     public class KpiFilterModel : GeneralFilterModel { }

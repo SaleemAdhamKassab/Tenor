@@ -16,7 +16,7 @@ namespace Tenor.Controllers
         [HttpPost("Get")]
         public async Task<IActionResult> Get([FromBody] KpiFilterModel kpitFilterModel)
         {
-            return Ok(new DataWithSize<Kpi>(-1, null));
+            return Ok();
         }
 
         [HttpGet("Get/{id}")]

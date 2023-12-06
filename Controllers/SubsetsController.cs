@@ -17,19 +17,20 @@ namespace Tenor.Controllers
         [HttpPost("Get")]
         public async Task<IActionResult> Get([FromBody] SubsetFilterModel SubsetFilterModel)
         {
-            try
-            {
-                List<SubsetDto> result = await _Subsetservice.GetAsync(SubsetFilterModel);
+            //try
+            //{
+            //    List<SubsetDto> result = await _Subsetservice.GetAsync(SubsetFilterModel);
 
-                if (result is null)
-                    return NotFound(new ResultWithMessage(null, "No Data Found"));
+            //    if (result is null)
+            //        return NotFound(new ResultWithMessage(null, "No Data Found"));
 
-                return Ok(new DataWithSize<SubsetDto>(result.Count, result));
-            }
-            catch (Exception e)
-            {
-                return BadRequest(new ResultWithMessage(null, e.Message));
-            }
+            //    return Ok(new DataWithSize<SubsetDto>(result.Count, result));
+            //}
+            //catch (Exception e)
+            //{
+            //    return BadRequest(new ResultWithMessage(null, e.Message));
+            //}
+            return Ok();
         }
 
         [HttpGet("Get/{id}")]

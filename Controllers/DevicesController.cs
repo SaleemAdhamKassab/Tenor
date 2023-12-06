@@ -1,9 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.VisualBasic;
-using System.Net;
 using Tenor.Dtos;
-using Tenor.Models;
-using Tenor.Services;
+using Tenor.Services.DevicesService;
+using Tenor.Services.DevicesService.ViewModels;
 
 namespace Tenor.Controllers
 {
@@ -14,82 +12,70 @@ namespace Tenor.Controllers
         private readonly IDevicesService _deviceService;
         public DevicesController(IDevicesService deviceService) => _deviceService = deviceService;
 
-        [HttpPost("Get")]
-        public async Task<IActionResult> Get([FromBody] DeviceFilterModel deviceFilterModel)
+        [HttpPost("getDevicesByFilter")]
+        public async Task<IActionResult> getDevicesByFilter([FromBody] DeviceFilterModel filter)
         {
-            try
-            {
-                List<DeviceDto> result = await _deviceService.GetAsync(deviceFilterModel);
-
-                if (result is null)
-                    return NotFound(new ResultWithMessage(null, "No Data Found"));
-
-                return Ok(new DataWithSize<DeviceDto>(result.Count, result));
-            }
-            catch (Exception e)
-            {
-                return BadRequest(new ResultWithMessage(null, e.Message));
-            }
-        }
-
-        [HttpGet("Get/{id}")]
-        public async Task<IActionResult> GetById(int id)
-        {
-            var result = await _deviceService.GetAsync(id);
+            ResultWithMessage result = _deviceService.getDevicesByFilter(filter);
 
             if (!string.IsNullOrEmpty(result.Message))
-            {
-                return BadRequest(result.Message);
-            }
+                return BadRequest(new ResultWithMessage(null, result.Message));
 
-            return Ok(result.Data);
+            return Ok(new ResultWithMessage(result.Data, string.Empty));
         }
 
-        [HttpGet("GetSubsets")]
-        public async Task<IActionResult> GetSubsets()
+        [HttpGet("getById/{id}")]
+        public async Task<IActionResult> getById(int id)
         {
-
-            var result = await _deviceService.GetSubsetsAsync();
+            ResultWithMessage result = _deviceService.getById(id);
 
             if (!string.IsNullOrEmpty(result.Message))
-            {
-                return BadRequest(result.Message);
-            }
+                return BadRequest(new ResultWithMessage(null, result.Message));
 
-            return Ok(result.Data);
+            return Ok(new ResultWithMessage(result.Data, string.Empty));
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Post(DeviceDto deviceDto)
+        [HttpGet("getSubsets")]
+        public IActionResult getSubsets()
         {
-            var result = await _deviceService.Add(deviceDto);
+            var result = _deviceService.getSubsets();
 
             if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(result.Message);
+                return BadRequest(new ResultWithMessage(null, result.Message));
 
-            return Ok(result.Data);
+            return Ok(new ResultWithMessage(result.Data, string.Empty));
         }
 
-        [HttpPut]
-        public async Task<IActionResult> Put(int id, DeviceDto deviceDto)
+        [HttpPost("addDevice")]
+        public async Task<IActionResult> addDevice(DeviceBindingModel model)
         {
-            var result = await _deviceService.Update(id, deviceDto);
+            var result = _deviceService.addDevice(model);
 
             if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(result.Message);
+                return BadRequest(new ResultWithMessage(null, result.Message));
 
-            return Ok(result.Data);
+            return Ok(new ResultWithMessage(result.Data, string.Empty));
         }
 
-        [HttpDelete]
-        public async Task<IActionResult> Delete(int id)
+        [HttpPut("updateDevice")]
+        public async Task<IActionResult> updateDevice(DeviceBindingModel model)
         {
-            var result = await _deviceService.Delete(id);
+            var result = _deviceService.updateDevice(model);
 
             if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(result.Message);
+                return BadRequest(new ResultWithMessage(null, result.Message));
 
-            return Ok(result.Data);
+            return Ok(new ResultWithMessage(result.Data, string.Empty));
+        }
+
+        [HttpDelete("deleteDevice")]
+        public IActionResult deleteDevice(int id)
+        {
+            var result = _deviceService.deleteDevice(id);
+
+            if (!string.IsNullOrEmpty(result.Message))
+                return BadRequest(new ResultWithMessage(null, result.Message));
+
+            return Ok(new ResultWithMessage(null, string.Empty));
         }
     }
 }

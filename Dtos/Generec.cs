@@ -1,15 +1,15 @@
 ﻿namespace Tenor.Dtos
 {
-    public class DataWithSize<T> where T : class
+    public class DataWithSize
     {
-        public DataWithSize(int dataSize, List<T> data)
+        public DataWithSize(int dataSize, object data)
         {
             DataSize = dataSize;
             Data = data;
         }
 
         public int DataSize { get; set; }
-        public List<T> Data { get; set; }
+        public object Data { get; set; }
     }
 
     public class ResultWithMessage
