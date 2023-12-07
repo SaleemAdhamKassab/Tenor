@@ -7,13 +7,10 @@ namespace Tenor.Controllers
 {
     [Route("api/Counters")]
     [ApiController]
-    public class CountersController : Controller
+    public class CountersController : BaseController
     {
         private readonly ICountersService _counterservice;
         public CountersController(ICountersService counterservice) => _counterservice = counterservice;
-
-        private IActionResult _returnResult(ResultWithMessage result) => !string.IsNullOrEmpty(result.Message) ? BadRequest(new ResultWithMessage(null, result.Message)) : Ok(new ResultWithMessage(result.Data, string.Empty));
-
 
         [HttpGet("getById/{id}")]
         public IActionResult getById(int id) => _returnResult(_counterservice.getById(id));

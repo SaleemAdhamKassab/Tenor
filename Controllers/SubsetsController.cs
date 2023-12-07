@@ -7,13 +7,10 @@ namespace Tenor.Controllers
 {
     [Route("api/subsets")]
     [ApiController]
-    public class SubsetsController : Controller
+    public class SubsetsController : BaseController
     {
         private readonly ISubsetsService _subsetservice;
         public SubsetsController(ISubsetsService Subsetservice) => _subsetservice = Subsetservice;
-
-
-        private IActionResult _returnResult(ResultWithMessage result) => !string.IsNullOrEmpty(result.Message) ? BadRequest(new ResultWithMessage(null, result.Message)) : Ok(new ResultWithMessage(result.Data, string.Empty));
 
 
         [HttpGet("getById/{id}")]
