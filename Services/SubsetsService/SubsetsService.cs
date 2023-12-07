@@ -149,7 +149,29 @@ namespace Tenor.Services.SubsetsService
 
                 SubsetViewModel subsetViewModel = new()
                 {
-                    //Auto mapper
+                    Id = subset.Id,
+                    SupplierId = subset.SupplierId,
+                    Name = subset.Name,
+                    Description = subset.Description,
+                    TableName = subset.TableName,
+                    RefTableName = subset.RefTableName,
+                    SchemaName = subset.SchemaName,
+                    RefSchema = subset.RefSchema,
+                    MaxDataDate = subset.MaxDataDate,
+                    IsLoad = subset.IsLoad,
+                    DataTS = subset.DataTS,
+                    IndexTS = subset.IndexTS,
+                    DbLink = subset.DbLink,
+                    RefDbLink = subset.RefDbLink,
+                    GranularityPeriod = subset.GranularityPeriod,
+                    DimensionTable = subset.DimensionTable,
+                    JoinExpression = subset.JoinExpression,
+                    StartChar = subset.StartChar,
+                    FactDimensionReference = subset.FactDimensionReference,
+                    TechnologyId = subset.TechnologyId,
+                    LoadPriorety = subset.LoadPriorety,
+                    SummaryType = subset.SummaryType,
+                    IsDeleted = subset.IsDeleted
                 };
 
                 return new ResultWithMessage(subsetViewModel, "");
@@ -200,7 +222,29 @@ namespace Tenor.Services.SubsetsService
 
                 SubsetViewModel subsetViewModel = new()
                 {
-                    //Auto mapper
+                    Id = subset.Id,
+                    SupplierId = subset.SupplierId,
+                    Name = subset.Name,
+                    Description = subset.Description,
+                    TableName = subset.TableName,
+                    RefTableName = subset.RefTableName,
+                    SchemaName = subset.SchemaName,
+                    RefSchema = subset.RefSchema,
+                    MaxDataDate = subset.MaxDataDate,
+                    IsLoad = subset.IsLoad,
+                    DataTS = subset.DataTS,
+                    IndexTS = subset.IndexTS,
+                    DbLink = subset.DbLink,
+                    RefDbLink = subset.RefDbLink,
+                    GranularityPeriod = subset.GranularityPeriod,
+                    DimensionTable = subset.DimensionTable,
+                    JoinExpression = subset.JoinExpression,
+                    StartChar = subset.StartChar,
+                    FactDimensionReference = subset.FactDimensionReference,
+                    TechnologyId = subset.TechnologyId,
+                    LoadPriorety = subset.LoadPriorety,
+                    SummaryType = subset.SummaryType,
+                    IsDeleted = subset.IsDeleted
                 };
 
                 return new ResultWithMessage(subsetViewModel, "");

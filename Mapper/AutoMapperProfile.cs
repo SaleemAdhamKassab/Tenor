@@ -1,14 +1,16 @@
 ﻿using AutoMapper;
 using Microsoft.OpenApi.Extensions;
 using Tenor.Models;
+using Tenor.Services.DevicesService.ViewModels;
+using Tenor.Services.SubsetsService.ViewModels;
 using static Tenor.Services.AuthServives.ViewModels.AuthModels;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
 namespace Tenor.Mapper
 {
-    public class AutoMapperProfile: Profile
+    public class AutoMapperProfile : Profile
     {
-        public AutoMapperProfile() 
+        public AutoMapperProfile()
         {
             //-----------------------------AUTH-------------------------------------------
             CreateMap<UserTenantRole, UserTenantDto>()
@@ -25,7 +27,7 @@ namespace Tenor.Mapper
 
             //-----------------------------KPI--------------------------------------
             CreateMap<Operation, OperationDto>()
-                .ForMember(dest => dest.OperatorName, opt => opt.MapFrom(src => src.Operator!=null?src.Operator.Name:null))
+                .ForMember(dest => dest.OperatorName, opt => opt.MapFrom(src => src.Operator != null ? src.Operator.Name : null))
                 .ForMember(dest => dest.FunctionName, opt => opt.MapFrom(src => src.Function != null ? src.Function.Name : null))
                 .ForMember(dest => dest.KpiName, opt => opt.MapFrom(src => src.Kpi != null ? src.Kpi.Name : null))
                 .ForMember(dest => dest.CounterName, opt => opt.MapFrom(src => src.Counter != null ? src.Counter.Name : null)).ReverseMap();
@@ -36,7 +38,7 @@ namespace Tenor.Mapper
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
                 .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.ExtraField.Type.GetDisplayName()))
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.ExtraField.Name))
-                .ForMember(dest => dest.Content, opt => opt.MapFrom(src=> ConvertContentType(src.ExtraField.Type.GetDisplayName(),src.ExtraField.Content)))
+                .ForMember(dest => dest.Content, opt => opt.MapFrom(src => ConvertContentType(src.ExtraField.Type.GetDisplayName(), src.ExtraField.Content)))
                 .ForMember(dest => dest.Url, opt => opt.MapFrom(src => src.ExtraField.Url)).ReverseMap();
 
             CreateMap<KpiFieldValue, KpiFieldValueViewModel>()
@@ -56,14 +58,16 @@ namespace Tenor.Mapper
                 .ForMember(dest => dest.DeviceName, opt => opt.MapFrom(src => src.Device.Name))
                 .ReverseMap();
 
+
+            //-----------------------------Subset--------------------------------------
             
 
         }
 
 
-        private dynamic ConvertContentType(string contenttype,string content)
+        private dynamic ConvertContentType(string contenttype, string content)
         {
-            if(contenttype != "List" && contenttype != "MultiSelectList")
+            if (contenttype != "List" && contenttype != "MultiSelectList")
             {
                 return content;
             }

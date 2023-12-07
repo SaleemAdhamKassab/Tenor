@@ -122,7 +122,20 @@ namespace Tenor.Services.CountersService
 
                 CounterViewModel counterViewModel = new()
                 {
-                    //Auto Mapper
+                    Id = counter.Id,
+                    Name = counter.Name,
+                    Code = counter.Code,
+                    ColumnName = counter.ColumnName,
+                    RefColumnName = counter.RefColumnName,
+                    Description = counter.Description,
+                    Aggregation = counter.Aggregation,
+                    IsDeleted = counter.IsDeleted,
+                    SupplierId = counter.SupplierId,
+                    TechnologyId = counter.TechnologyId,
+                    GroupDeviceTypeId = counter.GroupDeviceTypeId,
+                    GroupCategoryId = counter.GroupCategoryId,
+                    GroupLevelId = counter.GroupLevelId,
+                    SubsetId = counter.SubsetId
                 };
 
                 return new ResultWithMessage(counterViewModel, "");
@@ -165,7 +178,20 @@ namespace Tenor.Services.CountersService
 
                 CounterViewModel counterViewModel = new()
                 {
-                    //Auto Mapper
+                    Id = counter.Id,
+                    Name = counter.Name,
+                    Code = counter.Code,
+                    ColumnName = counter.ColumnName,
+                    RefColumnName = counter.RefColumnName,
+                    Description = counter.Description,
+                    Aggregation = counter.Aggregation,
+                    IsDeleted = counter.IsDeleted,
+                    SupplierId = counter.SupplierId,
+                    TechnologyId = counter.TechnologyId,
+                    GroupDeviceTypeId = counter.GroupDeviceTypeId,
+                    GroupCategoryId = counter.GroupCategoryId,
+                    GroupLevelId = counter.GroupLevelId,
+                    SubsetId = counter.SubsetId
                 };
 
                 return new ResultWithMessage(counterViewModel, "");
