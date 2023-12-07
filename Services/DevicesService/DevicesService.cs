@@ -131,7 +131,6 @@ namespace Tenor.Services.DevicesService
                 ParentId = model.ParentId == 0 ? null : model.ParentId
             };
 
-
             try
             {
                 _db.Add(device);

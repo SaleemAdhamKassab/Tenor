@@ -53,7 +53,6 @@ namespace Tenor.Services.SubsetsService
               SchemaName = e.SchemaName
           });
 
-
         public ResultWithMessage getById(int id)
         {
             SubsetViewModel Subset = _db.Subsets
@@ -140,7 +139,6 @@ namespace Tenor.Services.SubsetsService
                 IsDeleted = model.IsDeleted,
                 DeviceId = model.DeviceId
             };
-
 
             try
             {

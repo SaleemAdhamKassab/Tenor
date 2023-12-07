@@ -47,7 +47,6 @@ namespace Tenor.Services.CountersService
               SupplierId = e.SupplierId
           });
 
-
         public ResultWithMessage getById(int id)
         {
             CounterViewModel Counter = _db.Counters
