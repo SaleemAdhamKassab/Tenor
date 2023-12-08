@@ -8,6 +8,6 @@ namespace Tenor.Controllers
     [ApiController]
     public class BaseController : ControllerBase
     {
-        public IActionResult _returnResult(ResultWithMessage result) => !string.IsNullOrEmpty(result.Message) ? BadRequest(new { message = result.Message }) : Ok(new ResultWithMessage(result.Data, string.Empty));
+        protected IActionResult _returnResult(ResultWithMessage result) => !string.IsNullOrEmpty(result.Message) ? BadRequest(new { message = result.Message }) : Ok(new ResultWithMessage(result.Data, string.Empty));
     }
 }
