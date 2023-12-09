@@ -57,7 +57,7 @@ namespace Tenor.Services.KpisService.ViewModels
             public int FieldId { get; set; }
             public string Type { get; set; }
             public string FieldName { get; set; }
-            public dynamic Value { get; set; }
+            public object Value { get; set; }
         }
         public class KpiViewModel
         {
@@ -77,7 +77,7 @@ namespace Tenor.Services.KpisService.ViewModels
         public class Filter
         {
             public string key { get; set; }
-            public dynamic values { get; set; }
+            public object values { get; set; }
         }
         public class OperationBinding
         {

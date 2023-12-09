@@ -8,7 +8,7 @@ namespace Tenor.Controllers
 {
     [Route("api/kpis")]
     [ApiController]
-    public class KpisController : Controller
+    public class KpisController : BaseController
     {
         private readonly IKpisService _kpiservice;
         public KpisController(IKpisService kpiservice) => _kpiservice = kpiservice;

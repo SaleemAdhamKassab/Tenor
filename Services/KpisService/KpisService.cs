@@ -12,6 +12,13 @@ using System.DirectoryServices.Protocols;
 using Microsoft.IdentityModel.Tokens;
 using System.Reflection;
 using Tenor.Helper;
+using Infrastructure.Helpers;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Linq;
+using System.Dynamic;
+using System.Collections;
+using System.Runtime.Remoting;
+using System.Diagnostics.Contracts;
 
 namespace Tenor.Services.KpisService
 {
@@ -47,43 +54,48 @@ namespace Tenor.Services.KpisService
                 {
                     kpis = kpis.Where(x => x.Name.ToLower().StartsWith(kpiFilterModel.SearchQuery.ToLower()));
                 }
-                var kpiList = kpis.Select(x => new KpiListViewModel()
-                {
-                    Id=x.Id,
-                    Name=x.Name,
-                    DeviceId=x.DeviceId,
-                    DeviceName=x.Device.Name,
-                    KpiFileds=_mapper.Map<List<KpiFieldValueViewModel>>(x.KpiFieldValues)
-                });
+
 
                 if (kpiFilterModel.filters.Count != 0)
                 {
-                    foreach (var c in kpiFilterModel.filters)
+                    var expression = ExpressionUtils.BuildPredicate<Kpi>(kpiFilterModel.filters);
+                    if (expression != null)
                     {
-                        var filterKeyProperty = typeof(KpiListViewModel).GetProperty(c.key);
-                       
-                        if (filterKeyProperty.PropertyType == typeof(string))
+                        kpis = kpis.Where(expression);
+                    }
+                    else
+                    {
+                        foreach (var f in kpiFilterModel.filters)
                         {
-                            string dataValues = Convert.ToString(c.values);
+                            if (f.values.GetType().Name== "JsonElement")
+                            {
+                                string fileds = Convert.ToString(string.Join(",", f.values));
+                                string convertFields = fileds.Replace("\",\"", ",").Replace("[\"", "").Replace("\"]", "");
+                                kpis = kpis.Where(x => x.KpiFieldValues.Any(y => y.FieldValue.Contains(convertFields) && y.KpiField.ExtraField.Name == f.key));
 
-                            kpiList = kpiList.Where(x => filterKeyProperty.GetValue(x).ToString().ToLower().StartsWith(dataValues.ToLower()));
+                            }
+                            else
+                            {
+                                kpis = kpis.Where(x => x.KpiFieldValues.Any(y => f.values == f.values.ToString() && y.KpiField.ExtraField.Name == f.key));
 
-                          
+                            }
                         }
-                        else
-                        {
-                            string dataValues = Convert.ToString(string.Join(",", c.values));
-                            kpiList = kpiList.Where(x => dataValues.Contains(filterKeyProperty.GetValue(x).ToString()));
-
-                        }
-
                     }
                 }
+                               
+                var kpiList = kpis.Select(x => new KpiListViewModel()
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    DeviceId = x.DeviceId,
+                    DeviceName = x.Device.Name,
+                    KpiFileds = _mapper.Map<List<KpiFieldValueViewModel>>(x.KpiFieldValues)
+                });
 
                 if (!string.IsNullOrEmpty(kpiFilterModel.SortActive))
                 {
 
-                    var sortProperty = typeof(KpiViewModel).GetProperty(kpiFilterModel.SortActive);
+                    var sortProperty = typeof(KpiListViewModel).GetProperty(kpiFilterModel.SortActive);
                     if (sortProperty != null && kpiFilterModel.SortDirection == "asc")
                         kpiList = kpiList.OrderBy2(kpiFilterModel.SortActive);
 
@@ -92,18 +104,17 @@ namespace Tenor.Services.KpisService
 
                     int Count = kpiList.Count();
 
-                    var result = kpiList.Skip((kpiFilterModel.PageIndex - 1) * kpiFilterModel.PageSize)
+                    var result = kpiList.Skip((kpiFilterModel.PageIndex) * kpiFilterModel.PageSize)
                     .Take(kpiFilterModel.PageSize).ToList();
 
                     return new DataWithSize(Count,result);
                 }
 
-
                 else
                 {
                     int Count = kpiList.Count();
 
-                    var result = kpiList.Skip((kpiFilterModel.PageIndex - 1) * kpiFilterModel.PageSize)
+                    var result = kpiList.Skip((kpiFilterModel.PageIndex) * kpiFilterModel.PageSize)
                     .Take(kpiFilterModel.PageSize).ToList();
 
                     return new DataWithSize(Count, result);
@@ -283,5 +294,7 @@ namespace Tenor.Services.KpisService
 
             return result;
         }
+
+        
     }
 }
