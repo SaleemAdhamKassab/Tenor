@@ -50,8 +50,18 @@ namespace Tenor.Services.KpisService
                 List<string> kpiFields = _db.KpiFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList();
                 kpiFields.Add("DeviceId");
                 //--------------------------------------------------------------
-                KpiFilterModel kpiFilterModel = _mapper.Map<KpiFilterModel>(kpiFilterM);
                 dynamic data = JsonConvert.DeserializeObject<dynamic>(kpiFilterM.ToString());
+
+                KpiFilterModel kpiFilterModel = new KpiFilterModel()
+                {
+                    SearchQuery= data["searchQuery"],
+                    PageIndex = data["pageIndex"],
+                    PageSize = data["pageSize"],
+                    SortActive = data["sortActive"],
+                    SortDirection = data["sortDirection"]
+
+                };
+
                 //--------------------------------------------------------------
                 foreach (var s in kpiFields)
                 {

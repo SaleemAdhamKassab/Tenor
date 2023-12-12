@@ -12,7 +12,6 @@ namespace Tenor.Mapper
     {
         public AutoMapperProfile()
         {
-            CreateMap<object, KpiFilterModel>().ReverseMap();
             //-----------------------------AUTH-------------------------------------------
             CreateMap<UserTenantRole, UserTenantDto>()
                 .ForMember(dest => dest.userName, opt => opt.MapFrom(src => src.UserName))
