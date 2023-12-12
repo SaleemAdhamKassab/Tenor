@@ -8,29 +8,26 @@ using Tenor.Data;
 using Tenor.Dtos;
 using Tenor.Models;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
-using System.DirectoryServices.Protocols;
-using Microsoft.IdentityModel.Tokens;
-using System.Reflection;
 using Tenor.Helper;
 using Infrastructure.Helpers;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Dynamic;
-using System.Collections;
-using System.Runtime.Remoting;
-using System.Diagnostics.Contracts;
+using System.Linq;
+using System.ComponentModel;
+using Microsoft.Extensions.Hosting;
+using System.Text.RegularExpressions;
 
 namespace Tenor.Services.KpisService
 {
     public interface IKpisService
     {
-        Task<DataWithSize> GetListAsync(KpiFilterModel kpiFilterModel);
+        Task<DataWithSize> GetListAsync(object kpiFilterM);
         Task<ResultWithMessage> GetByIdAsync(int id);
         Task<ResultWithMessage> Add(CreateKpi kpiModel);
         Task<ResultWithMessage> Update(CreateKpi Kpi);
         Task<ResultWithMessage> Delete(int id);
         Task<ResultWithMessage> GetExtraFields();
-
     }
 
     public class KpisService : IKpisService
@@ -42,43 +39,51 @@ namespace Tenor.Services.KpisService
             _db = tenorDbContext;
             _mapper = mapper;
         }
-        public async Task<DataWithSize> GetListAsync(KpiFilterModel kpiFilterModel)
+        public async Task<DataWithSize> GetListAsync(object kpiFilterM)
         {
             try
             {
 
+                List<Filter> filters = new List<Filter>();
                 var kpis = _db.Kpis.Include(x => x.KpiFieldValues).ThenInclude(x=>x.KpiField).
                     ThenInclude(x=>x.ExtraField).AsQueryable();
-
+                List<string> kpiFields = _db.KpiFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList();
+                kpiFields.Add("DeviceId");
+                //--------------------------------------------------------------
+                KpiFilterModel kpiFilterModel = _mapper.Map<KpiFilterModel>(kpiFilterM);
+                dynamic data = JsonConvert.DeserializeObject<dynamic>(kpiFilterM.ToString());
+                //--------------------------------------------------------------
+                foreach (var s in kpiFields)
+                {
+                    Filter filter = new Filter();
+                    object property = data[s];
+                    if (property!=null)
+                    {
+                        filter.key = s;
+                        filter.values= Regex.Replace(property.ToString().Replace("{", "").Replace("}", ""), @"\t|\n|\r|\s+", "");
+                        filters.Add(filter);
+                    }
+                }
+               
                 if (!string.IsNullOrEmpty(kpiFilterModel.SearchQuery))
                 {
                     kpis = kpis.Where(x => x.Name.ToLower().StartsWith(kpiFilterModel.SearchQuery.ToLower()));
                 }
-
-
-                if (kpiFilterModel.filters.Count != 0)
+                
+                if (filters.Count != 0)
                 {
-                    var expression = ExpressionUtils.BuildPredicate<Kpi>(kpiFilterModel.filters);
+                    var expression = ExpressionUtils.BuildPredicate<Kpi>(filters);
                     if (expression != null)
                     {
                         kpis = kpis.Where(expression);
                     }
                     else
                     {
-                        foreach (var f in kpiFilterModel.filters)
-                        {
-                            if (f.values.GetType().Name== "JsonElement")
-                            {
-                                string fileds = Convert.ToString(string.Join(",", f.values));
-                                string convertFields = fileds.Replace("\",\"", ",").Replace("[\"", "").Replace("\"]", "");
-                                kpis = kpis.Where(x => x.KpiFieldValues.Any(y => y.FieldValue.Contains(convertFields) && y.KpiField.ExtraField.Name == f.key));
-
-                            }
-                            else
-                            {
-                                kpis = kpis.Where(x => x.KpiFieldValues.Any(y => f.values == f.values.ToString() && y.KpiField.ExtraField.Name == f.key));
-
-                            }
+                        foreach (var f in filters)
+                        {                        
+                          string fileds = Convert.ToString(string.Join(",", f.values));
+                          string convertFields = fileds.Replace("\",\"", ",").Replace("[", "").Replace("]", "").Replace("\"","");
+                          kpis = kpis.Where(x => x.KpiFieldValues.Any(y => y.FieldValue.Contains(convertFields) && y.KpiField.ExtraField.Name == f.key));                     
                         }
                     }
                 }
@@ -215,7 +220,7 @@ namespace Tenor.Services.KpisService
             var extraFields = _mapper.Map<List<KpiExtraField>>(_db.KpiFields.Where(x => x.IsActive).Include(x => x.ExtraField).ToList());
             return new ResultWithMessage(extraFields, null);
 
-        }
+        }   
         private bool DeleteSelfRelation(int? parentid, List<int> childid)
         {
             List<Operation> childOpt = new List<Operation>();
@@ -295,6 +300,5 @@ namespace Tenor.Services.KpisService
             return result;
         }
 
-        
     }
 }

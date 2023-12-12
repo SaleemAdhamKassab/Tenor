@@ -1,5 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Primitives;
+using System.Dynamic;
+using System.Text;
 using Tenor.Dtos;
+using Tenor.Helper;
 using Tenor.Models;
 using Tenor.Services.KpisService;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
@@ -11,16 +16,24 @@ namespace Tenor.Controllers
     public class KpisController : BaseController
     {
         private readonly IKpisService _kpiservice;
-        public KpisController(IKpisService kpiservice) => _kpiservice = kpiservice;
+        private readonly IHttpContextAccessor _contextAccessor;
 
-        [HttpPost("Get")]
-        public async Task<IActionResult> Get([FromBody] KpiFilterModel kpitFilterModel)
+        public KpisController(IKpisService kpiservice, IHttpContextAccessor contextAccessor)
         {
+            _kpiservice = kpiservice;
+            _contextAccessor = contextAccessor;
+
+        }
+
+        [HttpPost("GetList")]
+        public async Task<IActionResult> Get(object kpitFilterModel)
+        {
+            
             var result = await _kpiservice.GetListAsync(kpitFilterModel);
             return Ok(result);
         }
 
-        [HttpGet("Get/{id}")]
+        [HttpGet("GetById")]
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _kpiservice.GetByIdAsync(id);
@@ -73,5 +86,6 @@ namespace Tenor.Controllers
             return Ok(result.Data);
         }
 
+        
     }
 }

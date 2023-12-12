@@ -14,6 +14,7 @@ using Tenor.Services.CountersService;
 using Tenor.Services.DevicesService;
 using Tenor.Services.KpisService;
 using Tenor.Services.SubsetsService;
+using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,7 +61,7 @@ builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme).AddNe
 //----------------------------------------
 builder.Services.AddHttpContextAccessor();
 //-------------------------------------
-builder.Services.AddDbContext<TenorDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("RemoteConnection")));
+builder.Services.AddDbContext<TenorDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 // add services
 
 builder.Services.AddScoped<IDevicesService, DevicesService>();
@@ -81,6 +82,7 @@ builder.Services.AddCors(o => o.AddPolicy("CorsPolicy", builder =>
 }));
 
 var app = builder.Build();
+
 
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())

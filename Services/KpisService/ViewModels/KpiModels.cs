@@ -1,6 +1,7 @@
 ﻿using static Tenor.Helper.Constant;
 using System.ComponentModel.DataAnnotations;
 using Tenor.Dtos;
+using System.Dynamic;
 
 namespace Tenor.Services.KpisService.ViewModels
 {
@@ -70,9 +71,8 @@ namespace Tenor.Services.KpisService.ViewModels
             public OperationDto Operations { get; set; }
 
         }
-        public class KpiFilterModel: GeneralFilterModel
+        public  class  KpiFilterModel: GeneralFilterModel
         {
-            public List<Filter> filters { get; set; }
         }
         public class Filter
         {

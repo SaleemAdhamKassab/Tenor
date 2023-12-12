@@ -1,4 +1,6 @@
-﻿namespace Tenor.Dtos
+﻿using System.Dynamic;
+
+namespace Tenor.Dtos
 {
     public class GeneralFilterModel
     {
