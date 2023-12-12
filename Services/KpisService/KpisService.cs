@@ -174,7 +174,7 @@ namespace Tenor.Services.KpisService
                         AddExtraFields(newKpi.Id, kpi.KpiFields);
                     }
                     transaction.Complete();
-                    return new ResultWithMessage(kpi, null);
+                    return new ResultWithMessage(_mapper.Map<KpiViewModel>(newKpi), null);
                 }
                 catch (Exception ex)
                 {
@@ -210,7 +210,7 @@ namespace Tenor.Services.KpisService
                         AddExtraFields(Kpi.Id, Kpi.KpiFields);
                     }
                     transaction.Complete();
-                    return new ResultWithMessage(updatedKpi, null);
+                    return new ResultWithMessage(_mapper.Map<KpiViewModel>(updatedKpi), null);
                 }
                 catch (Exception ex)
                 {

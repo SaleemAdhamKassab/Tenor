@@ -25,7 +25,7 @@ namespace Tenor.Controllers
 
         }
 
-        [HttpPost("GetList")]
+        [HttpPost("getByFilter")]
         public async Task<IActionResult> Get(object kpitFilterModel)
         {
             
@@ -33,7 +33,7 @@ namespace Tenor.Controllers
             return Ok(result);
         }
 
-        [HttpGet("GetById")]
+        [HttpGet("getById")]
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _kpiservice.GetByIdAsync(id);
@@ -44,7 +44,7 @@ namespace Tenor.Controllers
             return Ok(result.Data);
         }
 
-        [HttpPost]
+        [HttpPost("add")]
         public async Task<IActionResult> Post(CreateKpi kpi)
         {
             var result = await _kpiservice.Add(kpi);
@@ -55,7 +55,7 @@ namespace Tenor.Controllers
             return Ok(result.Data);
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("edit")]
         public async Task<IActionResult> Put(int id, CreateKpi kpi)
         {
             if(id!=kpi.Id)
@@ -70,7 +70,7 @@ namespace Tenor.Controllers
             return Ok(result.Data);
         }
 
-        [HttpDelete]
+        [HttpDelete("delete")]
         public async Task<IActionResult> Delete(int id)
         {
             return Ok(null);
