@@ -1,16 +1,22 @@
-﻿using Tenor.Data;
+﻿using Infrastructure.Helpers;
+using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
+using System.Text.RegularExpressions;
+using Tenor.Data;
 using Tenor.Dtos;
 using Tenor.Helper;
 using Tenor.Models;
 using Tenor.Services.CountersService.ViewModels;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static Tenor.Helper.Constant;
+using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
 namespace Tenor.Services.CountersService
 {
     public interface ICountersService
     {
         ResultWithMessage getById(int id);
-        ResultWithMessage getByFilter(CounterFilterModel filter);
+        ResultWithMessage getByFilter(object filter);
         ResultWithMessage add(CounterBindingModel model);
         ResultWithMessage edit(CounterBindingModel CounterDto);
         ResultWithMessage delete(int id);
@@ -71,22 +77,100 @@ namespace Tenor.Services.CountersService
             return new ResultWithMessage(Counter, "");
         }
 
-        public ResultWithMessage getByFilter(CounterFilterModel filter)
+        public ResultWithMessage getByFilter(object counterFilter)
         {
-            var query = getCountersData(filter);
-            var queryViewModel = convertCountersToViewModel(query);
+            try
+            {
 
-            filter.SortActive = filter.SortActive == string.Empty ? "Id" : filter.SortActive;
+                List<Filter> filters = new List<Filter>();
+                IQueryable<Counter> query= _db.Counters.Where(e => true);
+                List<string> counterFields = _db.CounterFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList();
+                List<string> mainFields = new List<string>() { "supplierId", "code", "subsetId"};
+                counterFields.AddRange(mainFields);
+                //--------------------------------------------------------------
+                dynamic data = JsonConvert.DeserializeObject<dynamic>(counterFilter.ToString());
+                GeneralFilterModel counterFilterModel = new GeneralFilterModel()
+                {
+                    SearchQuery = data["searchQuery"],
+                    PageIndex = data["pageIndex"],
+                    PageSize = data["pageSize"],
+                    SortActive = data["sortActive"],
+                    SortDirection = data["sortDirection"]
 
-            if (filter.SortDirection == enSortDirection.desc.ToString())
-                queryViewModel = queryViewModel.OrderByDescending2(filter.SortActive);
-            else
-                queryViewModel = queryViewModel.OrderBy2(filter.SortActive);
+                };
+                //--------------------------------------------------------------
+                foreach (var s in counterFields)
+                {
+                    Filter filter = new Filter();
+                    object property = data[s];
+                    if (property != null)
+                    {
+                        filter.key = s;
+                        filter.values = Regex.Replace(property.ToString().Replace("{", "").Replace("}", ""), @"\t|\n|\r|\s+", "");
+                        filters.Add(filter);
+                    }
+                }
 
-            int resultSize = queryViewModel.Count();
-            var resultData = queryViewModel.Skip(filter.PageSize * filter.PageIndex).Take(filter.PageSize).ToList();
+                if (!string.IsNullOrEmpty(counterFilterModel.SearchQuery))
+                {
+                    query = query.Where(x => x.Name.ToLower().StartsWith(counterFilterModel.SearchQuery.ToLower()));
+                }
 
-            return new ResultWithMessage(new DataWithSize(resultSize, resultData), "");
+                if (filters.Count != 0)
+                {
+                    var expression = ExpressionUtils.BuildPredicate<Counter>(filters);
+                    if (expression != null)
+                    {
+                        query = query.Where(expression);
+                    }
+                    else
+                    {
+                        foreach (var f in filters)
+                        {
+                            string fileds = Convert.ToString(string.Join(",", f.values));
+                            string convertFields = fileds.Replace("\",\"", ",").Replace("[", "").Replace("]", "").Replace("\"", "");
+                            query = query.Where(x => x.CounterFieldValues.Any(y => y.FieldValue.Contains(convertFields) && y.CounterField.ExtraField.Name == f.key));
+                        }
+                    }
+                }
+
+                var queryViewModel = convertCountersToViewModel(query);
+
+
+                if (!string.IsNullOrEmpty(counterFilterModel.SortActive))
+                {
+
+                    var sortProperty = typeof(CounterListViewModel).GetProperty(counterFilterModel.SortActive);
+                    if (sortProperty != null && counterFilterModel.SortDirection == "asc")
+                        queryViewModel = queryViewModel.OrderBy2(counterFilterModel.SortActive);
+
+                    else if (sortProperty != null && counterFilterModel.SortDirection == "desc")
+                        queryViewModel = queryViewModel.OrderByDescending2(counterFilterModel.SortActive);
+
+                    int Count = queryViewModel.Count();
+
+                    var result = queryViewModel.Skip((counterFilterModel.PageIndex) * counterFilterModel.PageSize)
+                    .Take(counterFilterModel.PageSize).ToList();
+
+                    return new ResultWithMessage(new DataWithSize(Count, result), "");
+                }
+
+                else
+                {
+                    int Count = queryViewModel.Count();
+
+                    var result = queryViewModel.Skip((counterFilterModel.PageIndex) * counterFilterModel.PageSize)
+                    .Take(counterFilterModel.PageSize).ToList();
+
+                    return new ResultWithMessage(new DataWithSize(Count, result), "");
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return new ResultWithMessage(new DataWithSize(0, null), ex.Message);
+
+            }
         }
 
         public ResultWithMessage add(CounterBindingModel model)
