@@ -79,10 +79,14 @@ namespace Infrastructure.Helpers
 
 
                         val = Convert.ChangeType(item.values, body.Type);
-                        val = Convert.ToString(item.values);
+                        if(val==null)
+                        {
+                            val = Convert.ToString(item.values);
 
-                            
                         }
+
+
+                    }
                         catch (Exception)
                         {
                             val = Int32.Parse(item.values.ToString());

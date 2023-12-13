@@ -1,16 +1,21 @@
-﻿using Tenor.Data;
+﻿using Infrastructure.Helpers;
+using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
+using System.Text.RegularExpressions;
+using Tenor.Data;
 using Tenor.Dtos;
 using Tenor.Helper;
 using Tenor.Models;
 using Tenor.Services.SubsetsService.ViewModels;
 using static Tenor.Helper.Constant;
+using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
 namespace Tenor.Services.SubsetsService
 {
     public interface ISubsetsService
     {
         ResultWithMessage getById(int id);
-        ResultWithMessage getByFilter(SubsetFilterModel filter);
+        ResultWithMessage getByFilter(object subsetfilter);
         ResultWithMessage add(SubsetBindingModel model);
         ResultWithMessage edit(SubsetBindingModel subsetDto);
         ResultWithMessage delete(int id);
@@ -92,22 +97,99 @@ namespace Tenor.Services.SubsetsService
             return new ResultWithMessage(Subset, "");
         }
 
-        public ResultWithMessage getByFilter(SubsetFilterModel filter)
+        public ResultWithMessage getByFilter(object subsetfilter)
         {
-            var query = getSubsetsData(filter);
-            var queryViewModel = convertSubsetsToViewModel(query);
+            try
+            {
 
-            filter.SortActive = filter.SortActive == string.Empty ? "Id" : filter.SortActive;
+                List<Filter> filters = new List<Filter>();
+                IQueryable<Subset> query = _db.Subsets.Where(e => true);
+                List<string> subsetFields = _db.SubsetFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList();
+                List<string> mainFields = new List<string>() { "supplierId", "isLoad", "deviceId", "id", "tableName" };
+                subsetFields.AddRange(mainFields);
+                //--------------------------------------------------------------
+                dynamic data = JsonConvert.DeserializeObject<dynamic>(subsetfilter.ToString());
+                GeneralFilterModel subsetFilterModel = new GeneralFilterModel()
+                {
+                    SearchQuery = data["searchQuery"],
+                    PageIndex = data["pageIndex"],
+                    PageSize = data["pageSize"],
+                    SortActive = data["sortActive"],
+                    SortDirection = data["sortDirection"]
 
-            if (filter.SortDirection == enSortDirection.desc.ToString())
-                queryViewModel = queryViewModel.OrderByDescending2(filter.SortActive);
-            else
-                queryViewModel = queryViewModel.OrderBy2(filter.SortActive);
+                };
+                //--------------------------------------------------------------
+                foreach (var s in subsetFields)
+                {
+                    Filter filter = new Filter();
+                    object property = data[s];
+                    if (property != null)
+                    {
+                        filter.key = s;
+                        filter.values = Regex.Replace(property.ToString().Replace("{", "").Replace("}", ""), @"\t|\n|\r|\s+", "");
+                        filters.Add(filter);
+                    }
+                }
 
-            int resultSize = queryViewModel.Count();
-            var resultData = queryViewModel.Skip(filter.PageSize * filter.PageIndex).Take(filter.PageSize).ToList();
+                if (!string.IsNullOrEmpty(subsetFilterModel.SearchQuery))
+                {
+                    query = query.Where(x => x.Name.ToLower().StartsWith(subsetFilterModel.SearchQuery.ToLower()));
+                }
 
-            return new ResultWithMessage(new DataWithSize(resultSize, resultData), "");
+                if (filters.Count != 0)
+                {
+                    var expression = ExpressionUtils.BuildPredicate<Subset>(filters);
+                    if (expression != null)
+                    {
+                        query = query.Where(expression);
+                    }
+                    else
+                    {
+                        foreach (var f in filters)
+                        {
+                            string fileds = Convert.ToString(string.Join(",", f.values));
+                            string convertFields = fileds.Replace("\",\"", ",").Replace("[", "").Replace("]", "").Replace("\"", "");
+                            query = query.Where(x => x.SubsetFieldValues.Any(y => y.FieldValue.Contains(convertFields) && y.SubsetField.ExtraField.Name == f.key));
+                        }
+                    }
+                }
+
+                var queryViewModel = convertSubsetsToViewModel(query);
+
+                if (!string.IsNullOrEmpty(subsetFilterModel.SortActive))
+                {
+
+                    var sortProperty = typeof(SubsetListViewModel).GetProperty(subsetFilterModel.SortActive);
+                    if (sortProperty != null && subsetFilterModel.SortDirection == "asc")
+                        queryViewModel = queryViewModel.OrderBy2(subsetFilterModel.SortActive);
+
+                    else if (sortProperty != null && subsetFilterModel.SortDirection == "desc")
+                        queryViewModel = queryViewModel.OrderByDescending2(subsetFilterModel.SortActive);
+
+                    int Count = queryViewModel.Count();
+
+                    var result = queryViewModel.Skip((subsetFilterModel.PageIndex) * subsetFilterModel.PageSize)
+                    .Take(subsetFilterModel.PageSize).ToList();
+
+                    return new ResultWithMessage(new DataWithSize(Count, result), "");
+                }
+
+                else
+                {
+                    int Count = queryViewModel.Count();
+
+                    var result = queryViewModel.Skip((subsetFilterModel.PageIndex) * subsetFilterModel.PageSize)
+                    .Take(subsetFilterModel.PageSize).ToList();
+
+                    return new ResultWithMessage(new DataWithSize(Count, result), "");
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return new ResultWithMessage(new DataWithSize(0, null), ex.Message);
+
+            }
         }
 
         public ResultWithMessage add(SubsetBindingModel model)

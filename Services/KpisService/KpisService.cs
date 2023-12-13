@@ -48,8 +48,8 @@ namespace Tenor.Services.KpisService
                 var kpis = _db.Kpis.Include(x => x.KpiFieldValues).ThenInclude(x=>x.KpiField).
                     ThenInclude(x=>x.ExtraField).AsQueryable();
                 List<string> kpiFields = _db.KpiFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList();
-                kpiFields.Add("DeviceId");
-                //--------------------------------------------------------------
+                List<string> mainFields = new List<string>() {"id", "deviceId" };
+                kpiFields.AddRange(mainFields);                //--------------------------------------------------------------
                 dynamic data = JsonConvert.DeserializeObject<dynamic>(kpiFilterM.ToString());
                 KpiFilterModel kpiFilterModel = new KpiFilterModel()
                 {

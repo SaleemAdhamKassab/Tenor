@@ -85,7 +85,7 @@ namespace Tenor.Services.CountersService
                 List<Filter> filters = new List<Filter>();
                 IQueryable<Counter> query= _db.Counters.Where(e => true);
                 List<string> counterFields = _db.CounterFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList();
-                List<string> mainFields = new List<string>() { "supplierId", "code", "subsetId"};
+                List<string> mainFields = new List<string>() { "supplierId", "code", "subsetId","id"};
                 counterFields.AddRange(mainFields);
                 //--------------------------------------------------------------
                 dynamic data = JsonConvert.DeserializeObject<dynamic>(counterFilter.ToString());
