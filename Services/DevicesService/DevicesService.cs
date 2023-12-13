@@ -72,10 +72,8 @@ namespace Tenor.Services.DevicesService
               ParentName = e.Parent.Name
           });
 
-        private string validateDeviceBindingModel(DeviceBindingModel model)
+        private string validatingModel(DeviceBindingModel model)
         {
-            string errorMessage = string.Empty;
-
             if (model is null)
                 return "Empty Model!";
 
@@ -150,10 +148,10 @@ namespace Tenor.Services.DevicesService
 
         public ResultWithMessage add(DeviceBindingModel model)
         {
-            string validatingError = validateDeviceBindingModel(model);
+            string validatingModelErrorMessage = validatingModel(model);
 
-            if (!string.IsNullOrEmpty(validatingError))
-                return new ResultWithMessage(null, validatingError);
+            if (!string.IsNullOrEmpty(validatingModelErrorMessage))
+                return new ResultWithMessage(null, validatingModelErrorMessage);
 
             Device device = new()
             {
