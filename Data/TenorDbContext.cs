@@ -33,6 +33,9 @@ namespace Tenor.Data
         public DbSet<DashboardFieldValue> DashboardFieldValues { get; set; }
         public DbSet<Report> Reports { get; set; }
         public DbSet<Dashboard> Dashboards { get; set; }
+        public DbSet<SubsetField> SubsetFields { get; set; }
+        public DbSet<SubsetFieldValue> SubsetFieldValues { get; set; }
+
 
         //Entity Config
         protected override void OnModelCreating(ModelBuilder builder)

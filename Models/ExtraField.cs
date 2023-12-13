@@ -19,6 +19,7 @@ namespace Tenor.Models
         public virtual ICollection<CounterField> CounterFields { get; set; }
         public virtual ICollection<ReportField> ReportFields { get; set; }
         public virtual ICollection<DashboardField> DashboardFields { get; set; }
+        public virtual ICollection<SubsetField> SubsetFields { get; set; }
 
     }
 }
