@@ -10,7 +10,7 @@ namespace Tenor.Services.DevicesService.ViewModels
         public string Description { get; set; }
         public bool IsDeleted { get; set; }
         public int? ParentId { get; set; }
-        public string ParentName { get; set; }
+        public string? ParentName { get; set; }
     }
 
     public class DeviceListViewModel
@@ -21,7 +21,7 @@ namespace Tenor.Services.DevicesService.ViewModels
         public string Description { get; set; }
         public bool IsDeleted { get; set; }
         public int? ParentId { get; set; }
-        public string ParentName { get; set; }
+        public string? ParentName { get; set; }
     }
 
     public class DeviceBindingModel
@@ -34,5 +34,5 @@ namespace Tenor.Services.DevicesService.ViewModels
         public int? ParentId { get; set; }
     }
 
-    public class DeviceFilterModel : GeneralFilterModel { }
+    public class DeviceFilterModel : GeneralFilterModel{}
 }

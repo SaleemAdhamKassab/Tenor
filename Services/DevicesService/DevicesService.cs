@@ -46,10 +46,16 @@ namespace Tenor.Services.DevicesService
 
         private IQueryable<Device> getDevicesData(DeviceFilterModel filter)
         {
-            IQueryable<Device> qeury = _db.Devices.Where(e => true);
+            IQueryable<Device> qeury = _db.Devices.Include(e => e.Parent).Where(e => true);
 
             if (!string.IsNullOrEmpty(filter.SearchQuery))
-                qeury = qeury.Where(e => e.Name.Trim().ToLower().Contains(filter.SearchQuery.Trim().ToLower()));
+                qeury = qeury.Where
+                    (e => e.Id.ToString().Trim().ToLower().Contains(filter.SearchQuery.Trim().ToLower()) ||
+                     e.SupplierId.Trim().ToLower().Contains(filter.SearchQuery.Trim().ToLower()) ||
+                     e.Name.Trim().ToLower().Contains(filter.SearchQuery.Trim().ToLower()) ||
+                     e.ParentId.ToString().Trim().ToLower().Contains(filter.SearchQuery.Trim().ToLower()) ||
+                     e.Parent.Name.Trim().ToLower().Contains(filter.SearchQuery.Trim().ToLower())
+                );
 
             return qeury;
         }
@@ -66,11 +72,35 @@ namespace Tenor.Services.DevicesService
               ParentName = e.Parent.Name
           });
 
+        private string validateDeviceBindingModel(DeviceBindingModel model)
+        {
+            string errorMessage = string.Empty;
+
+            if (model is null)
+                return "Empty Model!";
+
+            bool isParentIdExists = model.ParentId is null || _db.Devices.Any(e => e.Id == model.ParentId);
+            if (!isParentIdExists)
+                return $"Invalid Parent Id: {model.ParentId}!";
+
+            bool isNameExists = _db.Devices.Any(e => e.Name.Trim().ToLower() == model.Name.Trim().ToLower());
+            if (isNameExists)
+                return $"The Device Name [{model.Name}] is already used!";
+
+            return string.Empty;
+        }
+
 
 
         public ResultWithMessage getById(int id)
         {
-            DeviceViewModel device = _db.Devices
+            Device device = _db.Devices.Find(id);
+
+            if (device is null)
+                return new ResultWithMessage(null, $"No Device found with Id: {id}");
+
+
+            DeviceViewModel deviceToRetrive = _db.Devices
                 .Select(e => new DeviceViewModel()
                 {
                     Id = e.Id,
@@ -83,7 +113,7 @@ namespace Tenor.Services.DevicesService
                 })
                 .First(e => e.Id == id);
 
-            return new ResultWithMessage(device, "");
+            return new ResultWithMessage(deviceToRetrive, "");
         }
 
 
@@ -120,8 +150,10 @@ namespace Tenor.Services.DevicesService
 
         public ResultWithMessage add(DeviceBindingModel model)
         {
-            if (model is null)
-                return new ResultWithMessage(null, "Empty Model!!");
+            string validatingError = validateDeviceBindingModel(model);
+
+            if (!string.IsNullOrEmpty(validatingError))
+                return new ResultWithMessage(null, validatingError);
 
             Device device = new()
             {
@@ -137,6 +169,8 @@ namespace Tenor.Services.DevicesService
                 _db.Add(device);
                 _db.SaveChanges();
 
+                device = _db.Devices.Include(e => e.Parent).Single(e => e.Id == device.Id);
+
                 DeviceViewModel deviceViewModel = new()
                 {
                     Id = device.Id,
@@ -144,10 +178,9 @@ namespace Tenor.Services.DevicesService
                     Description = device.Description,
                     IsDeleted = device.IsDeleted,
                     ParentId = device.ParentId,
-                    ParentName = device.Parent.Name,
+                    ParentName = device.ParentId is null ? null : device.Parent.Name,
                     SupplierId = device.SupplierId
                 };
-
 
                 return new ResultWithMessage(deviceViewModel, "");
             }
@@ -186,7 +219,7 @@ namespace Tenor.Services.DevicesService
                     Description = device.Description,
                     IsDeleted = device.IsDeleted,
                     ParentId = device.ParentId,
-                    ParentName = device.Parent.Name,
+                    ParentName = device.ParentId is null ? null : device.Parent.Name,
                     SupplierId = device.SupplierId
                 };
 

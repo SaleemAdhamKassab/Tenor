@@ -12,7 +12,7 @@ namespace Tenor.Controllers
         private readonly IDevicesService _deviceService;
         public DevicesController(IDevicesService deviceService) => _deviceService = deviceService;
 
-        [HttpGet("getById/{id}")]
+        [HttpGet("getById")]
         public IActionResult getById(int id) => _returnResult(_deviceService.getById(id));
 
 
