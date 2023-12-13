@@ -11,9 +11,9 @@ namespace Tenor.Services.SubsetsService
     {
         ResultWithMessage getById(int id);
         ResultWithMessage getByFilter(SubsetFilterModel filter);
-        ResultWithMessage addSubset(SubsetBindingModel model);
-        ResultWithMessage updateSubset(SubsetBindingModel subsetDto);
-        ResultWithMessage deleteSubset(int id);
+        ResultWithMessage add(SubsetBindingModel model);
+        ResultWithMessage edit(SubsetBindingModel subsetDto);
+        ResultWithMessage delete(int id);
     }
 
     public class SubsetsService : ISubsetsService
@@ -107,7 +107,7 @@ namespace Tenor.Services.SubsetsService
             return new ResultWithMessage(new DataWithSize(resultSize, resultData), "");
         }
 
-        public ResultWithMessage addSubset(SubsetBindingModel model)
+        public ResultWithMessage add(SubsetBindingModel model)
         {
             if (model is null)
                 return new ResultWithMessage(null, "Empty Model!!");
@@ -180,7 +180,7 @@ namespace Tenor.Services.SubsetsService
             }
         }
 
-        public ResultWithMessage updateSubset(SubsetBindingModel model)
+        public ResultWithMessage edit(SubsetBindingModel model)
         {
             if (model is null)
                 return new ResultWithMessage(null, "Empty Model!!");
@@ -254,7 +254,7 @@ namespace Tenor.Services.SubsetsService
             }
         }
 
-        public ResultWithMessage deleteSubset(int id)
+        public ResultWithMessage delete(int id)
         {
             Subset subset = _db.Subsets.Find(id);
 

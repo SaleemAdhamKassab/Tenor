@@ -24,15 +24,15 @@ namespace Tenor.Controllers
         public IActionResult getSubsets() => _returnResult(_deviceService.getSubsets());
 
 
-        [HttpPost("addDevice")]
-        public IActionResult addDevice(DeviceBindingModel model) => _returnResult(_deviceService.addDevice(model));
+        [HttpPost("add")]
+        public IActionResult add(DeviceBindingModel model) => _returnResult(_deviceService.add(model));
 
 
-        [HttpPut("updateDevice")]
-        public IActionResult updateDevice(DeviceBindingModel model) => _returnResult(_deviceService.updateDevice(model));
+        [HttpPut("edit")]
+        public IActionResult edit(DeviceBindingModel model) => _returnResult(_deviceService.edit(model));
 
 
-        [HttpDelete("deleteDevice")]
-        public IActionResult deleteDevice(int id) => _returnResult(_deviceService.deleteDevice(id));
+        [HttpDelete("delete")]
+        public IActionResult delete(int id) => _returnResult(_deviceService.delete(id));
     }
 }

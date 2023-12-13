@@ -13,9 +13,9 @@ namespace Tenor.Services.DevicesService
         ResultWithMessage getById(int id);
         ResultWithMessage getByFilter(DeviceFilterModel filter);
         ResultWithMessage getSubsets();
-        ResultWithMessage addDevice(DeviceBindingModel model);
-        ResultWithMessage updateDevice(DeviceBindingModel subsetDto);
-        ResultWithMessage deleteDevice(int id);
+        ResultWithMessage add(DeviceBindingModel model);
+        ResultWithMessage edit(DeviceBindingModel subsetDto);
+        ResultWithMessage delete(int id);
     }
 
     public class DevicesService : IDevicesService
@@ -117,7 +117,7 @@ namespace Tenor.Services.DevicesService
             return new ResultWithMessage(devicesWithChilds, "");
         }
 
-        public ResultWithMessage addDevice(DeviceBindingModel model)
+        public ResultWithMessage add(DeviceBindingModel model)
         {
             if (model is null)
                 return new ResultWithMessage(null, "Empty Model!!");
@@ -156,7 +156,7 @@ namespace Tenor.Services.DevicesService
             }
         }
 
-        public ResultWithMessage updateDevice(DeviceBindingModel model)
+        public ResultWithMessage edit(DeviceBindingModel model)
         {
             if (model is null)
                 return new ResultWithMessage(null, "Empty Model!!");
@@ -198,7 +198,7 @@ namespace Tenor.Services.DevicesService
             }
         }
 
-        public ResultWithMessage deleteDevice(int id)
+        public ResultWithMessage delete(int id)
         {
             Device device = _db.Devices.Find(id);
 

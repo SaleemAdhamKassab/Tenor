@@ -11,9 +11,9 @@ namespace Tenor.Services.CountersService
     {
         ResultWithMessage getById(int id);
         ResultWithMessage getByFilter(CounterFilterModel filter);
-        ResultWithMessage addCounter(CounterBindingModel model);
-        ResultWithMessage updateCounter(CounterBindingModel CounterDto);
-        ResultWithMessage deleteCounter(int id);
+        ResultWithMessage add(CounterBindingModel model);
+        ResultWithMessage edit(CounterBindingModel CounterDto);
+        ResultWithMessage delete(int id);
     }
 
     public class CountersService : ICountersService
@@ -91,7 +91,7 @@ namespace Tenor.Services.CountersService
             return new ResultWithMessage(new DataWithSize(resultSize, resultData), "");
         }
 
-        public ResultWithMessage addCounter(CounterBindingModel model)
+        public ResultWithMessage add(CounterBindingModel model)
         {
             if (model is null)
                 return new ResultWithMessage(null, "Empty Model!!");
@@ -145,7 +145,7 @@ namespace Tenor.Services.CountersService
             }
         }
 
-        public ResultWithMessage updateCounter(CounterBindingModel model)
+        public ResultWithMessage edit(CounterBindingModel model)
         {
             if (model is null)
                 return new ResultWithMessage(null, "Empty Model!!");
@@ -202,7 +202,7 @@ namespace Tenor.Services.CountersService
             }
         }
 
-        public ResultWithMessage deleteCounter(int id)
+        public ResultWithMessage delete(int id)
         {
             Counter counter = _db.Counters.Find(id);
 

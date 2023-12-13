@@ -20,16 +20,16 @@ namespace Tenor.Controllers
         public IActionResult getSubsetsByFilter([FromBody] CounterFilterModel filter) => _returnResult(_counterservice.getByFilter(filter));
 
 
-        [HttpPost("addCounter")]
-        public IActionResult addCounter(CounterBindingModel model) => _returnResult(_counterservice.addCounter(model));
+        [HttpPost("add")]
+        public IActionResult add(CounterBindingModel model) => _returnResult(_counterservice.add(model));
 
 
-        [HttpPut("updateCounter")]
-        public IActionResult updateCounter(CounterBindingModel model) => _returnResult(_counterservice.updateCounter(model));
+        [HttpPut("edit")]
+        public IActionResult edit(CounterBindingModel model) => _returnResult(_counterservice.edit(model));
 
 
-        [HttpDelete("deleteCounter")]
-        public IActionResult deleteSubset(int id) => _returnResult(_counterservice.deleteCounter(id));
+        [HttpDelete("delete")]
+        public IActionResult delete(int id) => _returnResult(_counterservice.delete(id));
 
     }
 }

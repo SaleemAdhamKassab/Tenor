@@ -21,15 +21,15 @@ namespace Tenor.Controllers
         public IActionResult getByFilter([FromBody] SubsetFilterModel filter) => _returnResult(_subsetservice.getByFilter(filter));
 
 
-        [HttpPost("addSubset")]
-        public IActionResult addSubset(SubsetBindingModel model) => _returnResult(_subsetservice.addSubset(model));
+        [HttpPost("add")]
+        public IActionResult add(SubsetBindingModel model) => _returnResult(_subsetservice.add(model));
 
 
-        [HttpPut("updateSubset")]
-        public IActionResult updateSubset(SubsetBindingModel model) => _returnResult(_subsetservice.updateSubset(model));
+        [HttpPut("edit")]
+        public IActionResult edit(SubsetBindingModel model) => _returnResult(_subsetservice.edit(model));
 
 
-        [HttpDelete("deleteSubset")]
-        public IActionResult deleteSubset(int id) => _returnResult(_subsetservice.deleteSubset(id));
+        [HttpDelete("delete")]
+        public IActionResult delete(int id) => _returnResult(_subsetservice.delete(id));
     }
 }
