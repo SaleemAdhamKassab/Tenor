@@ -51,7 +51,6 @@ namespace Tenor.Services.KpisService
                 kpiFields.Add("DeviceId");
                 //--------------------------------------------------------------
                 dynamic data = JsonConvert.DeserializeObject<dynamic>(kpiFilterM.ToString());
-
                 KpiFilterModel kpiFilterModel = new KpiFilterModel()
                 {
                     SearchQuery= data["searchQuery"],
@@ -61,7 +60,6 @@ namespace Tenor.Services.KpisService
                     SortDirection = data["sortDirection"]
 
                 };
-
                 //--------------------------------------------------------------
                 foreach (var s in kpiFields)
                 {
@@ -74,7 +72,7 @@ namespace Tenor.Services.KpisService
                         filters.Add(filter);
                     }
                 }
-               
+              
                 if (!string.IsNullOrEmpty(kpiFilterModel.SearchQuery))
                 {
                     kpis = kpis.Where(x => x.Name.ToLower().StartsWith(kpiFilterModel.SearchQuery.ToLower()));

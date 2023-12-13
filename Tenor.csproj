@@ -27,4 +27,8 @@
     <PackageReference Include="System.DirectoryServices.AccountManagement" Version="7.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services\GlobalService\" />
+  </ItemGroup>
+
 </Project>
