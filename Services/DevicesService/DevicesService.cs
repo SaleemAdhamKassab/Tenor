@@ -62,7 +62,8 @@ namespace Tenor.Services.DevicesService
               Description = e.Description,
               IsDeleted = e.IsDeleted,
               SupplierId = e.SupplierId,
-              ParentId = e.ParentId
+              ParentId = e.ParentId,
+              ParentName = e.Parent.Name
           });
 
 

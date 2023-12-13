@@ -44,7 +44,9 @@ namespace Tenor.Services.CountersService
               Description = e.Description,
               Aggregation = e.Aggregation,
               IsDeleted = e.IsDeleted,
-              SupplierId = e.SupplierId
+              SupplierId = e.SupplierId,
+              SubsetId = e.SubsetId,
+              SubsetName = e.Subset.Name
           });
 
         public ResultWithMessage getById(int id)
@@ -61,10 +63,6 @@ namespace Tenor.Services.CountersService
                     Aggregation = e.Aggregation,
                     IsDeleted = e.IsDeleted,
                     SupplierId = e.SupplierId,
-                    TechnologyId = e.TechnologyId,
-                    GroupDeviceTypeId = e.GroupDeviceTypeId,
-                    GroupCategoryId = e.GroupCategoryId,
-                    GroupLevelId = e.GroupLevelId,
                     SubsetId = e.SubsetId,
                     SubsetName = e.Subset.Name
                 })
@@ -107,10 +105,6 @@ namespace Tenor.Services.CountersService
                 Aggregation = model.Aggregation,
                 IsDeleted = model.IsDeleted,
                 SupplierId = model.SupplierId,
-                TechnologyId = model.TechnologyId,
-                GroupDeviceTypeId = model.GroupDeviceTypeId,
-                GroupCategoryId = model.GroupCategoryId,
-                GroupLevelId = model.GroupLevelId,
                 SubsetId = model.SubsetId
             };
 
@@ -130,11 +124,8 @@ namespace Tenor.Services.CountersService
                     Aggregation = counter.Aggregation,
                     IsDeleted = counter.IsDeleted,
                     SupplierId = counter.SupplierId,
-                    TechnologyId = counter.TechnologyId,
-                    GroupDeviceTypeId = counter.GroupDeviceTypeId,
-                    GroupCategoryId = counter.GroupCategoryId,
-                    GroupLevelId = counter.GroupLevelId,
-                    SubsetId = counter.SubsetId
+                    SubsetId = counter.SubsetId,
+                    SubsetName = counter.Subset.Name
                 };
 
                 return new ResultWithMessage(counterViewModel, "");
@@ -164,10 +155,6 @@ namespace Tenor.Services.CountersService
             counter.Aggregation = model.Aggregation;
             counter.IsDeleted = model.IsDeleted;
             counter.SupplierId = model.SupplierId;
-            counter.TechnologyId = model.TechnologyId;
-            counter.GroupDeviceTypeId = model.GroupDeviceTypeId;
-            counter.GroupCategoryId = model.GroupCategoryId;
-            counter.GroupLevelId = model.GroupLevelId;
             counter.SubsetId = model.SubsetId;
 
             try
@@ -186,11 +173,8 @@ namespace Tenor.Services.CountersService
                     Aggregation = counter.Aggregation,
                     IsDeleted = counter.IsDeleted,
                     SupplierId = counter.SupplierId,
-                    TechnologyId = counter.TechnologyId,
-                    GroupDeviceTypeId = counter.GroupDeviceTypeId,
-                    GroupCategoryId = counter.GroupCategoryId,
-                    GroupLevelId = counter.GroupLevelId,
-                    SubsetId = counter.SubsetId
+                    SubsetId = counter.SubsetId,
+                    SubsetName = counter.Subset.Name
                 };
 
                 return new ResultWithMessage(counterViewModel, "");

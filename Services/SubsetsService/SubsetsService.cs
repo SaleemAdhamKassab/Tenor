@@ -50,7 +50,11 @@ namespace Tenor.Services.SubsetsService
               MaxDataDate = e.MaxDataDate,
               RefDbLink = e.RefDbLink,
               RefSchema = e.RefSchema,
-              SchemaName = e.SchemaName
+              SchemaName = e.SchemaName,
+              DeviceId = e.DeviceId,
+              DeviceName = e.Device.Name,
+              GranularityPeriod = e.GranularityPeriod,
+              SummaryType = e.SummaryType
           });
 
         public ResultWithMessage getById(int id)
@@ -77,7 +81,6 @@ namespace Tenor.Services.SubsetsService
                     JoinExpression = e.JoinExpression,
                     StartChar = e.StartChar,
                     FactDimensionReference = e.FactDimensionReference,
-                    TechnologyId = e.TechnologyId,
                     LoadPriorety = e.LoadPriorety,
                     SummaryType = e.SummaryType,
                     IsDeleted = e.IsDeleted,
@@ -133,7 +136,6 @@ namespace Tenor.Services.SubsetsService
                 JoinExpression = model.JoinExpression,
                 StartChar = model.StartChar,
                 FactDimensionReference = model.FactDimensionReference,
-                TechnologyId = model.TechnologyId,
                 LoadPriorety = model.LoadPriorety,
                 SummaryType = model.SummaryType,
                 IsDeleted = model.IsDeleted,
@@ -166,10 +168,11 @@ namespace Tenor.Services.SubsetsService
                     JoinExpression = subset.JoinExpression,
                     StartChar = subset.StartChar,
                     FactDimensionReference = subset.FactDimensionReference,
-                    TechnologyId = subset.TechnologyId,
                     LoadPriorety = subset.LoadPriorety,
                     SummaryType = subset.SummaryType,
-                    IsDeleted = subset.IsDeleted
+                    IsDeleted = subset.IsDeleted,
+                    DeviceId = subset.DeviceId,
+                    DeviceName = subset.Device.Name
                 };
 
                 return new ResultWithMessage(subsetViewModel, "");
@@ -208,7 +211,6 @@ namespace Tenor.Services.SubsetsService
             subset.JoinExpression = model.JoinExpression;
             subset.StartChar = model.StartChar;
             subset.FactDimensionReference = model.FactDimensionReference;
-            subset.TechnologyId = model.TechnologyId;
             subset.LoadPriorety = model.LoadPriorety;
             subset.SummaryType = model.SummaryType;
             subset.IsDeleted = model.IsDeleted;
@@ -239,10 +241,11 @@ namespace Tenor.Services.SubsetsService
                     JoinExpression = subset.JoinExpression,
                     StartChar = subset.StartChar,
                     FactDimensionReference = subset.FactDimensionReference,
-                    TechnologyId = subset.TechnologyId,
                     LoadPriorety = subset.LoadPriorety,
                     SummaryType = subset.SummaryType,
-                    IsDeleted = subset.IsDeleted
+                    IsDeleted = subset.IsDeleted,
+                    DeviceId = subset.DeviceId,
+                    DeviceName = subset.Device.Name
                 };
 
                 return new ResultWithMessage(subsetViewModel, "");

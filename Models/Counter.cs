@@ -8,6 +8,11 @@ namespace Tenor.Models
     {
         public int Id { get; set; }
 
+
+        [Required]
+        public string SupplierId { get; set; }
+
+
         [Required, StringLength(100, MinimumLength = 2, ErrorMessage = "Name must be between 2 and 100 char")]
         public string Name { get; set; }
 
@@ -17,22 +22,6 @@ namespace Tenor.Models
         public string Description { get; set; }
         public string Aggregation { get; set; }
         public bool IsDeleted { get; set; }
-
-
-        [Required]
-        public string SupplierId { get; set; }
-
-        [Required]
-        public int TechnologyId { get; set; }
-
-        [Required]
-        public int GroupDeviceTypeId { get; set; }
-
-        [Required]
-        public int GroupCategoryId { get; set; }
-
-        [Required]
-        public int GroupLevelId { get; set; }
 
         [ForeignKey("Subset")]
         public int SubsetId { get; set; }

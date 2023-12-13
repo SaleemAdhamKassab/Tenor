@@ -8,6 +8,9 @@ namespace Tenor.Models
         [Key]
         public int Id { get; set; }
 
+        [Required]
+        public string SupplierId { get; set; }
+
         [Required, StringLength(100, MinimumLength = 2, ErrorMessage = "Name must be between 2 and 100 char")]
         public string Name { get; set; }
 
@@ -30,14 +33,9 @@ namespace Tenor.Models
         public string JoinExpression { get; set; }
         public char? StartChar { get; set; }
         public string? FactDimensionReference { get; set; }
-        public int? TechnologyId { get; set; }
         public int? LoadPriorety { get; set; }
         public string? SummaryType { get; set; }
         public bool IsDeleted { get; set; }
-
-
-        [Required]
-        public string SupplierId { get; set; }
 
 
         [ForeignKey("Device")]
