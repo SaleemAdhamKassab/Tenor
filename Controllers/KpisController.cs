@@ -26,12 +26,8 @@ namespace Tenor.Controllers
         }
 
         [HttpPost("getByFilter")]
-        public async Task<IActionResult> Get(object kpitFilterModel)
-        {
-            
-            var result = await _kpiservice.GetListAsync(kpitFilterModel);
-            return Ok(result);
-        }
+        public IActionResult getSubsetsByFilter(object filter) => _returnResult(_kpiservice.GetListAsync(filter));
+
 
         [HttpGet("getById")]
         public async Task<IActionResult> GetById(int id)

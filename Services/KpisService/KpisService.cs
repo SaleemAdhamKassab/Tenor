@@ -17,12 +17,15 @@ using System.Linq;
 using System.ComponentModel;
 using Microsoft.Extensions.Hosting;
 using System.Text.RegularExpressions;
+using Tenor.Services.CountersService.ViewModels;
+using static Azure.Core.HttpHeader;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace Tenor.Services.KpisService
 {
     public interface IKpisService
     {
-        Task<DataWithSize> GetListAsync(object kpiFilterM);
+        ResultWithMessage GetListAsync(object kpiFilterM);
         Task<ResultWithMessage> GetByIdAsync(int id);
         Task<ResultWithMessage> Add(CreateKpi kpiModel);
         Task<ResultWithMessage> Update(CreateKpi Kpi);
@@ -42,64 +45,31 @@ namespace Tenor.Services.KpisService
             _db = tenorDbContext;
             _mapper = mapper;
         }
-        public async Task<DataWithSize> GetListAsync(object kpiFilterM)
+        public ResultWithMessage GetListAsync(object kpiFilterM)
         {
             try
             {
-
-                List<Filter> filters = new List<Filter>();
-                var kpis = _db.Kpis.Include(x => x.KpiFieldValues).ThenInclude(x=>x.KpiField).
-                    ThenInclude(x=>x.ExtraField).AsQueryable();
+                //--------------------------Data Source---------------------------------------
+                IQueryable<Kpi> query = _db.Kpis.Include(x => x.KpiFieldValues).ThenInclude(x => x.KpiField).
+                 ThenInclude(x => x.ExtraField).AsQueryable();
                 List<string> kpiFields = _db.KpiFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList();
-                List<string> mainFields = new List<string>() {"id", "deviceId" };
-                kpiFields.AddRange(mainFields);                //--------------------------------------------------------------
+                //------------------------------Conver Dynamic filter--------------------------
                 dynamic data = JsonConvert.DeserializeObject<dynamic>(kpiFilterM.ToString());
                 KpiFilterModel kpiFilterModel = new KpiFilterModel()
                 {
-                    SearchQuery= data["searchQuery"],
-                    PageIndex = data["pageIndex"],
-                    PageSize = data["pageSize"],
-                    SortActive = data["sortActive"],
-                    SortDirection = data["sortDirection"]
+                    SearchQuery = kpiFilterM.ToString().Contains("SearchQuery") ? data["SearchQuery"] : data["searchQuery"],
+                    PageIndex = kpiFilterM.ToString().Contains("PageIndex") ? data["PageIndex"] : data["pageIndex"],
+                    PageSize = kpiFilterM.ToString().Contains("PageSize") ? data["PageSize"] : data["pageSize"],
+                    SortActive = kpiFilterM.ToString().Contains("SortActive") ? data["SortActive"] : data["sortActive"],
+                    SortDirection = kpiFilterM.ToString().Contains("SortDirection") ? data["SortDirection"] : data["sortDirection"],
+                    DeviceId = (kpiFilterM.ToString().Contains("DeviceId") ? data["DeviceId"] : data["deviceId"]) != "" ?
+                               (kpiFilterM.ToString().Contains("DeviceId") ? data["DeviceId"] : data["deviceId"]) : null
 
                 };
-                //--------------------------------------------------------------
-                foreach (var s in kpiFields)
-                {
-                    Filter filter = new Filter();
-                    object property = data[s];
-                    if (property!=null)
-                    {
-                        filter.key = s;
-                        filter.values= Regex.Replace(property.ToString().Replace("{", "").Replace("}", ""), @"\t|\n|\r|\s+", "");
-                        filters.Add(filter);
-                    }
-                }
-              
-                if (!string.IsNullOrEmpty(kpiFilterModel.SearchQuery))
-                {
-                    kpis = kpis.Where(x => x.Name.ToLower().StartsWith(kpiFilterModel.SearchQuery.ToLower()));
-                }
-                
-                if (filters.Count != 0)
-                {
-                    var expression = ExpressionUtils.BuildPredicate<Kpi>(filters);
-                    if (expression != null)
-                    {
-                        kpis = kpis.Where(expression);
-                    }
-                    else
-                    {
-                        foreach (var f in filters)
-                        {                        
-                          string fileds = Convert.ToString(string.Join(",", f.values));
-                          string convertFields = fileds.Replace("\",\"", ",").Replace("[", "").Replace("]", "").Replace("\"","");
-                          kpis = kpis.Where(x => x.KpiFieldValues.Any(y => y.FieldValue.Contains(convertFields) && y.KpiField.ExtraField.Name == f.key));                     
-                        }
-                    }
-                }
-                               
-                var kpiList = kpis.Select(x => new KpiListViewModel()
+                //--------------------------------Filter and conver data to VM----------------------------------------------
+                IQueryable<Kpi> fiteredData = getFilteredData(data, query, kpiFilterModel, kpiFields);
+                //-------------------------------Data sorting and pagination------------------------------------------
+                var queryViewModel = fiteredData.Select(x => new KpiListViewModel()
                 {
                     Id = x.Id,
                     Name = x.Name,
@@ -107,39 +77,12 @@ namespace Tenor.Services.KpisService
                     DeviceName = x.Device.Name,
                     KpiFileds = _mapper.Map<List<KpiFieldValueViewModel>>(x.KpiFieldValues)
                 });
-
-                if (!string.IsNullOrEmpty(kpiFilterModel.SortActive))
-                {
-
-                    var sortProperty = typeof(KpiListViewModel).GetProperty(kpiFilterModel.SortActive);
-                    if (sortProperty != null && kpiFilterModel.SortDirection == "asc")
-                        kpiList = kpiList.OrderBy2(kpiFilterModel.SortActive);
-
-                    else if (sortProperty != null && kpiFilterModel.SortDirection == "desc")
-                        kpiList = kpiList.OrderByDescending2(kpiFilterModel.SortActive);
-
-                    int Count = kpiList.Count();
-
-                    var result = kpiList.Skip((kpiFilterModel.PageIndex) * kpiFilterModel.PageSize)
-                    .Take(kpiFilterModel.PageSize).ToList();
-
-                    return new DataWithSize(Count,result);
-                }
-
-                else
-                {
-                    int Count = kpiList.Count();
-
-                    var result = kpiList.Skip((kpiFilterModel.PageIndex) * kpiFilterModel.PageSize)
-                    .Take(kpiFilterModel.PageSize).ToList();
-
-                    return new DataWithSize(Count, result);
-                }
+                return sortAndPagination(kpiFilterModel, queryViewModel);
 
             }
             catch (Exception ex)
             {
-                return new DataWithSize(0,ex.Message);
+                return new ResultWithMessage(new DataWithSize(0, null), ex.Message);
 
             }
         }
@@ -322,6 +265,95 @@ namespace Tenor.Services.KpisService
             }
 
             return result;
+        }
+        private IQueryable<Kpi> getFilteredData(dynamic data, IQueryable<Kpi> query, KpiFilterModel kpiFilterModel, List<string> counterFields)
+        {
+            //Build filter for extra field
+            List<Filter> filters = new List<Filter>();
+            foreach (var s in counterFields)
+            {
+                Filter filter = new Filter();
+                object property = data[s] != null ? data[s] : data[char.ToLower(s[0]) + s.Substring(1)];
+                if (property != null)
+                {
+                    if (!string.IsNullOrEmpty(property.ToString()))
+                    {
+                        filter.key = s;
+                        filter.values = Regex.Replace(property.ToString().Replace("{", "").Replace("}", ""), @"\t|\n|\r|\s+", "");
+                        filters.Add(filter);
+                    }
+                }
+
+            }
+
+            // Applay filter on data query
+            if (filters.Count != 0)
+            {
+
+                foreach (var f in filters)
+                {
+                    if (typeof(Kpi).GetProperty(f.key) != null)
+                    {
+                        var expression = ExpressionUtils.BuildPredicate<Kpi>(f.key, "==", f.values.ToString());
+                        query = query.Where(expression);
+
+                    }
+
+                    else
+
+                    {
+
+                        string fileds = Convert.ToString(string.Join(",", f.values));
+                        string convertFields = fileds.Replace("\",\"", ",").Replace("[", "").Replace("]", "").Replace("\"", "");
+                        if (!string.IsNullOrEmpty(convertFields))
+                        {
+                            query = query.Where(x => x.KpiFieldValues.Any(y => convertFields.Contains(y.FieldValue) && y.KpiField.ExtraField.Name.ToLower() == f.key.ToLower()));
+
+                        }
+
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(kpiFilterModel.SearchQuery))
+            {
+                query = query.Where(x => x.Name.ToLower().Contains(kpiFilterModel.SearchQuery.ToLower())
+                              || x.DeviceId.ToString().Equals(kpiFilterModel.SearchQuery)
+                              || x.Id.ToString().Equals(kpiFilterModel.SearchQuery)
+                              );
+            }
+
+            return query;
+        }
+        private ResultWithMessage sortAndPagination(KpiFilterModel kpiFilterModel, IQueryable<KpiListViewModel> queryViewModel)
+        {
+            if (!string.IsNullOrEmpty(kpiFilterModel.SortActive))
+            {
+
+                var sortProperty = typeof(CounterListViewModel).GetProperty(char.ToUpper(kpiFilterModel.SortActive[0]) + kpiFilterModel.SortActive.Substring(1));
+                if (sortProperty != null && kpiFilterModel.SortDirection == "asc")
+                    queryViewModel = queryViewModel.OrderBy2(kpiFilterModel.SortActive);
+
+                else if (sortProperty != null && kpiFilterModel.SortDirection == "desc")
+                    queryViewModel = queryViewModel.OrderByDescending2(kpiFilterModel.SortActive);
+
+                int Count = queryViewModel.Count();
+
+                var result = queryViewModel.Skip((kpiFilterModel.PageIndex) * kpiFilterModel.PageSize)
+                .Take(kpiFilterModel.PageSize).ToList();
+
+                return new ResultWithMessage(new DataWithSize(Count, result), "");
+            }
+
+            else
+            {
+                int Count = queryViewModel.Count();
+                var result = queryViewModel.Skip((kpiFilterModel.PageIndex) * kpiFilterModel.PageSize)
+                .Take(kpiFilterModel.PageSize).ToList();
+
+                return new ResultWithMessage(new DataWithSize(Count, result), "");
+            }
+
         }
 
     }
