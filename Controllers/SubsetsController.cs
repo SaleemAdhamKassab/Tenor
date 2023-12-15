@@ -31,5 +31,12 @@ namespace Tenor.Controllers
 
         [HttpDelete("delete")]
         public IActionResult delete(int id) => _returnResult(_subsetservice.delete(id));
+
+        [HttpGet("GetExtraFields")]
+        public IActionResult GetExtraFields()
+        {
+           return  _returnResult(_subsetservice.GetExtraFields());
+       
+        }
     }
 }

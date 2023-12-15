@@ -66,7 +66,13 @@ namespace Tenor.Mapper
                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.ExtraField.Name))
                .ForMember(dest => dest.Content, opt => opt.MapFrom(src => ConvertContentType(src.ExtraField.Type.GetDisplayName(), src.ExtraField.Content)))
                .ForMember(dest => dest.Url, opt => opt.MapFrom(src => src.ExtraField.Url)).ReverseMap();
-
+            //-----------------------------Subset--------------------------------------
+            CreateMap<SubsetField, SubsetExtraField>()
+               .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+               .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.ExtraField.Type.GetDisplayName()))
+               .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.ExtraField.Name))
+               .ForMember(dest => dest.Content, opt => opt.MapFrom(src => ConvertContentType(src.ExtraField.Type.GetDisplayName(), src.ExtraField.Content)))
+               .ForMember(dest => dest.Url, opt => opt.MapFrom(src => src.ExtraField.Url)).ReverseMap();
         }
 
 

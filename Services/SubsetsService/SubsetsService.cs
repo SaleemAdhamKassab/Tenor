@@ -1,4 +1,5 @@
-﻿using Infrastructure.Helpers;
+﻿using AutoMapper;
+using Infrastructure.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
@@ -23,14 +24,20 @@ namespace Tenor.Services.SubsetsService
         ResultWithMessage add(SubsetBindingModel model);
         ResultWithMessage edit(SubsetBindingModel subsetDto);
         ResultWithMessage delete(int id);
+        ResultWithMessage GetExtraFields();
     }
 
     public class SubsetsService : ISubsetsService
     {
-        public SubsetsService(TenorDbContext tenorDbContext) => _db = tenorDbContext;
-
         private readonly TenorDbContext _db;
-       
+        private readonly IMapper _mapper;
+        public SubsetsService(TenorDbContext tenorDbContext, IMapper mapper)
+        {
+            _db = tenorDbContext;
+            _mapper = mapper;
+
+        }
+    
         private IQueryable<SubsetListViewModel> convertSubsetsToViewModel(IQueryable<Subset> model) =>
           model.Select(e => new SubsetListViewModel
           {
@@ -268,6 +275,12 @@ namespace Tenor.Services.SubsetsService
             {
                 return new ResultWithMessage(model, e.Message);
             }
+        }
+        public ResultWithMessage GetExtraFields()
+        {
+            var extraFields = _mapper.Map<List<KpiExtraField>>(_db.SubsetFields.Where(x => x.IsActive).Include(x => x.ExtraField).ToList());
+            return new ResultWithMessage(extraFields, null);
+
         }
 
         public ResultWithMessage delete(int id)

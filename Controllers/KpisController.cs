@@ -36,23 +36,15 @@ namespace Tenor.Controllers
         [HttpGet("getById")]
         public async Task<IActionResult> GetById(int id)
         {
-            var result = await _kpiservice.GetByIdAsync(id);
-
-            if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(result.Message);
-
-            return Ok(result.Data);
+             return _returnResult(await _kpiservice.GetByIdAsync(id));
+        
         }
 
         [HttpPost("add")]
         public async Task<IActionResult> Post(CreateKpi kpi)
         {
-            var result = await _kpiservice.Add(kpi);
-
-            if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(result.Message);
-
-            return Ok(result.Data);
+            return _returnResult(await _kpiservice.Add(kpi));
+         
         }
 
         [HttpPut("edit")]
@@ -62,12 +54,8 @@ namespace Tenor.Controllers
             {
                 return BadRequest();
             }
-            var result = await _kpiservice.Update(kpi);
-
-            if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(result.Message);
-
-            return Ok(result.Data);
+            return _returnResult(await _kpiservice.Update(kpi));
+            
         }
 
         [HttpDelete("delete")]
@@ -79,31 +67,23 @@ namespace Tenor.Controllers
         [HttpGet("GetExtraFields")]
         public async Task<IActionResult> GetExtraFields()
         {
-            var result = await _kpiservice.GetExtraFields();
-            if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(result.Message);
-
-            return Ok(result.Data);
+            return _returnResult(await _kpiservice.GetExtraFields());
+       
         }
 
         [HttpGet("GetOperators")]
         public IActionResult GetOperators()
         {
-            var result =  _kpiservice.GetOperators();
-            if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(result.Message);
+            return _returnResult( _kpiservice.GetOperators());
 
-            return Ok(result.Data);
+         
         }
 
         [HttpGet("GetFunctions")]
         public IActionResult GetFunctions()
         {
-            var result = _kpiservice.GetFunctions();
-            if (!string.IsNullOrEmpty(result.Message))
-                return BadRequest(result.Message);
-
-            return Ok(result.Data);
+            return _returnResult(_kpiservice.GetFunctions());
+       
         }
 
 
