@@ -12,6 +12,7 @@ using Tenor.Dtos;
 using Tenor.Helper;
 using Tenor.Models;
 using Tenor.Services.CountersService.ViewModels;
+using Tenor.Services.SubsetsService.ViewModels;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static Tenor.Helper.Constant;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
@@ -77,10 +78,7 @@ namespace Tenor.Services.CountersService
                     PageSize = counterFilter.ToString().Contains("PageSize") ? data["PageSize"] : data["pageSize"],
                     SortActive = counterFilter.ToString().Contains("SortActive") ? data["SortActive"] : data["sortActive"],
                     SortDirection = counterFilter.ToString().Contains("SortDirection") ? data["SortDirection"] : data["sortDirection"],                   
-
-                    SubsetId = (counterFilter.ToString().Contains("SubsetId") ? data["SubsetId"] : data["subsetId"]) != "" ?
-                               (counterFilter.ToString().Contains("SubsetId") ? data["SubsetId"] : data["subsetId"]) : null,
-
+                    SubsetId = counterFilter.ToString().Contains("SubsetId") ? Convert.ToString(data["SubsetId"]) : Convert.ToString(data["subsetId"]),
                     DeviceId = (counterFilter.ToString().Contains("DeviceId") ? data["DeviceId"] : data["deviceId"]) != "" ?
                                (counterFilter.ToString().Contains("DeviceId") ? data["DeviceId"] : data["deviceId"]) : null
 
@@ -239,17 +237,17 @@ namespace Tenor.Services.CountersService
                         filters.Add(filter);
                     }
                 }
-
             }
-          
-            if (counterFilterModel.SubsetId != null && counterFilterModel.SubsetId != 0)
+
+            if (!string.IsNullOrEmpty(Regex.Replace(counterFilterModel.SubsetId.ToString().Replace("[", "").Replace("]", ""), @"\t|\n|\r|\s+", "")))
             {
-                Filter filter = new Filter();
-                filter.key = "SubsetId";
-                filter.values = counterFilterModel.SubsetId;
-                filters.Add(filter);
-            }
+                string convertdevice = Regex.Replace(counterFilterModel.SubsetId.ToString().Replace("[", "").Replace("]", ""), @"\t|\n|\r|\s+", "");
+                var subsetlist = convertdevice.Split(',').ToList();
+                query = query.Where(x => subsetlist.Contains(x.SubsetId.ToString()));
 
+
+            }
+            
             // Applay filter on data query
             if (filters.Count != 0)
             {

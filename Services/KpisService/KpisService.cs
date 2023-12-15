@@ -20,6 +20,8 @@ using System.Text.RegularExpressions;
 using Tenor.Services.CountersService.ViewModels;
 using static Azure.Core.HttpHeader;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Tenor.Services.SubsetsService.ViewModels;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Tenor.Services.KpisService
 {
@@ -62,8 +64,8 @@ namespace Tenor.Services.KpisService
                     PageSize = kpiFilterM.ToString().Contains("PageSize") ? data["PageSize"] : data["pageSize"],
                     SortActive = kpiFilterM.ToString().Contains("SortActive") ? data["SortActive"] : data["sortActive"],
                     SortDirection = kpiFilterM.ToString().Contains("SortDirection") ? data["SortDirection"] : data["sortDirection"],
-                    DeviceId = (kpiFilterM.ToString().Contains("DeviceId") ? data["DeviceId"] : data["deviceId"]) != "" ?
-                               (kpiFilterM.ToString().Contains("DeviceId") ? data["DeviceId"] : data["deviceId"]) : null
+                    DeviceId = kpiFilterM.ToString().Contains("DeviceId") ? data["DeviceId"] : data["deviceId"],
+
 
                 };
                 //--------------------------------Filter and conver data to VM----------------------------------------------
@@ -322,7 +324,11 @@ namespace Tenor.Services.KpisService
                               || x.Id.ToString().Equals(kpiFilterModel.SearchQuery)
                               );
             }
+            if (!string.IsNullOrEmpty(kpiFilterModel.DeviceId))
+            {
+                query = query.Where(x => x.DeviceId.ToString()== kpiFilterModel.DeviceId);
 
+            }
             return query;
         }
         private ResultWithMessage sortAndPagination(KpiFilterModel kpiFilterModel, IQueryable<KpiListViewModel> queryViewModel)

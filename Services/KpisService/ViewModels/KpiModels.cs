@@ -73,7 +73,7 @@ namespace Tenor.Services.KpisService.ViewModels
         }
         public  class  KpiFilterModel: GeneralFilterModel
         {
-            public int? DeviceId { get; set; }
+            public string? DeviceId { get; set; }
 
         }
         public class Filter

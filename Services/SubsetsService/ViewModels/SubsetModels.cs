@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using Tenor.Dtos;
 using Tenor.Models;
+using Newtonsoft.Json.Linq;
 
 namespace Tenor.Services.SubsetsService.ViewModels
 {
@@ -93,5 +94,9 @@ namespace Tenor.Services.SubsetsService.ViewModels
         public int DeviceId { get; set; }
     }
 
-    public class SubsetFilterModel : GeneralFilterModel { }
+    public class SubsetFilterModel : GeneralFilterModel
+    {
+        public string? DeviceId { get; set; }
+
+    }
 }

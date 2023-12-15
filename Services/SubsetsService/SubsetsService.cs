@@ -1,11 +1,15 @@
 ﻿using Infrastructure.Helpers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Tenor.Data;
 using Tenor.Dtos;
 using Tenor.Helper;
 using Tenor.Models;
+using Tenor.Services.CountersService.ViewModels;
 using Tenor.Services.SubsetsService.ViewModels;
 using static Tenor.Helper.Constant;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
@@ -26,18 +30,7 @@ namespace Tenor.Services.SubsetsService
         public SubsetsService(TenorDbContext tenorDbContext) => _db = tenorDbContext;
 
         private readonly TenorDbContext _db;
-
-
-        private IQueryable<Subset> getSubsetsData(SubsetFilterModel filter)
-        {
-            IQueryable<Subset> qeury = _db.Subsets.Where(e => true);
-
-            if (!string.IsNullOrEmpty(filter.SearchQuery))
-                qeury = qeury.Where(e => e.Name.Trim().ToLower().Contains(filter.SearchQuery.Trim().ToLower()));
-
-            return qeury;
-        }
-
+       
         private IQueryable<SubsetListViewModel> convertSubsetsToViewModel(IQueryable<Subset> model) =>
           model.Select(e => new SubsetListViewModel
           {
@@ -101,88 +94,26 @@ namespace Tenor.Services.SubsetsService
         {
             try
             {
-
-                List<Filter> filters = new List<Filter>();
+                //--------------------------Data Source---------------------------------------
                 IQueryable<Subset> query = _db.Subsets.Where(e => true);
                 List<string> subsetFields = _db.SubsetFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList();
-                List<string> mainFields = new List<string>() { "supplierId", "isLoad", "deviceId", "id", "tableName" };
-                subsetFields.AddRange(mainFields);
-                //--------------------------------------------------------------
+                //------------------------------Conver Dynamic filter--------------------------
                 dynamic data = JsonConvert.DeserializeObject<dynamic>(subsetfilter.ToString());
-                GeneralFilterModel subsetFilterModel = new GeneralFilterModel()
+                SubsetFilterModel subsetFilterModel = new SubsetFilterModel()
                 {
-                    SearchQuery = data["searchQuery"],
-                    PageIndex = data["pageIndex"],
-                    PageSize = data["pageSize"],
-                    SortActive = data["sortActive"],
-                    SortDirection = data["sortDirection"]
+                    SearchQuery = subsetfilter.ToString().Contains("SearchQuery") ? data["SearchQuery"] : data["searchQuery"],
+                    PageIndex = subsetfilter.ToString().Contains("PageIndex") ? data["PageIndex"] : data["pageIndex"],
+                    PageSize = subsetfilter.ToString().Contains("PageSize") ? data["PageSize"] : data["pageSize"],
+                    SortActive = subsetfilter.ToString().Contains("SortActive") ? data["SortActive"] : data["sortActive"],
+                    SortDirection = subsetfilter.ToString().Contains("SortDirection") ? data["SortDirection"] : data["sortDirection"],
+                    DeviceId = subsetfilter.ToString().Contains("DeviceId") ? data["DeviceId"] : data["deviceId"]
 
                 };
-                //--------------------------------------------------------------
-                foreach (var s in subsetFields)
-                {
-                    Filter filter = new Filter();
-                    object property = data[s];
-                    if (property != null)
-                    {
-                        filter.key = s;
-                        filter.values = Regex.Replace(property.ToString().Replace("{", "").Replace("}", ""), @"\t|\n|\r|\s+", "");
-                        filters.Add(filter);
-                    }
-                }
-
-                if (!string.IsNullOrEmpty(subsetFilterModel.SearchQuery))
-                {
-                    query = query.Where(x => x.Name.ToLower().StartsWith(subsetFilterModel.SearchQuery.ToLower()));
-                }
-
-                if (filters.Count != 0)
-                {
-                    var expression = ExpressionUtils.BuildPredicate<Subset>(filters);
-                    if (expression != null)
-                    {
-                        query = query.Where(expression);
-                    }
-                    else
-                    {
-                        foreach (var f in filters)
-                        {
-                            string fileds = Convert.ToString(string.Join(",", f.values));
-                            string convertFields = fileds.Replace("\",\"", ",").Replace("[", "").Replace("]", "").Replace("\"", "");
-                            query = query.Where(x => x.SubsetFieldValues.Any(y => y.FieldValue.Contains(convertFields) && y.SubsetField.ExtraField.Name == f.key));
-                        }
-                    }
-                }
-
-                var queryViewModel = convertSubsetsToViewModel(query);
-
-                if (!string.IsNullOrEmpty(subsetFilterModel.SortActive))
-                {
-
-                    var sortProperty = typeof(SubsetListViewModel).GetProperty(subsetFilterModel.SortActive);
-                    if (sortProperty != null && subsetFilterModel.SortDirection == "asc")
-                        queryViewModel = queryViewModel.OrderBy2(subsetFilterModel.SortActive);
-
-                    else if (sortProperty != null && subsetFilterModel.SortDirection == "desc")
-                        queryViewModel = queryViewModel.OrderByDescending2(subsetFilterModel.SortActive);
-
-                    int Count = queryViewModel.Count();
-
-                    var result = queryViewModel.Skip((subsetFilterModel.PageIndex) * subsetFilterModel.PageSize)
-                    .Take(subsetFilterModel.PageSize).ToList();
-
-                    return new ResultWithMessage(new DataWithSize(Count, result), "");
-                }
-
-                else
-                {
-                    int Count = queryViewModel.Count();
-
-                    var result = queryViewModel.Skip((subsetFilterModel.PageIndex) * subsetFilterModel.PageSize)
-                    .Take(subsetFilterModel.PageSize).ToList();
-
-                    return new ResultWithMessage(new DataWithSize(Count, result), "");
-                }
+                //--------------------------------Filter and conver data to VM----------------------------------------------
+                IQueryable<Subset> fiteredData = getFilteredData(data, query, subsetFilterModel, subsetFields);
+                //-------------------------------Data sorting and pagination------------------------------------------
+                var queryViewModel = convertSubsetsToViewModel(fiteredData);
+                return sortAndPagination(subsetFilterModel, queryViewModel);
 
             }
             catch (Exception ex)
@@ -359,5 +290,103 @@ namespace Tenor.Services.SubsetsService
                 return new ResultWithMessage(null, e.Message);
             }
         }
+        private IQueryable<Subset> getFilteredData(dynamic data, IQueryable<Subset> query, SubsetFilterModel subsetFilterModel, List<string> subsetFields)
+        {
+            //Build filter for extra field
+            List<Filter> filters = new List<Filter>();
+            foreach (var s in subsetFields)
+            {
+                Filter filter = new Filter();
+                object property = data[s] != null ? data[s] : data[char.ToLower(s[0]) + s.Substring(1)];
+                if (property != null)
+                {
+                    if (!string.IsNullOrEmpty(property.ToString()))
+                    {
+                        filter.key = s;
+                        filter.values = Regex.Replace(property.ToString().Replace("{", "").Replace("}", ""), @"\t|\n|\r|\s+", "");
+                        filters.Add(filter);
+                    }
+                }
+
+            }
+
+            // Applay filter on data query
+            if (filters.Count != 0)
+            {
+
+                foreach (var f in filters)
+                {
+                    if (typeof(Subset).GetProperty(f.key) != null)
+                    {
+                       
+                            var expression = ExpressionUtils.BuildPredicate<Subset>(f.key, "==", f.values.ToString());
+                            query = query.Where(expression);
+                      
+                    }
+
+                    else
+
+                    {
+
+                        string fileds = Convert.ToString(string.Join(",", f.values));
+                        string convertFields = fileds.Replace("\",\"", ",").Replace("[", "").Replace("]", "").Replace("\"", "");
+                        if (!string.IsNullOrEmpty(convertFields))
+                        {
+                            query = query.Where(x => x.SubsetFieldValues.Any(y => convertFields.Contains(y.FieldValue) && y.SubsetField.ExtraField.Name.ToLower() == f.key.ToLower()));
+
+                        }
+
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(subsetFilterModel.SearchQuery))
+            {
+                query = query.Where(x => x.Name.ToLower().Contains(subsetFilterModel.SearchQuery.ToLower())
+                              || x.SupplierId.Contains(subsetFilterModel.SearchQuery)
+                              || x.TableName.Contains(subsetFilterModel.SearchQuery)
+                              || x.Id.ToString().Equals(subsetFilterModel.SearchQuery)
+                              );
+            }
+
+            if (!string.IsNullOrEmpty(subsetFilterModel.DeviceId))
+            {
+                query = query.Where(x=> x.DeviceId.ToString()== subsetFilterModel.DeviceId);
+          
+            }
+
+            return query;
+        }
+        private ResultWithMessage sortAndPagination(SubsetFilterModel kpiFilterModel, IQueryable<SubsetListViewModel> queryViewModel)
+        {
+            if (!string.IsNullOrEmpty(kpiFilterModel.SortActive))
+            {
+
+                var sortProperty = typeof(SubsetListViewModel).GetProperty(char.ToUpper(kpiFilterModel.SortActive[0]) + kpiFilterModel.SortActive.Substring(1));
+                if (sortProperty != null && kpiFilterModel.SortDirection == "asc")
+                    queryViewModel = queryViewModel.OrderBy2(kpiFilterModel.SortActive);
+
+                else if (sortProperty != null && kpiFilterModel.SortDirection == "desc")
+                    queryViewModel = queryViewModel.OrderByDescending2(kpiFilterModel.SortActive);
+
+                int Count = queryViewModel.Count();
+
+                var result = queryViewModel.Skip((kpiFilterModel.PageIndex) * kpiFilterModel.PageSize)
+                .Take(kpiFilterModel.PageSize).ToList();
+
+                return new ResultWithMessage(new DataWithSize(Count, result), "");
+            }
+
+            else
+            {
+                int Count = queryViewModel.Count();
+                var result = queryViewModel.Skip((kpiFilterModel.PageIndex) * kpiFilterModel.PageSize)
+                .Take(kpiFilterModel.PageSize).ToList();
+
+                return new ResultWithMessage(new DataWithSize(Count, result), "");
+            }
+
+        }
+
     }
 }
