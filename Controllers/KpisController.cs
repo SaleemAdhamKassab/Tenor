@@ -86,6 +86,26 @@ namespace Tenor.Controllers
             return Ok(result.Data);
         }
 
-        
+        [HttpGet("GetOperators")]
+        public IActionResult GetOperators()
+        {
+            var result =  _kpiservice.GetOperators();
+            if (!string.IsNullOrEmpty(result.Message))
+                return BadRequest(result.Message);
+
+            return Ok(result.Data);
+        }
+
+        [HttpGet("GetFunctions")]
+        public IActionResult GetFunctions()
+        {
+            var result = _kpiservice.GetFunctions();
+            if (!string.IsNullOrEmpty(result.Message))
+                return BadRequest(result.Message);
+
+            return Ok(result.Data);
+        }
+
+
     }
 }

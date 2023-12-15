@@ -1,6 +1,11 @@
-﻿using Infrastructure.Helpers;
+﻿using AutoMapper;
+using Infrastructure.Helpers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Tenor.Data;
 using Tenor.Dtos;
@@ -20,41 +25,20 @@ namespace Tenor.Services.CountersService
         ResultWithMessage add(CounterBindingModel model);
         ResultWithMessage edit(CounterBindingModel CounterDto);
         ResultWithMessage delete(int id);
+        Task<ResultWithMessage> GetExtraFields();
+
     }
 
     public class CountersService : ICountersService
     {
-        public CountersService(TenorDbContext tenorDbContext) => _db = tenorDbContext;
-
         private readonly TenorDbContext _db;
-
-
-        private IQueryable<Counter> getCountersData(CounterFilterModel filter)
+        private readonly IMapper _mapper;
+        public CountersService(TenorDbContext tenorDbContext, IMapper mapper)
         {
-            IQueryable<Counter> qeury = _db.Counters.Where(e => true);
-
-            if (!string.IsNullOrEmpty(filter.SearchQuery))
-                qeury = qeury.Where(e => e.Name.Trim().ToLower().Contains(filter.SearchQuery.Trim().ToLower()));
-
-            return qeury;
-        }
-
-        private IQueryable<CounterListViewModel> convertCountersToViewModel(IQueryable<Counter> model) =>
-          model.Select(e => new CounterListViewModel
-          {
-              Id = e.Id,
-              Name = e.Name,
-              Code = e.Code,
-              ColumnName = e.ColumnName,
-              RefColumnName = e.RefColumnName,
-              Description = e.Description,
-              Aggregation = e.Aggregation,
-              IsDeleted = e.IsDeleted,
-              SupplierId = e.SupplierId,
-              SubsetId = e.SubsetId,
-              SubsetName = e.Subset.Name
-          });
-
+            _db = tenorDbContext;
+            _mapper = mapper;
+        } 
+     
         public ResultWithMessage getById(int id)
         {
             CounterViewModel Counter = _db.Counters
@@ -81,89 +65,34 @@ namespace Tenor.Services.CountersService
         {
             try
             {
-
-                List<Filter> filters = new List<Filter>();
-                IQueryable<Counter> query= _db.Counters.Where(e => true);
+                //--------------------------Data Source---------------------------------------
+                IQueryable<Counter> query = _db.Counters.Where(e => true);
                 List<string> counterFields = _db.CounterFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList();
-                List<string> mainFields = new List<string>() { "supplierId", "code", "subsetId","id"};
-                counterFields.AddRange(mainFields);
-                //--------------------------------------------------------------
+                //------------------------------Conver Dynamic filter--------------------------
                 dynamic data = JsonConvert.DeserializeObject<dynamic>(counterFilter.ToString());
-                GeneralFilterModel counterFilterModel = new GeneralFilterModel()
+                CounterFilterModel counterFilterModel = new CounterFilterModel()
                 {
-                    SearchQuery = data["searchQuery"],
-                    PageIndex = data["pageIndex"],
-                    PageSize = data["pageSize"],
-                    SortActive = data["sortActive"],
-                    SortDirection = data["sortDirection"]
+                    SearchQuery = counterFilter.ToString().Contains("SearchQuery") ? data["SearchQuery"] : data["searchQuery"],
+                    PageIndex = counterFilter.ToString().Contains("PageIndex") ? data["PageIndex"] : data["pageIndex"],
+                    PageSize = counterFilter.ToString().Contains("PageSize") ? data["PageSize"] : data["pageSize"],
+                    SortActive = counterFilter.ToString().Contains("SortActive") ? data["SortActive"] : data["sortActive"],
+                    SortDirection = counterFilter.ToString().Contains("SortDirection") ? data["SortDirection"] : data["sortDirection"],
+
+                    Id = (counterFilter.ToString().Contains("id") ? data["id"] : data["Id"]) != "" ?
+                         (counterFilter.ToString().Contains("id") ? data["id"] : data["Id"]) : null,
+
+                    SubsetId = (counterFilter.ToString().Contains("SubsetId") ? data["SubsetId"] : data["subsetId"]) != "" ?
+                               (counterFilter.ToString().Contains("SubsetId") ? data["SubsetId"] : data["subsetId"]) : null,
+
+                    DeviceId = (counterFilter.ToString().Contains("DeviceId") ? data["DeviceId"] : data["deviceId"]) != "" ?
+                               (counterFilter.ToString().Contains("DeviceId") ? data["DeviceId"] : data["deviceId"]) : null
 
                 };
-                //--------------------------------------------------------------
-                foreach (var s in counterFields)
-                {
-                    Filter filter = new Filter();
-                    object property = data[s];
-                    if (property != null)
-                    {
-                        filter.key = s;
-                        filter.values = Regex.Replace(property.ToString().Replace("{", "").Replace("}", ""), @"\t|\n|\r|\s+", "");
-                        filters.Add(filter);
-                    }
-                }
-
-                if (!string.IsNullOrEmpty(counterFilterModel.SearchQuery))
-                {
-                    query = query.Where(x => x.Name.ToLower().StartsWith(counterFilterModel.SearchQuery.ToLower()));
-                }
-
-                if (filters.Count != 0)
-                {
-                    var expression = ExpressionUtils.BuildPredicate<Counter>(filters);
-                    if (expression != null)
-                    {
-                        query = query.Where(expression);
-                    }
-                    else
-                    {
-                        foreach (var f in filters)
-                        {
-                            string fileds = Convert.ToString(string.Join(",", f.values));
-                            string convertFields = fileds.Replace("\",\"", ",").Replace("[", "").Replace("]", "").Replace("\"", "");
-                            query = query.Where(x => x.CounterFieldValues.Any(y => y.FieldValue.Contains(convertFields) && y.CounterField.ExtraField.Name == f.key));
-                        }
-                    }
-                }
-
-                var queryViewModel = convertCountersToViewModel(query);
-
-
-                if (!string.IsNullOrEmpty(counterFilterModel.SortActive))
-                {
-
-                    var sortProperty = typeof(CounterListViewModel).GetProperty(counterFilterModel.SortActive);
-                    if (sortProperty != null && counterFilterModel.SortDirection == "asc")
-                        queryViewModel = queryViewModel.OrderBy2(counterFilterModel.SortActive);
-
-                    else if (sortProperty != null && counterFilterModel.SortDirection == "desc")
-                        queryViewModel = queryViewModel.OrderByDescending2(counterFilterModel.SortActive);
-
-                    int Count = queryViewModel.Count();
-
-                    var result = queryViewModel.Skip((counterFilterModel.PageIndex) * counterFilterModel.PageSize)
-                    .Take(counterFilterModel.PageSize).ToList();
-
-                    return new ResultWithMessage(new DataWithSize(Count, result), "");
-                }
-
-                else
-                {
-                    int Count = queryViewModel.Count();
-
-                    var result = queryViewModel.Skip((counterFilterModel.PageIndex) * counterFilterModel.PageSize)
-                    .Take(counterFilterModel.PageSize).ToList();
-
-                    return new ResultWithMessage(new DataWithSize(Count, result), "");
-                }
+                //--------------------------------Filter and conver data to VM----------------------------------------------
+                IQueryable<Counter> fiteredData = getFilteredData(data, query, counterFilterModel, counterFields);
+                //-------------------------------Data sorting and pagination------------------------------------------
+                var queryViewModel = convertCountersToViewModel(fiteredData);
+                return sortAndPagination(counterFilterModel, queryViewModel);
 
             }
             catch (Exception ex)
@@ -290,5 +219,131 @@ namespace Tenor.Services.CountersService
                 return new ResultWithMessage(null, e.Message);
             }
         }
+        public async Task<ResultWithMessage> GetExtraFields()
+        {
+            var extraFields = _mapper.Map<List<KpiExtraField>>(_db.CounterFields.Where(x => x.IsActive).Include(x => x.ExtraField).ToList());
+            return new ResultWithMessage(extraFields, null);
+
+        }
+        private IQueryable<Counter> getFilteredData(dynamic data, IQueryable<Counter> query, CounterFilterModel counterFilterModel, List<string> counterFields)
+        {
+            //Build filter for extra field
+            List<Filter> filters = new List<Filter>();
+            foreach (var s in counterFields)
+            {
+                Filter filter = new Filter();
+                object property = data[s]!=null? data[s]: data[char.ToLower(s[0]) + s.Substring(1)];
+                if (property != null)
+                {
+                    if (!string.IsNullOrEmpty(property.ToString()))
+                    {
+                        filter.key = s;
+                        filter.values = Regex.Replace(property.ToString().Replace("{", "").Replace("}", ""), @"\t|\n|\r|\s+", "");                       
+                        filters.Add(filter);
+                    }
+                }
+
+            }
+
+            if (counterFilterModel.Id != null && counterFilterModel.Id != 0)
+            {
+                Filter filter = new Filter();
+                filter.key = "Id";
+                filter.values = counterFilterModel.Id;
+                filters.Add(filter);
+            }
+            if (counterFilterModel.SubsetId != null && counterFilterModel.SubsetId != 0)
+            {
+                Filter filter = new Filter();
+                filter.key = "SubsetId";
+                filter.values = counterFilterModel.SubsetId;
+                filters.Add(filter);
+            }
+
+            // Applay filter on data query
+            if (filters.Count != 0)
+            {
+
+                foreach (var f in filters)
+                {
+                    if(typeof(Counter).GetProperty(f.key)!=null)
+                    {
+                      var expression = ExpressionUtils.BuildPredicate<Counter>(f.key,"==",f.values.ToString());
+                      query = query.Where(expression);
+
+                    }
+                    
+                    else
+
+                    {
+
+                        string fileds = Convert.ToString(string.Join(",", f.values));
+                        string convertFields = fileds.Replace("\",\"", ",").Replace("[", "").Replace("]", "").Replace("\"", "");
+                        query = query.Where(x => x.CounterFieldValues.Any(y => y.FieldValue.Contains(convertFields) && y.CounterField.ExtraField.Name.ToLower() == f.key.ToLower()));
+
+                    }
+                }
+            }
+
+            if (counterFilterModel.DeviceId != null && counterFilterModel.DeviceId != 0)
+            {
+                query = query.Where(x => x.Subset.DeviceId == counterFilterModel.DeviceId);
+            }
+
+
+            if (!string.IsNullOrEmpty(counterFilterModel.SearchQuery))
+            {
+                query = query.Where(x => x.Name.Trim().ToLower().Contains(counterFilterModel.SearchQuery.Trim().ToLower())
+                              || x.SupplierId.Trim().ToLower().Contains(counterFilterModel.SearchQuery.Trim().ToLower()));
+            }
+
+            return query;
+        }
+        private ResultWithMessage sortAndPagination(CounterFilterModel counterFilterModel,IQueryable<CounterListViewModel> queryViewModel)
+        {
+            if (!string.IsNullOrEmpty(counterFilterModel.SortActive))
+            {
+
+                var sortProperty = typeof(CounterListViewModel).GetProperty(counterFilterModel.SortActive);
+                if (sortProperty != null && counterFilterModel.SortDirection == "asc")
+                    queryViewModel = queryViewModel.OrderBy2(counterFilterModel.SortActive);
+
+                else if (sortProperty != null && counterFilterModel.SortDirection == "desc")
+                    queryViewModel = queryViewModel.OrderByDescending2(counterFilterModel.SortActive);
+
+                int Count = queryViewModel.Count();
+
+                var result = queryViewModel.Skip((counterFilterModel.PageIndex) * counterFilterModel.PageSize)
+                .Take(counterFilterModel.PageSize).ToList();
+
+                return new ResultWithMessage(new DataWithSize(Count, result), "");
+            }
+
+            else
+            {
+                int Count = queryViewModel.Count();
+                var result = queryViewModel.Skip((counterFilterModel.PageIndex) * counterFilterModel.PageSize)
+                .Take(counterFilterModel.PageSize).ToList();
+
+                return new ResultWithMessage(new DataWithSize(Count, result), "");
+            }
+
+        }
+        private IQueryable<CounterListViewModel> convertCountersToViewModel(IQueryable<Counter> model) =>
+      model.Select(e => new CounterListViewModel
+      {
+          Id = e.Id,
+          Name = e.Name,
+          Code = e.Code,
+          ColumnName = e.ColumnName,
+          RefColumnName = e.RefColumnName,
+          Description = e.Description,
+          Aggregation = e.Aggregation,
+          IsDeleted = e.IsDeleted,
+          SupplierId = e.SupplierId,
+          SubsetId = e.SubsetId,
+          SubsetName = e.Subset.Name
+      });
+
     }
 }

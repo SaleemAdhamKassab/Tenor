@@ -10,5 +10,4 @@ namespace Tenor.Dtos
         public string? SortActive { get; set; }
         public string? SortDirection { get; set; }
     }
-    public class CounterFilterModel : GeneralFilterModel { }
 }

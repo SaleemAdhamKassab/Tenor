@@ -31,5 +31,14 @@ namespace Tenor.Controllers
         [HttpDelete("delete")]
         public IActionResult delete(int id) => _returnResult(_counterservice.delete(id));
 
+        [HttpGet("GetExtraFields")]
+        public async Task<IActionResult> GetExtraFields()
+        {
+            var result = await _counterservice.GetExtraFields();
+            if (!string.IsNullOrEmpty(result.Message))
+                return BadRequest(result.Message);
+
+            return Ok(result.Data);
+        }
     }
 }

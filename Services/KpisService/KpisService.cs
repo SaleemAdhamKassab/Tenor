@@ -28,6 +28,9 @@ namespace Tenor.Services.KpisService
         Task<ResultWithMessage> Update(CreateKpi Kpi);
         Task<ResultWithMessage> Delete(int id);
         Task<ResultWithMessage> GetExtraFields();
+        ResultWithMessage GetOperators();
+        ResultWithMessage GetFunctions();
+
     }
 
     public class KpisService : IKpisService
@@ -229,6 +232,19 @@ namespace Tenor.Services.KpisService
             return new ResultWithMessage(extraFields, null);
 
         }   
+
+        public ResultWithMessage GetOperators()
+        {
+            var opt = _db.Operators.ToList();
+            return new ResultWithMessage(opt, null);
+
+        }
+        public ResultWithMessage GetFunctions()
+        {
+            var func = _db.Functions.ToList();
+            return new ResultWithMessage(func, null);
+
+        }
         private bool DeleteSelfRelation(int? parentid, List<int> childid)
         {
             List<Operation> childOpt = new List<Operation>();
