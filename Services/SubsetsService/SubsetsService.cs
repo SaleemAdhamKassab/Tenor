@@ -278,7 +278,7 @@ namespace Tenor.Services.SubsetsService
         }
         public ResultWithMessage GetExtraFields()
         {
-            var extraFields = _mapper.Map<List<KpiExtraField>>(_db.SubsetFields.Where(x => x.IsActive).Include(x => x.ExtraField).ToList());
+            var extraFields = _mapper.Map<List<SubsetExtraField>>(_db.SubsetFields.Where(x => x.IsActive).Include(x => x.ExtraField).ToList());
             return new ResultWithMessage(extraFields, null);
 
         }
