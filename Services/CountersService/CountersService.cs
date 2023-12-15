@@ -76,10 +76,7 @@ namespace Tenor.Services.CountersService
                     PageIndex = counterFilter.ToString().Contains("PageIndex") ? data["PageIndex"] : data["pageIndex"],
                     PageSize = counterFilter.ToString().Contains("PageSize") ? data["PageSize"] : data["pageSize"],
                     SortActive = counterFilter.ToString().Contains("SortActive") ? data["SortActive"] : data["sortActive"],
-                    SortDirection = counterFilter.ToString().Contains("SortDirection") ? data["SortDirection"] : data["sortDirection"],
-
-                    Id = (counterFilter.ToString().Contains("id") ? data["id"] : data["Id"]) != "" ?
-                         (counterFilter.ToString().Contains("id") ? data["id"] : data["Id"]) : null,
+                    SortDirection = counterFilter.ToString().Contains("SortDirection") ? data["SortDirection"] : data["sortDirection"],                   
 
                     SubsetId = (counterFilter.ToString().Contains("SubsetId") ? data["SubsetId"] : data["subsetId"]) != "" ?
                                (counterFilter.ToString().Contains("SubsetId") ? data["SubsetId"] : data["subsetId"]) : null,
@@ -244,14 +241,7 @@ namespace Tenor.Services.CountersService
                 }
 
             }
-
-            if (counterFilterModel.Id != null && counterFilterModel.Id != 0)
-            {
-                Filter filter = new Filter();
-                filter.key = "Id";
-                filter.values = counterFilterModel.Id;
-                filters.Add(filter);
-            }
+          
             if (counterFilterModel.SubsetId != null && counterFilterModel.SubsetId != 0)
             {
                 Filter filter = new Filter();
@@ -279,7 +269,11 @@ namespace Tenor.Services.CountersService
 
                         string fileds = Convert.ToString(string.Join(",", f.values));
                         string convertFields = fileds.Replace("\",\"", ",").Replace("[", "").Replace("]", "").Replace("\"", "");
-                        query = query.Where(x => x.CounterFieldValues.Any(y => y.FieldValue.Contains(convertFields) && y.CounterField.ExtraField.Name.ToLower() == f.key.ToLower()));
+                        if(!string.IsNullOrEmpty(convertFields))
+                        {
+                            query = query.Where(x => x.CounterFieldValues.Any(y => convertFields.Contains(y.FieldValue) && y.CounterField.ExtraField.Name.ToLower() == f.key.ToLower()));
+
+                        }
 
                     }
                 }
@@ -293,8 +287,10 @@ namespace Tenor.Services.CountersService
 
             if (!string.IsNullOrEmpty(counterFilterModel.SearchQuery))
             {
-                query = query.Where(x => x.Name.Trim().ToLower().Contains(counterFilterModel.SearchQuery.Trim().ToLower())
-                              || x.SupplierId.Trim().ToLower().Contains(counterFilterModel.SearchQuery.Trim().ToLower()));
+                query = query.Where(x => x.Name.ToLower().Contains(counterFilterModel.SearchQuery.ToLower())
+                              || x.SupplierId.Contains(counterFilterModel.SearchQuery)
+                              || x.Id.ToString().Equals(counterFilterModel.SearchQuery)
+                              );
             }
 
             return query;
@@ -304,7 +300,7 @@ namespace Tenor.Services.CountersService
             if (!string.IsNullOrEmpty(counterFilterModel.SortActive))
             {
 
-                var sortProperty = typeof(CounterListViewModel).GetProperty(counterFilterModel.SortActive);
+                var sortProperty = typeof(CounterListViewModel).GetProperty(char.ToUpper(counterFilterModel.SortActive[0]) + counterFilterModel.SortActive.Substring(1));
                 if (sortProperty != null && counterFilterModel.SortDirection == "asc")
                     queryViewModel = queryViewModel.OrderBy2(counterFilterModel.SortActive);
 

@@ -57,7 +57,6 @@ namespace Tenor.Services.CountersService.ViewModels
 
     public class CounterFilterModel : GeneralFilterModel 
     {
-        public int? Id { get; set; }
         public int ? SubsetId { get; set; }
         public int? DeviceId { get; set; }
 
