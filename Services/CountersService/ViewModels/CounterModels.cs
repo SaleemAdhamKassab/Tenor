@@ -2,6 +2,8 @@
 using System.ComponentModel.DataAnnotations;
 using Tenor.Dtos;
 using Tenor.Models;
+using Tenor.Services.SubsetsService.ViewModels;
+using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
 namespace Tenor.Services.CountersService.ViewModels
 {
@@ -18,6 +20,8 @@ namespace Tenor.Services.CountersService.ViewModels
         public bool IsDeleted { get; set; }
         public int SubsetId { get; set; }
         public string SubsetName { get; set; }
+        public List<CounterExtraFieldValueViewModel> ExtraFields { get; set; }
+
     }
 
     public class CounterListViewModel
@@ -53,12 +57,32 @@ namespace Tenor.Services.CountersService.ViewModels
         public string Aggregation { get; set; }
         public bool IsDeleted { get; set; }
         public int SubsetId { get; set; }
+        public List<ExtraFieldValue>? ExtraFields { get; set; }
+
     }
 
-    public class CounterFilterModel : GeneralFilterModel 
+    public class CounterFilterModel : GeneralFilterModel
     {
-        public string ? SubsetId { get; set; }
+        public string? SubsetId { get; set; }
         public int? DeviceId { get; set; }
 
+    }
+
+    public class CounterExtraField
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Type { get; set; }
+        public dynamic Content { get; set; }
+        public string? Url { get; set; }
+    }
+
+    public class CounterExtraFieldValueViewModel
+    {
+        public int Id { get; set; }
+        public int FieldId { get; set; }
+        public string Type { get; set; }
+        public string FieldName { get; set; }
+        public object Value { get; set; }
     }
 }

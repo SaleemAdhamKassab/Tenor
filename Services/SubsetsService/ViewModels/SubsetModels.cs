@@ -94,7 +94,6 @@ namespace Tenor.Services.SubsetsService.ViewModels
         public int DeviceId { get; set; }
 
         public List<ExtraFieldValue>? ExtraFields { get; set; }
-
     }
 
     public class SubsetFilterModel : GeneralFilterModel

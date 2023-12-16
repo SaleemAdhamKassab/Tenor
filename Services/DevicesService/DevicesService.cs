@@ -13,10 +13,10 @@ namespace Tenor.Services.DevicesService
         ResultWithMessage getById(int id);
         ResultWithMessage getByFilter(DeviceFilterModel filter);
         ResultWithMessage getSubsets();
+        bool isDeviceExists(int id);
         ResultWithMessage add(DeviceBindingModel model);
         ResultWithMessage edit(DeviceBindingModel subsetDto);
         ResultWithMessage delete(int id);
-        bool isDeviceExists(int id);
     }
 
     public class DevicesService : IDevicesService

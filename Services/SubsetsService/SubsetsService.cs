@@ -66,8 +66,6 @@ namespace Tenor.Services.SubsetsService
 
         private bool isSubsetExists(int subsetId) => _db.Subsets.Find(subsetId) is not null;
 
-        private static List<string> convertStringToList(string s) => s.Split(',').ToList();
-
         private List<SubsetExtraFieldValueViewModel> getExtraFields(int subsetId)
         {
             List<SubsetExtraFieldValueViewModel> extraFields =
@@ -81,7 +79,7 @@ namespace Tenor.Services.SubsetsService
                     FieldId = e.SubsetField.Id,
                     Type = e.SubsetField.ExtraField.Type.ToString(),
                     FieldName = e.SubsetField.ExtraField.Name,
-                    Value = e.FieldValue.Contains(',') ? convertStringToList(e.FieldValue) : e.FieldValue
+                    Value = e.FieldValue.Contains(',') ? Util.convertStringToList(e.FieldValue) : e.FieldValue
                 })
                 .ToList();
 
@@ -222,6 +220,8 @@ namespace Tenor.Services.SubsetsService
             _db.SaveChanges();
             return true;
         }
+
+        private bool isCounterExists(int counterId) => _db.Counters.Find(counterId) is not null;
 
 
 

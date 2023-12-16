@@ -12,7 +12,7 @@ namespace Tenor.Controllers
         public SubsetsController(ISubsetsService Subsetservice) => _subsetservice = Subsetservice;
 
 
-        [HttpGet("getById/{id}")]
+        [HttpGet("getById")]
         public IActionResult getById(int id) => _returnResult(_subsetservice.getById(id));
 
 

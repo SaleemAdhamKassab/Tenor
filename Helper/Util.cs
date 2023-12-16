@@ -12,5 +12,8 @@
 
             return result;
         }
+
+        public static List<string> convertStringToList(string s) => s.Split(',').ToList();
+
     }
 }
