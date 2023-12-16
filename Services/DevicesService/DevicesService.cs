@@ -73,7 +73,7 @@ namespace Tenor.Services.DevicesService
               ParentName = e.Parent.Name
           });
 
-        private string validatingModel(DeviceBindingModel model)
+        private string getValidatingModelErrorMessage(DeviceBindingModel model)
         {
             if (model is null)
                 return "Empty Model!";
@@ -99,7 +99,7 @@ namespace Tenor.Services.DevicesService
                 return new ResultWithMessage(null, $"No Device found with Id: {id}");
 
 
-            DeviceViewModel deviceToRetrive = _db.Devices
+            DeviceViewModel deviceViewModel = _db.Devices
                 .Select(e => new DeviceViewModel()
                 {
                     Id = e.Id,
@@ -112,9 +112,8 @@ namespace Tenor.Services.DevicesService
                 })
                 .First(e => e.Id == id);
 
-            return new ResultWithMessage(deviceToRetrive, "");
+            return new ResultWithMessage(deviceViewModel, "");
         }
-
 
         public ResultWithMessage getByFilter(DeviceFilterModel filter)
         {
@@ -151,7 +150,7 @@ namespace Tenor.Services.DevicesService
 
         public ResultWithMessage add(DeviceBindingModel model)
         {
-            string validatingModelErrorMessage = validatingModel(model);
+            string validatingModelErrorMessage = getValidatingModelErrorMessage(model);
 
             if (!string.IsNullOrEmpty(validatingModelErrorMessage))
                 return new ResultWithMessage(null, validatingModelErrorMessage);
@@ -195,6 +194,11 @@ namespace Tenor.Services.DevicesService
         {
             if (model is null)
                 return new ResultWithMessage(null, "Empty Model!!");
+
+            string validatingModelErrorMessage = getValidatingModelErrorMessage(model);
+
+            if (!string.IsNullOrEmpty(validatingModelErrorMessage))
+                return new ResultWithMessage(null, validatingModelErrorMessage);
 
             Device device = _db.Devices.Find(model.Id);
 
