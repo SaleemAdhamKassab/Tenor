@@ -1,13 +1,7 @@
 ﻿using AutoMapper;
 using Infrastructure.Helpers;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System.Linq;
-using System.Runtime.Remoting;
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Transactions;
 using Tenor.Data;
@@ -17,7 +11,6 @@ using Tenor.Models;
 using Tenor.Services.CountersService.ViewModels;
 using Tenor.Services.DevicesService;
 using Tenor.Services.SubsetsService.ViewModels;
-using static Tenor.Helper.Constant;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
 namespace Tenor.Services.SubsetsService
@@ -26,10 +19,10 @@ namespace Tenor.Services.SubsetsService
     {
         ResultWithMessage getById(int id);
         ResultWithMessage getByFilter(object subsetfilter);
+        ResultWithMessage getExtraFields();
         ResultWithMessage add(SubsetBindingModel model);
         ResultWithMessage edit(SubsetBindingModel subsetDto);
         ResultWithMessage delete(int id);
-        ResultWithMessage GetExtraFields();
     }
 
     public class SubsetsService : ISubsetsService
@@ -72,7 +65,7 @@ namespace Tenor.Services.SubsetsService
         private bool isSubsetExtraFieldIdExistsAndActive(int id) => _db.SubsetFields.Where(e => e.Id == id && e.IsActive).FirstOrDefault() is not null;
 
         private bool isSubsetExists(int subsetId) => _db.Subsets.Find(subsetId) is not null;
-        
+
         private static List<string> convertStringToList(string s) => s.Split(',').ToList();
 
         private List<SubsetExtraFieldValueViewModel> getExtraFields(int subsetId)
@@ -94,6 +87,145 @@ namespace Tenor.Services.SubsetsService
 
             return extraFields;
         }
+
+        private IQueryable<Subset> getFilteredData(dynamic data, IQueryable<Subset> query, SubsetFilterModel subsetFilterModel, List<string> subsetFields)
+        {
+            //Build filter for extra field
+            List<Filter> filters = new List<Filter>();
+            foreach (var s in subsetFields)
+            {
+                Filter filter = new Filter();
+                object property = data[s] != null ? data[s] : data[char.ToLower(s[0]) + s.Substring(1)];
+                if (property != null)
+                {
+                    if (!string.IsNullOrEmpty(property.ToString()))
+                    {
+                        filter.key = s;
+                        filter.values = Regex.Replace(property.ToString().Replace("{", "").Replace("}", ""), @"\t|\n|\r|\s+", "");
+                        filters.Add(filter);
+                    }
+                }
+
+            }
+
+            // Applay filter on data query
+            if (filters.Count != 0)
+            {
+
+                foreach (var f in filters)
+                {
+                    if (typeof(Subset).GetProperty(f.key) != null)
+                    {
+
+                        var expression = ExpressionUtils.BuildPredicate<Subset>(f.key, "==", f.values.ToString());
+                        query = query.Where(expression);
+
+                    }
+
+                    else
+
+                    {
+
+                        string fileds = Convert.ToString(string.Join(",", f.values));
+                        string convertFields = fileds.Replace("\",\"", ",").Replace("[", "").Replace("]", "").Replace("\"", "");
+                        if (!string.IsNullOrEmpty(convertFields))
+                        {
+                            query = query.Where(x => x.SubsetFieldValues.Any(y => convertFields.Contains(y.FieldValue) && y.SubsetField.ExtraField.Name.ToLower() == f.key.ToLower()));
+
+                        }
+
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(subsetFilterModel.SearchQuery))
+            {
+                query = query.Where(x => x.Name.ToLower().Contains(subsetFilterModel.SearchQuery.ToLower())
+                              || x.SupplierId.Contains(subsetFilterModel.SearchQuery)
+                              || x.TableName.Contains(subsetFilterModel.SearchQuery)
+                              || x.Id.ToString().Equals(subsetFilterModel.SearchQuery)
+                              );
+            }
+
+            if (!string.IsNullOrEmpty(subsetFilterModel.DeviceId))
+            {
+                query = query.Where(x => x.DeviceId.ToString() == subsetFilterModel.DeviceId);
+
+            }
+
+            return query;
+        }
+
+        private ResultWithMessage sortAndPagination(SubsetFilterModel kpiFilterModel, IQueryable<SubsetListViewModel> queryViewModel)
+        {
+            if (!string.IsNullOrEmpty(kpiFilterModel.SortActive))
+            {
+
+                var sortProperty = typeof(SubsetListViewModel).GetProperty(char.ToUpper(kpiFilterModel.SortActive[0]) + kpiFilterModel.SortActive.Substring(1));
+                if (sortProperty != null && kpiFilterModel.SortDirection == "asc")
+                    queryViewModel = queryViewModel.OrderBy2(kpiFilterModel.SortActive);
+
+                else if (sortProperty != null && kpiFilterModel.SortDirection == "desc")
+                    queryViewModel = queryViewModel.OrderByDescending2(kpiFilterModel.SortActive);
+
+                int Count = queryViewModel.Count();
+
+                var result = queryViewModel.Skip((kpiFilterModel.PageIndex) * kpiFilterModel.PageSize)
+                .Take(kpiFilterModel.PageSize).ToList();
+
+                return new ResultWithMessage(new DataWithSize(Count, result), "");
+            }
+
+            else
+            {
+                int Count = queryViewModel.Count();
+                var result = queryViewModel.Skip((kpiFilterModel.PageIndex) * kpiFilterModel.PageSize)
+                .Take(kpiFilterModel.PageSize).ToList();
+
+                return new ResultWithMessage(new DataWithSize(Count, result), "");
+            }
+
+        }
+
+        private string getValidaitingModelErrorMessage(SubsetBindingModel model)
+        {
+            if (model is null)
+                return "Empty Model!!";
+
+            if (!_devicesService.isDeviceExists(model.DeviceId))
+                return $"Invalid device Id: {model.DeviceId}";
+
+            foreach (ExtraFieldValue extraField in model.ExtraFields)
+                if (!isSubsetExtraFieldIdExistsAndActive(extraField.FieldId))
+                    return $"Invalid or InActive ExtrafieldId: {extraField.FieldId} ,value: {extraField.Value}";
+
+            return string.Empty;
+        }
+
+        private bool addSubsetExtraFieldValues(List<ExtraFieldValue> extraFieldValues, int subsetId)
+        {
+            foreach (ExtraFieldValue extraField in extraFieldValues)
+            {
+                var extraFieldValue = Convert.ToString(extraField.Value);
+                extraFieldValue = Util.cleanExtraFieldValue(extraFieldValue);
+
+                SubsetFieldValue subsetFieldValue = new()
+                {
+                    SubsetId = subsetId,
+                    SubsetFieldId = extraField.FieldId,
+                    FieldValue = extraFieldValue
+                };
+
+                _db.Add(subsetFieldValue);
+            }
+
+            _db.SaveChanges();
+            return true;
+        }
+
+
+
+
 
         public ResultWithMessage getById(int id)
         {
@@ -168,17 +300,18 @@ namespace Tenor.Services.SubsetsService
             }
         }
 
+        public ResultWithMessage getExtraFields()
+        {
+            var extraFields = _mapper.Map<List<SubsetExtraField>>(_db.SubsetFields.Where(x => x.IsActive).Include(x => x.ExtraField).ToList());
+            return new ResultWithMessage(extraFields, null);
+        }
+
         public ResultWithMessage add(SubsetBindingModel model)
         {
-            if (model is null)
-                return new ResultWithMessage(null, "Empty Model!!");
+            string validaitingModelErrorMessage = getValidaitingModelErrorMessage(model);
 
-            if (!_devicesService.isDeviceExists(model.DeviceId))
-                return new ResultWithMessage(null, $"Invalid device Id: {model.DeviceId}");
-
-            foreach (ExtraFieldValue extraField in model.ExtraFields)
-                if (!isSubsetExtraFieldIdExistsAndActive(extraField.FieldId))
-                    return new ResultWithMessage(null, $"Invalid or InActive ExtrafieldId: {extraField.FieldId} ,value: {extraField.Value}");
+            if (!string.IsNullOrEmpty(validaitingModelErrorMessage))
+                return new ResultWithMessage(null, validaitingModelErrorMessage);
 
             using (TransactionScope transaction = new())
             {
@@ -214,27 +347,8 @@ namespace Tenor.Services.SubsetsService
                     _db.Add(subset);
                     _db.SaveChanges();
 
-
                     if (model.ExtraFields.Count != 0)
-                    {
-                        foreach (ExtraFieldValue extraField in model.ExtraFields)
-                        {
-                            var extraFieldValue = Convert.ToString(extraField.Value);
-                            extraFieldValue = Util.cleanExtraFieldValue(extraFieldValue);
-
-
-                            SubsetFieldValue subsetFieldValue = new()
-                            {
-                                SubsetId = subset.Id,
-                                SubsetFieldId = extraField.FieldId,
-                                FieldValue = extraFieldValue
-                            };
-
-                            _db.Add(subsetFieldValue);
-                        }
-                    }
-
-                    _db.SaveChanges();
+                        addSubsetExtraFieldValues(model.ExtraFields, subset.Id);
 
                     subset = _db.Subsets.Include(e => e.Device).Single(e => e.Id == subset.Id);
 
@@ -263,11 +377,12 @@ namespace Tenor.Services.SubsetsService
                         SummaryType = subset.SummaryType,
                         IsDeleted = subset.IsDeleted,
                         DeviceId = subset.DeviceId,
-                        DeviceName = subset.Device.Name
+                        DeviceName = subset.Device.Name,
+                        ExtraFields = getExtraFields(subset.Id)
                     };
 
                     transaction.Complete();
-                    return new ResultWithMessage(subset, null);
+                    return new ResultWithMessage(subsetViewModel, null);
                 }
 
                 catch (Exception ex)
@@ -279,8 +394,10 @@ namespace Tenor.Services.SubsetsService
 
         public ResultWithMessage edit(SubsetBindingModel model)
         {
-            if (model is null)
-                return new ResultWithMessage(null, "Empty Model!!");
+            string validaitingModelErrorMessage = getValidaitingModelErrorMessage(model);
+
+            if (!string.IsNullOrEmpty(validaitingModelErrorMessage))
+                return new ResultWithMessage(null, validaitingModelErrorMessage);
 
             Subset subset = _db.Subsets.Find(model.Id);
 
@@ -309,10 +426,20 @@ namespace Tenor.Services.SubsetsService
             subset.SummaryType = model.SummaryType;
             subset.IsDeleted = model.IsDeleted;
 
+
             try
             {
+                List<SubsetFieldValue> subsetFieldValuesToDelete = _db.SubsetFieldValues.Where(e => e.SubsetId == model.Id).ToList();
+                _db.RemoveRange(subsetFieldValuesToDelete);
+
                 _db.Update(subset);
+
+                if (model.ExtraFields.Count != 0)
+                    addSubsetExtraFieldValues(model.ExtraFields, subset.Id);
+
                 _db.SaveChanges();
+
+                subset = _db.Subsets.Include(e => e.Device).Single(e => e.Id == subset.Id);
 
                 SubsetViewModel subsetViewModel = new()
                 {
@@ -339,7 +466,8 @@ namespace Tenor.Services.SubsetsService
                     SummaryType = subset.SummaryType,
                     IsDeleted = subset.IsDeleted,
                     DeviceId = subset.DeviceId,
-                    DeviceName = subset.Device.Name
+                    DeviceName = subset.Device.Name,
+                    ExtraFields = getExtraFields(subset.Id)
                 };
 
                 return new ResultWithMessage(subsetViewModel, "");
@@ -349,12 +477,6 @@ namespace Tenor.Services.SubsetsService
             {
                 return new ResultWithMessage(model, e.Message);
             }
-        }
-        public ResultWithMessage GetExtraFields()
-        {
-            var extraFields = _mapper.Map<List<SubsetExtraField>>(_db.SubsetFields.Where(x => x.IsActive).Include(x => x.ExtraField).ToList());
-            return new ResultWithMessage(extraFields, null);
-
         }
 
         public ResultWithMessage delete(int id)
@@ -377,103 +499,5 @@ namespace Tenor.Services.SubsetsService
                 return new ResultWithMessage(null, e.Message);
             }
         }
-        private IQueryable<Subset> getFilteredData(dynamic data, IQueryable<Subset> query, SubsetFilterModel subsetFilterModel, List<string> subsetFields)
-        {
-            //Build filter for extra field
-            List<Filter> filters = new List<Filter>();
-            foreach (var s in subsetFields)
-            {
-                Filter filter = new Filter();
-                object property = data[s] != null ? data[s] : data[char.ToLower(s[0]) + s.Substring(1)];
-                if (property != null)
-                {
-                    if (!string.IsNullOrEmpty(property.ToString()))
-                    {
-                        filter.key = s;
-                        filter.values = Regex.Replace(property.ToString().Replace("{", "").Replace("}", ""), @"\t|\n|\r|\s+", "");
-                        filters.Add(filter);
-                    }
-                }
-
-            }
-
-            // Applay filter on data query
-            if (filters.Count != 0)
-            {
-
-                foreach (var f in filters)
-                {
-                    if (typeof(Subset).GetProperty(f.key) != null)
-                    {
-
-                        var expression = ExpressionUtils.BuildPredicate<Subset>(f.key, "==", f.values.ToString());
-                        query = query.Where(expression);
-
-                    }
-
-                    else
-
-                    {
-
-                        string fileds = Convert.ToString(string.Join(",", f.values));
-                        string convertFields = fileds.Replace("\",\"", ",").Replace("[", "").Replace("]", "").Replace("\"", "");
-                        if (!string.IsNullOrEmpty(convertFields))
-                        {
-                            query = query.Where(x => x.SubsetFieldValues.Any(y => convertFields.Contains(y.FieldValue) && y.SubsetField.ExtraField.Name.ToLower() == f.key.ToLower()));
-
-                        }
-
-                    }
-                }
-            }
-
-            if (!string.IsNullOrEmpty(subsetFilterModel.SearchQuery))
-            {
-                query = query.Where(x => x.Name.ToLower().Contains(subsetFilterModel.SearchQuery.ToLower())
-                              || x.SupplierId.Contains(subsetFilterModel.SearchQuery)
-                              || x.TableName.Contains(subsetFilterModel.SearchQuery)
-                              || x.Id.ToString().Equals(subsetFilterModel.SearchQuery)
-                              );
-            }
-
-            if (!string.IsNullOrEmpty(subsetFilterModel.DeviceId))
-            {
-                query = query.Where(x => x.DeviceId.ToString() == subsetFilterModel.DeviceId);
-
-            }
-
-            return query;
-        }
-        private ResultWithMessage sortAndPagination(SubsetFilterModel kpiFilterModel, IQueryable<SubsetListViewModel> queryViewModel)
-        {
-            if (!string.IsNullOrEmpty(kpiFilterModel.SortActive))
-            {
-
-                var sortProperty = typeof(SubsetListViewModel).GetProperty(char.ToUpper(kpiFilterModel.SortActive[0]) + kpiFilterModel.SortActive.Substring(1));
-                if (sortProperty != null && kpiFilterModel.SortDirection == "asc")
-                    queryViewModel = queryViewModel.OrderBy2(kpiFilterModel.SortActive);
-
-                else if (sortProperty != null && kpiFilterModel.SortDirection == "desc")
-                    queryViewModel = queryViewModel.OrderByDescending2(kpiFilterModel.SortActive);
-
-                int Count = queryViewModel.Count();
-
-                var result = queryViewModel.Skip((kpiFilterModel.PageIndex) * kpiFilterModel.PageSize)
-                .Take(kpiFilterModel.PageSize).ToList();
-
-                return new ResultWithMessage(new DataWithSize(Count, result), "");
-            }
-
-            else
-            {
-                int Count = queryViewModel.Count();
-                var result = queryViewModel.Skip((kpiFilterModel.PageIndex) * kpiFilterModel.PageSize)
-                .Take(kpiFilterModel.PageSize).ToList();
-
-                return new ResultWithMessage(new DataWithSize(Count, result), "");
-            }
-
-        }
-
     }
 }

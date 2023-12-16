@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Tenor.Dtos;
 using Tenor.Services.SubsetsService;
 using Tenor.Services.SubsetsService.ViewModels;
 
@@ -21,6 +20,10 @@ namespace Tenor.Controllers
         public IActionResult getByFilter([FromBody] object filter) => _returnResult(_subsetservice.getByFilter(filter));
 
 
+        [HttpGet("getExtraFields")]
+        public IActionResult getExtraFields() => _returnResult(_subsetservice.getExtraFields());
+
+
         [HttpPost("add")]
         public IActionResult add(SubsetBindingModel model) => _returnResult(_subsetservice.add(model));
 
@@ -31,12 +34,5 @@ namespace Tenor.Controllers
 
         [HttpDelete("delete")]
         public IActionResult delete(int id) => _returnResult(_subsetservice.delete(id));
-
-        [HttpGet("GetExtraFields")]
-        public IActionResult GetExtraFields()
-        {
-           return  _returnResult(_subsetservice.GetExtraFields());
-       
-        }
     }
 }
