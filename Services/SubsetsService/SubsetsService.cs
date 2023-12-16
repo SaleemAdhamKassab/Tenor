@@ -137,17 +137,6 @@ namespace Tenor.Services.SubsetsService
             }
         }
 
-        private string cleanValue(string name)
-        {
-            name = name.Replace('[', ' ');
-            name = name.Replace(']', ' ');
-            name = name.Replace('\\', ' ');
-            name = name.Replace('"', ' ');
-            name = new string(name.ToCharArray().Where(c => !Char.IsWhiteSpace(c)).ToArray());
-
-            return name;
-        }
-
         public ResultWithMessage add(SubsetBindingModel model)
         {
             if (model is null)
@@ -198,7 +187,7 @@ namespace Tenor.Services.SubsetsService
                             //check if extraField.FieldId is active and correct
 
                             var extraFieldValue = Convert.ToString(extraField.Value);
-                            extraFieldValue = cleanValue(extraFieldValue);
+                            extraFieldValue = Util.cleanExtraFieldValue(extraFieldValue);
 
 
                             SubsetFieldValue subsetFieldValue = new()
