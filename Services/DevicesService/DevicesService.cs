@@ -16,6 +16,7 @@ namespace Tenor.Services.DevicesService
         ResultWithMessage add(DeviceBindingModel model);
         ResultWithMessage edit(DeviceBindingModel subsetDto);
         ResultWithMessage delete(int id);
+        bool isDeviceExists(int id);
     }
 
     public class DevicesService : IDevicesService
@@ -145,6 +146,8 @@ namespace Tenor.Services.DevicesService
             var devicesWithChilds = _recSetChilds(_db.Devices.Include(x => x.Subsets).Where(x => x.ParentId == null).ToList());
             return new ResultWithMessage(devicesWithChilds, "");
         }
+
+        public bool isDeviceExists(int id) => _db.Devices.Any(e => e.Id == id);
 
         public ResultWithMessage add(DeviceBindingModel model)
         {

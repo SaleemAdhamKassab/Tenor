@@ -5,12 +5,17 @@ using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Linq;
+using System.Runtime.Remoting;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using System.Transactions;
 using Tenor.Data;
 using Tenor.Dtos;
 using Tenor.Helper;
 using Tenor.Models;
 using Tenor.Services.CountersService.ViewModels;
+using Tenor.Services.DevicesService;
 using Tenor.Services.SubsetsService.ViewModels;
 using static Tenor.Helper.Constant;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
@@ -31,13 +36,15 @@ namespace Tenor.Services.SubsetsService
     {
         private readonly TenorDbContext _db;
         private readonly IMapper _mapper;
-        public SubsetsService(TenorDbContext tenorDbContext, IMapper mapper)
+        private readonly IDevicesService _devicesService;
+
+        public SubsetsService(TenorDbContext tenorDbContext, IMapper mapper, IDevicesService devicesService)
         {
             _db = tenorDbContext;
             _mapper = mapper;
-
+            _devicesService = devicesService;
         }
-    
+
         private IQueryable<SubsetListViewModel> convertSubsetsToViewModel(IQueryable<Subset> model) =>
           model.Select(e => new SubsetListViewModel
           {
@@ -130,76 +137,121 @@ namespace Tenor.Services.SubsetsService
             }
         }
 
+        private string cleanValue(string name)
+        {
+            name = name.Replace('[', ' ');
+            name = name.Replace(']', ' ');
+            name = name.Replace('\\', ' ');
+            name = name.Replace('"', ' ');
+            name = new string(name.ToCharArray().Where(c => !Char.IsWhiteSpace(c)).ToArray());
+
+            return name;
+        }
+
         public ResultWithMessage add(SubsetBindingModel model)
         {
             if (model is null)
                 return new ResultWithMessage(null, "Empty Model!!");
 
-            Subset subset = new()
-            {
-                Id = model.Id,
-                SupplierId = model.SupplierId,
-                Name = model.Name,
-                Description = model.Description,
-                TableName = model.TableName,
-                RefTableName = model.RefTableName,
-                SchemaName = model.SchemaName,
-                RefSchema = model.RefSchema,
-                MaxDataDate = model.MaxDataDate,
-                IsLoad = model.IsLoad,
-                DataTS = model.DataTS,
-                IndexTS = model.IndexTS,
-                DbLink = model.DbLink,
-                RefDbLink = model.RefDbLink,
-                GranularityPeriod = model.GranularityPeriod,
-                DimensionTable = model.DimensionTable,
-                JoinExpression = model.JoinExpression,
-                StartChar = model.StartChar,
-                FactDimensionReference = model.FactDimensionReference,
-                LoadPriorety = model.LoadPriorety,
-                SummaryType = model.SummaryType,
-                IsDeleted = model.IsDeleted,
-                DeviceId = model.DeviceId
-            };
+            if (!_devicesService.isDeviceExists(model.DeviceId))
+                return new ResultWithMessage(null, $"Invalid device Id: {model.DeviceId}");
 
-            try
+            using (TransactionScope transaction = new())
             {
-                _db.Add(subset);
-                _db.SaveChanges();
-
-                SubsetViewModel subsetViewModel = new()
+                try
                 {
-                    Id = subset.Id,
-                    SupplierId = subset.SupplierId,
-                    Name = subset.Name,
-                    Description = subset.Description,
-                    TableName = subset.TableName,
-                    RefTableName = subset.RefTableName,
-                    SchemaName = subset.SchemaName,
-                    RefSchema = subset.RefSchema,
-                    MaxDataDate = subset.MaxDataDate,
-                    IsLoad = subset.IsLoad,
-                    DataTS = subset.DataTS,
-                    IndexTS = subset.IndexTS,
-                    DbLink = subset.DbLink,
-                    RefDbLink = subset.RefDbLink,
-                    GranularityPeriod = subset.GranularityPeriod,
-                    DimensionTable = subset.DimensionTable,
-                    JoinExpression = subset.JoinExpression,
-                    StartChar = subset.StartChar,
-                    FactDimensionReference = subset.FactDimensionReference,
-                    LoadPriorety = subset.LoadPriorety,
-                    SummaryType = subset.SummaryType,
-                    IsDeleted = subset.IsDeleted,
-                    DeviceId = subset.DeviceId,
-                    DeviceName = subset.Device.Name
-                };
+                    Subset subset = new()
+                    {
+                        Id = model.Id,
+                        SupplierId = model.SupplierId,
+                        Name = model.Name,
+                        Description = model.Description,
+                        TableName = model.TableName,
+                        RefTableName = model.RefTableName,
+                        SchemaName = model.SchemaName,
+                        RefSchema = model.RefSchema,
+                        MaxDataDate = model.MaxDataDate,
+                        IsLoad = model.IsLoad,
+                        DataTS = model.DataTS,
+                        IndexTS = model.IndexTS,
+                        DbLink = model.DbLink,
+                        RefDbLink = model.RefDbLink,
+                        GranularityPeriod = model.GranularityPeriod,
+                        DimensionTable = model.DimensionTable,
+                        JoinExpression = model.JoinExpression,
+                        StartChar = model.StartChar,
+                        FactDimensionReference = model.FactDimensionReference,
+                        LoadPriorety = model.LoadPriorety,
+                        SummaryType = model.SummaryType,
+                        IsDeleted = model.IsDeleted,
+                        DeviceId = model.DeviceId,
+                    };
 
-                return new ResultWithMessage(subsetViewModel, "");
-            }
-            catch (Exception e)
-            {
-                return new ResultWithMessage(model, e.Message);
+                    _db.Add(subset);
+                    _db.SaveChanges();
+
+
+                    if (model.ExtraFields.Count != 0)
+                    {
+                        foreach (ExtraFieldValue extraField in model.ExtraFields)
+                        {
+                            //check if extraField.FieldId is active and correct
+
+                            var extraFieldValue = Convert.ToString(extraField.Value);
+                            extraFieldValue = cleanValue(extraFieldValue);
+
+
+                            SubsetFieldValue subsetFieldValue = new()
+                            {
+                                SubsetId = subset.Id,
+                                SubsetFieldId = extraField.FieldId,
+                                FieldValue = extraFieldValue
+                            };
+
+                            _db.Add(subsetFieldValue);
+                        }
+                    }
+
+                    _db.SaveChanges();
+
+                    subset = _db.Subsets.Include(e => e.Device).Single(e => e.Id == subset.Id);
+
+                    SubsetViewModel subsetViewModel = new()
+                    {
+                        Id = subset.Id,
+                        SupplierId = subset.SupplierId,
+                        Name = subset.Name,
+                        Description = subset.Description,
+                        TableName = subset.TableName,
+                        RefTableName = subset.RefTableName,
+                        SchemaName = subset.SchemaName,
+                        RefSchema = subset.RefSchema,
+                        MaxDataDate = subset.MaxDataDate,
+                        IsLoad = subset.IsLoad,
+                        DataTS = subset.DataTS,
+                        IndexTS = subset.IndexTS,
+                        DbLink = subset.DbLink,
+                        RefDbLink = subset.RefDbLink,
+                        GranularityPeriod = subset.GranularityPeriod,
+                        DimensionTable = subset.DimensionTable,
+                        JoinExpression = subset.JoinExpression,
+                        StartChar = subset.StartChar,
+                        FactDimensionReference = subset.FactDimensionReference,
+                        LoadPriorety = subset.LoadPriorety,
+                        SummaryType = subset.SummaryType,
+                        IsDeleted = subset.IsDeleted,
+                        DeviceId = subset.DeviceId,
+                        DeviceName = subset.Device.Name
+                    };
+
+                    transaction.Complete();
+                    return new ResultWithMessage(subset, null);
+                }
+
+                catch (Exception ex)
+                {
+                    return new ResultWithMessage(null, ex.Message);
+                }
             }
         }
 
@@ -331,10 +383,10 @@ namespace Tenor.Services.SubsetsService
                 {
                     if (typeof(Subset).GetProperty(f.key) != null)
                     {
-                       
-                            var expression = ExpressionUtils.BuildPredicate<Subset>(f.key, "==", f.values.ToString());
-                            query = query.Where(expression);
-                      
+
+                        var expression = ExpressionUtils.BuildPredicate<Subset>(f.key, "==", f.values.ToString());
+                        query = query.Where(expression);
+
                     }
 
                     else
@@ -364,8 +416,8 @@ namespace Tenor.Services.SubsetsService
 
             if (!string.IsNullOrEmpty(subsetFilterModel.DeviceId))
             {
-                query = query.Where(x=> x.DeviceId.ToString()== subsetFilterModel.DeviceId);
-          
+                query = query.Where(x => x.DeviceId.ToString() == subsetFilterModel.DeviceId);
+
             }
 
             return query;

@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using Tenor.Dtos;
 using Tenor.Models;
 using Newtonsoft.Json.Linq;
+using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
 namespace Tenor.Services.SubsetsService.ViewModels
 {
@@ -92,6 +93,9 @@ namespace Tenor.Services.SubsetsService.ViewModels
 
         [Required]
         public int DeviceId { get; set; }
+
+        public List<ExtraFieldValue>? ExtraFields { get; set; }
+
     }
 
     public class SubsetFilterModel : GeneralFilterModel
