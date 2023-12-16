@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Tenor.Dtos;
+using Tenor.Models;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
 namespace Tenor.Services.SubsetsService.ViewModels
@@ -30,6 +31,7 @@ namespace Tenor.Services.SubsetsService.ViewModels
         public bool IsDeleted { get; set; }
         public int DeviceId { get; set; }
         public string DeviceName { get; set; }
+        public List<SubsetExtraFieldValueViewModel> ExtraFields { get; set; }
     }
 
     public class SubsetListViewModel
@@ -108,5 +110,14 @@ namespace Tenor.Services.SubsetsService.ViewModels
         public string Type { get; set; }
         public dynamic Content { get; set; }
         public string? Url { get; set; }
+    }
+
+    public class SubsetExtraFieldValueViewModel
+    {
+        public int Id { get; set; }
+        public int FieldId { get; set; }
+        public string Type { get; set; }
+        public string FieldName { get; set; }
+        public object Value { get; set; }
     }
 }

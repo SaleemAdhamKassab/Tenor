@@ -71,11 +71,37 @@ namespace Tenor.Services.SubsetsService
 
         private bool isSubsetExtraFieldIdExistsAndActive(int id) => _db.SubsetFields.Where(e => e.Id == id && e.IsActive).FirstOrDefault() is not null;
 
+        private bool isSubsetExists(int subsetId) => _db.Subsets.Find(subsetId) is not null;
+        
+        private static List<string> convertStringToList(string s) => s.Split(',').ToList();
 
+        private List<SubsetExtraFieldValueViewModel> getExtraFields(int subsetId)
+        {
+            List<SubsetExtraFieldValueViewModel> extraFields =
+                _db.SubsetFieldValues
+                .Where(e => e.SubsetId == subsetId)
+                .Include(e => e.SubsetField)
+                .ThenInclude(e => e.ExtraField)
+                .Select(e => new SubsetExtraFieldValueViewModel()
+                {
+                    Id = e.Id,
+                    FieldId = e.SubsetField.Id,
+                    Type = e.SubsetField.ExtraField.Type.ToString(),
+                    FieldName = e.SubsetField.ExtraField.Name,
+                    Value = e.FieldValue.Contains(',') ? convertStringToList(e.FieldValue) : e.FieldValue
+                })
+                .ToList();
+
+            return extraFields;
+        }
 
         public ResultWithMessage getById(int id)
         {
-            SubsetViewModel Subset = _db.Subsets
+            if (!isSubsetExists(id))
+                return new ResultWithMessage(null, $"Invalid Subset Id: {id}");
+
+
+            SubsetViewModel model = _db.Subsets
                 .Select(e => new SubsetViewModel()
                 {
                     Id = e.Id,
@@ -101,11 +127,12 @@ namespace Tenor.Services.SubsetsService
                     SummaryType = e.SummaryType,
                     IsDeleted = e.IsDeleted,
                     DeviceId = e.DeviceId,
-                    DeviceName = e.Device.Name
+                    DeviceName = e.Device.Name,
+                    ExtraFields = getExtraFields(id)
                 })
                 .First(e => e.Id == id);
 
-            return new ResultWithMessage(Subset, "");
+            return new ResultWithMessage(model, "");
         }
 
         public ResultWithMessage getByFilter(object subsetfilter)
