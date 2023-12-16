@@ -1,8 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using Tenor.Dtos;
-using Tenor.Models;
-using Newtonsoft.Json.Linq;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
 namespace Tenor.Services.SubsetsService.ViewModels
@@ -103,6 +100,7 @@ namespace Tenor.Services.SubsetsService.ViewModels
         public string? DeviceId { get; set; }
 
     }
+
     public class SubsetExtraField
     {
         public int Id { get; set; }

@@ -69,6 +69,10 @@ namespace Tenor.Services.SubsetsService
               SummaryType = e.SummaryType
           });
 
+        private bool isSubsetExtraFieldIdExistsAndActive(int id) => _db.SubsetFields.Where(e => e.Id == id && e.IsActive).FirstOrDefault() is not null;
+
+
+
         public ResultWithMessage getById(int id)
         {
             SubsetViewModel Subset = _db.Subsets
@@ -145,6 +149,10 @@ namespace Tenor.Services.SubsetsService
             if (!_devicesService.isDeviceExists(model.DeviceId))
                 return new ResultWithMessage(null, $"Invalid device Id: {model.DeviceId}");
 
+            foreach (ExtraFieldValue extraField in model.ExtraFields)
+                if (!isSubsetExtraFieldIdExistsAndActive(extraField.FieldId))
+                    return new ResultWithMessage(null, $"Invalid or InActive ExtrafieldId: {extraField.FieldId} ,value: {extraField.Value}");
+
             using (TransactionScope transaction = new())
             {
                 try
@@ -184,8 +192,6 @@ namespace Tenor.Services.SubsetsService
                     {
                         foreach (ExtraFieldValue extraField in model.ExtraFields)
                         {
-                            //check if extraField.FieldId is active and correct
-
                             var extraFieldValue = Convert.ToString(extraField.Value);
                             extraFieldValue = Util.cleanExtraFieldValue(extraFieldValue);
 
