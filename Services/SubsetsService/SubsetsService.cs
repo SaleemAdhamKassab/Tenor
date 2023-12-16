@@ -20,6 +20,7 @@ namespace Tenor.Services.SubsetsService
         ResultWithMessage getById(int id);
         ResultWithMessage getByFilter(object subsetfilter);
         ResultWithMessage getExtraFields();
+        bool isSubsetExists(int subsetId);
         ResultWithMessage add(SubsetBindingModel model);
         ResultWithMessage edit(SubsetBindingModel subsetDto);
         ResultWithMessage delete(int id);
@@ -63,8 +64,6 @@ namespace Tenor.Services.SubsetsService
           });
 
         private bool isSubsetExtraFieldIdExistsAndActive(int id) => _db.SubsetFields.Where(e => e.Id == id && e.IsActive).FirstOrDefault() is not null;
-
-        private bool isSubsetExists(int subsetId) => _db.Subsets.Find(subsetId) is not null;
 
         private List<SubsetExtraFieldValueViewModel> getExtraFields(int subsetId)
         {
@@ -305,6 +304,9 @@ namespace Tenor.Services.SubsetsService
             var extraFields = _mapper.Map<List<SubsetExtraField>>(_db.SubsetFields.Where(x => x.IsActive).Include(x => x.ExtraField).ToList());
             return new ResultWithMessage(extraFields, null);
         }
+
+        public bool isSubsetExists(int id) => _db.Subsets.Any(e => e.Id == id);
+
 
         public ResultWithMessage add(SubsetBindingModel model)
         {
