@@ -1,20 +1,15 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.Negotiate;
-using Microsoft.AspNetCore.Server.IISIntegration;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
-using Tenor.ActionFilters;
 using Tenor.Data;
 using Tenor.Helper;
-using Tenor.Services;
 using Tenor.Services.AuthServives;
 using Tenor.Services.CountersService;
 using Tenor.Services.DevicesService;
 using Tenor.Services.KpisService;
 using Tenor.Services.SubsetsService;
-using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
 var builder = WebApplication.CreateBuilder(args);
 
