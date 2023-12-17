@@ -91,6 +91,9 @@ namespace Tenor.Services.DevicesService
 
 
 
+
+
+
         public ResultWithMessage getById(int id)
         {
             Device device = _db.Devices.Find(id);
