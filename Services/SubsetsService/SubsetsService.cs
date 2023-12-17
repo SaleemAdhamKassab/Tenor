@@ -2,6 +2,7 @@
 using Infrastructure.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
 using System.Transactions;
 using Tenor.Data;
@@ -10,6 +11,7 @@ using Tenor.Helper;
 using Tenor.Models;
 using Tenor.Services.DevicesService;
 using Tenor.Services.SubsetsService.ViewModels;
+using static Tenor.Helper.Constant;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
 namespace Tenor.Services.SubsetsService
@@ -59,7 +61,8 @@ namespace Tenor.Services.SubsetsService
               DeviceId = e.DeviceId,
               DeviceName = e.Device.Name,
               GranularityPeriod = e.GranularityPeriod,
-              SummaryType = e.SummaryType
+              SummaryType = e.SummaryType,
+              ExtraFields = getExtraFields(e.Id)
           });
 
         private bool isSubsetExtraFieldIdExistsAndActive(int id) => _db.SubsetFields.Where(e => e.Id == id && e.IsActive).FirstOrDefault() is not null;
@@ -67,19 +70,19 @@ namespace Tenor.Services.SubsetsService
         private List<SubsetExtraFieldValueViewModel> getExtraFields(int subsetId)
         {
             List<SubsetExtraFieldValueViewModel> extraFields =
-                _db.SubsetFieldValues
-                .Where(e => e.SubsetId == subsetId)
-                .Include(e => e.SubsetField)
-                .ThenInclude(e => e.ExtraField)
-                .Select(e => new SubsetExtraFieldValueViewModel()
-                {
-                    Id = e.Id,
-                    FieldId = e.SubsetField.Id,
-                    Type = e.SubsetField.ExtraField.Type.ToString(),
-                    FieldName = e.SubsetField.ExtraField.Name,
-                    Value = e.FieldValue.Contains(',') ? Util.convertStringToList(e.FieldValue) : e.FieldValue
-                })
-                .ToList();
+            _db.SubsetFieldValues
+            .Where(e => e.SubsetId == subsetId)
+            .Include(e => e.SubsetField)
+            .ThenInclude(e => e.ExtraField)
+            .Select(e => new SubsetExtraFieldValueViewModel()
+            {
+                Id = e.Id,
+                FieldId = e.SubsetField.Id,
+                Type = e.SubsetField.ExtraField.Type.ToString(),
+                FieldName = e.SubsetField.ExtraField.Name,
+                Value = e.FieldValue.Contains(',') ? Util.convertStringToList(e.FieldValue) : e.FieldValue
+            })
+            .ToList();
 
             return extraFields;
         }
@@ -224,7 +227,6 @@ namespace Tenor.Services.SubsetsService
 
 
 
-
         public ResultWithMessage getById(int id)
         {
             if (!isSubsetExists(id))
@@ -305,7 +307,6 @@ namespace Tenor.Services.SubsetsService
         }
 
         public bool isSubsetExists(int id) => _db.Subsets.Any(e => e.Id == id);
-
 
         public ResultWithMessage add(SubsetBindingModel model)
         {
