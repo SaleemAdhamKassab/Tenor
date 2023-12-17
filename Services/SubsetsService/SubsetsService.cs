@@ -40,7 +40,7 @@ namespace Tenor.Services.SubsetsService
             _devicesService = devicesService;
         }
 
-        private IQueryable<SubsetListViewModel> convertSubsetsToViewModel(IQueryable<Subset> model) =>
+        private IQueryable<SubsetListViewModel> convertSubsetsToListViewModel(IQueryable<Subset> model) =>
           model.Select(e => new SubsetListViewModel
           {
               Id = e.Id,
@@ -62,30 +62,30 @@ namespace Tenor.Services.SubsetsService
               DeviceName = e.Device.Name,
               GranularityPeriod = e.GranularityPeriod,
               SummaryType = e.SummaryType,
-              ExtraFields = getExtraFields(e.Id)
+              ExtraFields = _mapper.Map<List<SubsetExtraFieldValueViewModel>>(e.SubsetFieldValues)
           });
 
         private bool isSubsetExtraFieldIdExistsAndActive(int id) => _db.SubsetFields.Where(e => e.Id == id && e.IsActive).FirstOrDefault() is not null;
 
-        private List<SubsetExtraFieldValueViewModel> getExtraFields(int subsetId)
-        {
-            List<SubsetExtraFieldValueViewModel> extraFields =
-            _db.SubsetFieldValues
-            .Where(e => e.SubsetId == subsetId)
-            .Include(e => e.SubsetField)
-            .ThenInclude(e => e.ExtraField)
-            .Select(e => new SubsetExtraFieldValueViewModel()
-            {
-                Id = e.Id,
-                FieldId = e.SubsetField.Id,
-                Type = e.SubsetField.ExtraField.Type.ToString(),
-                FieldName = e.SubsetField.ExtraField.Name,
-                Value = e.FieldValue.Contains(',') ? Util.convertStringToList(e.FieldValue) : e.FieldValue
-            })
-            .ToList();
+        //private List<SubsetExtraFieldValueViewModel> getExtraFields(int subsetId)
+        //{
+        //    List<SubsetExtraFieldValueViewModel> extraFields =
+        //    _db.SubsetFieldValues
+        //    .Where(e => e.SubsetId == subsetId)
+        //    .Include(e => e.SubsetField)
+        //    .ThenInclude(e => e.ExtraField)
+        //    .Select(e => new SubsetExtraFieldValueViewModel()
+        //    {
+        //        Id = e.Id,
+        //        FieldId = e.SubsetField.Id,
+        //        Type = e.SubsetField.ExtraField.Type.ToString(),
+        //        FieldName = e.SubsetField.ExtraField.Name,
+        //        Value = e.FieldValue.Contains(',') ? Util.convertStringToList(e.FieldValue) : e.FieldValue
+        //    })
+        //    .ToList();
 
-            return extraFields;
-        }
+        //    return extraFields;
+        //}
 
         private IQueryable<Subset> getFilteredData(dynamic data, IQueryable<Subset> query, SubsetFilterModel subsetFilterModel, List<string> subsetFields)
         {
@@ -225,8 +225,6 @@ namespace Tenor.Services.SubsetsService
         private bool isCounterExists(int counterId) => _db.Counters.Find(counterId) is not null;
 
 
-
-
         public ResultWithMessage getById(int id)
         {
             if (!isSubsetExists(id))
@@ -260,7 +258,7 @@ namespace Tenor.Services.SubsetsService
                     IsDeleted = e.IsDeleted,
                     DeviceId = e.DeviceId,
                     DeviceName = e.Device.Name,
-                    ExtraFields = getExtraFields(id)
+                    ExtraFields = _mapper.Map<List<SubsetExtraFieldValueViewModel>>(e.SubsetFieldValues)
                 })
                 .First(e => e.Id == id);
 
@@ -272,7 +270,8 @@ namespace Tenor.Services.SubsetsService
             try
             {
                 //--------------------------Data Source---------------------------------------
-                IQueryable<Subset> query = _db.Subsets.Where(e => true);
+                IQueryable<Subset> query = _db.Subsets.Include(x => x.SubsetFieldValues).ThenInclude(x => x.SubsetField).
+                ThenInclude(x => x.ExtraField).AsQueryable();
                 List<string> subsetFields = _db.SubsetFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList();
                 //------------------------------Conver Dynamic filter--------------------------
                 dynamic data = JsonConvert.DeserializeObject<dynamic>(subsetfilter.ToString());
@@ -289,7 +288,7 @@ namespace Tenor.Services.SubsetsService
                 //--------------------------------Filter and conver data to VM----------------------------------------------
                 IQueryable<Subset> fiteredData = getFilteredData(data, query, subsetFilterModel, subsetFields);
                 //-------------------------------Data sorting and pagination------------------------------------------
-                var queryViewModel = convertSubsetsToViewModel(fiteredData);
+                var queryViewModel = convertSubsetsToListViewModel(fiteredData);
                 return sortAndPagination(subsetFilterModel, queryViewModel);
 
             }
@@ -380,7 +379,7 @@ namespace Tenor.Services.SubsetsService
                         IsDeleted = subset.IsDeleted,
                         DeviceId = subset.DeviceId,
                         DeviceName = subset.Device.Name,
-                        ExtraFields = getExtraFields(subset.Id)
+                        ExtraFields = _mapper.Map<List<SubsetExtraFieldValueViewModel>>(subset.SubsetFieldValues)
                     };
 
                     transaction.Complete();
@@ -470,7 +469,7 @@ namespace Tenor.Services.SubsetsService
                         IsDeleted = subset.IsDeleted,
                         DeviceId = subset.DeviceId,
                         DeviceName = subset.Device.Name,
-                        ExtraFields = getExtraFields(subset.Id)
+                        ExtraFields = _mapper.Map<List<SubsetExtraFieldValueViewModel>>(subset.SubsetFieldValues)
                     };
 
                     transaction.Complete();

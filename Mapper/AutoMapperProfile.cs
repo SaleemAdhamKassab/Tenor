@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.OpenApi.Extensions;
 using Tenor.Models;
+using Tenor.Services.CountersService.ViewModels;
 using Tenor.Services.DevicesService.ViewModels;
 using Tenor.Services.SubsetsService.ViewModels;
 using static Tenor.Services.AuthServives.ViewModels.AuthModels;
@@ -66,13 +67,34 @@ namespace Tenor.Mapper
                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.ExtraField.Name))
                .ForMember(dest => dest.Content, opt => opt.MapFrom(src => ConvertContentType(src.ExtraField.Type.GetDisplayName(), src.ExtraField.Content)))
                .ForMember(dest => dest.Url, opt => opt.MapFrom(src => src.ExtraField.Url)).ReverseMap();
+
+            CreateMap<CounterFieldValue, CounterExtraFieldValueViewModel>()
+                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+                 .ForMember(dest => dest.FieldId, opt => opt.MapFrom(src => src.CounterFieldId))
+                 .ForMember(dest => dest.FieldName, opt => opt.MapFrom(src => src.CounterField.ExtraField.Name))
+                 .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.CounterField.ExtraField.Type))
+                 .ForMember(dest => dest.Value, opt => opt.MapFrom(src => ConvertContentType(src.CounterField.ExtraField.Type.GetDisplayName(), src.FieldValue)))
+                 .ReverseMap();
+
             //-----------------------------Subset--------------------------------------
             CreateMap<SubsetField, SubsetExtraField>()
-               .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
-               .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.ExtraField.Type.GetDisplayName()))
-               .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.ExtraField.Name))
-               .ForMember(dest => dest.Content, opt => opt.MapFrom(src => ConvertContentType(src.ExtraField.Type.GetDisplayName(), src.ExtraField.Content)))
-               .ForMember(dest => dest.Url, opt => opt.MapFrom(src => src.ExtraField.Url)).ReverseMap();
+                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+                 .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.ExtraField.Type.GetDisplayName()))
+                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.ExtraField.Name))
+                 .ForMember(dest => dest.Content, opt => opt.MapFrom(src => ConvertContentType(src.ExtraField.Type.GetDisplayName(), src.ExtraField.Content)))
+                 .ForMember(dest => dest.Url, opt => opt.MapFrom(src => src.ExtraField.Url)).ReverseMap();
+
+            CreateMap<SubsetFieldValue, SubsetExtraFieldValueViewModel>()
+                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+                 .ForMember(dest => dest.FieldId, opt => opt.MapFrom(src => src.SubsetFieldId))
+                 .ForMember(dest => dest.FieldName, opt => opt.MapFrom(src => src.SubsetField.ExtraField.Name))
+                 .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.SubsetField.ExtraField.Type))
+                 .ForMember(dest => dest.Value, opt => opt.MapFrom(src => ConvertContentType(src.SubsetField.ExtraField.Type.GetDisplayName(), src.FieldValue)))
+                 .ReverseMap();
+
+
+           
+
         }
 
 

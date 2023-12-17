@@ -10,6 +10,7 @@ using Tenor.Helper;
 using Tenor.Models;
 using Tenor.Services.CountersService.ViewModels;
 using Tenor.Services.SubsetsService;
+using Tenor.Services.SubsetsService.ViewModels;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
 namespace Tenor.Services.CountersService
@@ -142,7 +143,7 @@ namespace Tenor.Services.CountersService
 
         }
 
-        private IQueryable<CounterListViewModel> convertCountersToViewModel(IQueryable<Counter> model) =>
+        private IQueryable<CounterListViewModel> convertCountersToListViewModel(IQueryable<Counter> model) =>
                   model.Select(e => new CounterListViewModel
                   {
                       Id = e.Id,
@@ -155,31 +156,32 @@ namespace Tenor.Services.CountersService
                       IsDeleted = e.IsDeleted,
                       SupplierId = e.SupplierId,
                       SubsetId = e.SubsetId,
-                      SubsetName = e.Subset.Name
+                      SubsetName = e.Subset.Name,
+                      ExtraFields = _mapper.Map<List<CounterExtraFieldValueViewModel>>(e.CounterFieldValues)
                   });
 
 
         private bool isCounterExists(int counterId) => _db.Counters.Find(counterId) is not null;
 
-        private List<CounterExtraFieldValueViewModel> getExtraFields(int counterId)
-        {
-            List<CounterExtraFieldValueViewModel> extraFields =
-                _db.CounterFieldValues
-                .Where(e => e.CounterId == counterId)
-                .Include(e => e.CounterField)
-                .ThenInclude(e => e.ExtraField)
-                .Select(e => new CounterExtraFieldValueViewModel()
-                {
-                    Id = e.Id,
-                    FieldId = e.CounterField.Id,
-                    Type = e.CounterField.ExtraField.Type.ToString(),
-                    FieldName = e.CounterField.ExtraField.Name,
-                    Value = e.FieldValue.Contains(',') ? Util.convertStringToList(e.FieldValue) : e.FieldValue
-                })
-                .ToList();
+        //private List<CounterExtraFieldValueViewModel> getExtraFields(int counterId)
+        //{
+        //    List<CounterExtraFieldValueViewModel> extraFields =
+        //        _db.CounterFieldValues
+        //        .Where(e => e.CounterId == counterId)
+        //        .Include(e => e.CounterField)
+        //        .ThenInclude(e => e.ExtraField)
+        //        .Select(e => new CounterExtraFieldValueViewModel()
+        //        {
+        //            Id = e.Id,
+        //            FieldId = e.CounterField.Id,
+        //            Type = e.CounterField.ExtraField.Type.ToString(),
+        //            FieldName = e.CounterField.ExtraField.Name,
+        //            Value = e.FieldValue.Contains(',') ? Util.convertStringToList(e.FieldValue) : e.FieldValue
+        //        })
+        //        .ToList();
 
-            return extraFields;
-        }
+        //    return extraFields;
+        //}
 
         private bool isCounterExtraFieldIdExistsAndActive(int id) => _db.CounterFields.Where(e => e.Id == id && e.IsActive).FirstOrDefault() is not null;
 
@@ -220,11 +222,6 @@ namespace Tenor.Services.CountersService
         }
 
 
-
-
-
-
-
         public ResultWithMessage getById(int id)
         {
             if (!isCounterExists(id))
@@ -244,7 +241,7 @@ namespace Tenor.Services.CountersService
                     SupplierId = e.SupplierId,
                     SubsetId = e.SubsetId,
                     SubsetName = e.Subset.Name,
-                    ExtraFields = getExtraFields(id)
+                    ExtraFields = _mapper.Map<List<CounterExtraFieldValueViewModel>>(e.CounterFieldValues)
                 })
                 .First(e => e.Id == id);
 
@@ -275,7 +272,7 @@ namespace Tenor.Services.CountersService
                 //--------------------------------Filter and conver data to VM----------------------------------------------
                 IQueryable<Counter> fiteredData = getFilteredData(data, query, counterFilterModel, counterFields);
                 //-------------------------------Data sorting and pagination------------------------------------------
-                var queryViewModel = convertCountersToViewModel(fiteredData);
+                var queryViewModel = convertCountersToListViewModel(fiteredData);
                 return sortAndPagination(counterFilterModel, queryViewModel);
 
             }
@@ -288,7 +285,7 @@ namespace Tenor.Services.CountersService
 
         public ResultWithMessage getExtraFields()
         {
-            var extraFields = _mapper.Map<List<KpiExtraField>>(_db.CounterFields.Where(x => x.IsActive).Include(x => x.ExtraField).ToList());
+            var extraFields = _mapper.Map<List<CounterExtraField>>(_db.CounterFields.Where(x => x.IsActive).Include(x => x.ExtraField).ToList());
             return new ResultWithMessage(extraFields, null);
         }
 
@@ -341,7 +338,7 @@ namespace Tenor.Services.CountersService
                         SubsetName = counter.Subset.Name,
                         DeviceId = counter.Subset.Device.Id,
                         DeviceName = counter.Subset.Device.Name,
-                        ExtraFields = getExtraFields(counter.Id)
+                        ExtraFields = _mapper.Map<List<CounterExtraFieldValueViewModel>>(counter.CounterFieldValues)
                     };
 
                     transaction.Complete();
@@ -410,7 +407,7 @@ namespace Tenor.Services.CountersService
                         SubsetName = counter.Subset.Name,
                         DeviceId = counter.Subset.Device.Id,
                         DeviceName = counter.Subset.Device.Name,
-                        ExtraFields = getExtraFields(counter.Id)
+                        ExtraFields = _mapper.Map<List<CounterExtraFieldValueViewModel>>(counter.CounterFieldValues)
                     };
 
                     transaction.Complete();
