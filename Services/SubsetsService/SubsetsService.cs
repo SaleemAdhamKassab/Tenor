@@ -231,7 +231,8 @@ namespace Tenor.Services.SubsetsService
                 return new ResultWithMessage(null, $"Invalid Subset Id: {id}");
 
 
-            SubsetViewModel model = _db.Subsets
+            SubsetViewModel model = _db.Subsets.Include(x => x.SubsetFieldValues).ThenInclude(x => x.SubsetField).
+                    ThenInclude(x => x.ExtraField).Include(e => e.Device)
                 .Select(e => new SubsetViewModel()
                 {
                     Id = e.Id,
@@ -351,7 +352,8 @@ namespace Tenor.Services.SubsetsService
                     if (model.ExtraFields.Count != 0)
                         addSubsetExtraFieldValues(model.ExtraFields, subset.Id);
 
-                    subset = _db.Subsets.Include(e => e.Device).Single(e => e.Id == subset.Id);
+                    subset = _db.Subsets.Include(x => x.SubsetFieldValues).ThenInclude(x => x.SubsetField).
+                    ThenInclude(x => x.ExtraField).Include(e => e.Device).Single(e => e.Id == subset.Id);
 
                     SubsetViewModel subsetViewModel = new()
                     {
@@ -441,7 +443,8 @@ namespace Tenor.Services.SubsetsService
 
                     _db.SaveChanges();
 
-                    subset = _db.Subsets.Include(e => e.Device).Single(e => e.Id == subset.Id);
+                    subset = _db.Subsets.Include(x => x.SubsetFieldValues).ThenInclude(x => x.SubsetField).
+                    ThenInclude(x => x.ExtraField).Include(e => e.Device).Single(e => e.Id == subset.Id);
 
                     SubsetViewModel subsetViewModel = new()
                     {
