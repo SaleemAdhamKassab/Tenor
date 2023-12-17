@@ -34,5 +34,17 @@ namespace Tenor.Controllers
 
         [HttpDelete("delete")]
         public IActionResult delete(int id) => _returnResult(_deviceService.delete(id));
+
+
+        [HttpPost("exportDevicesByFilter")]
+        public IActionResult exportDevicesByFilter(DeviceFilterModel filter)
+        {
+            var fileResult = _deviceService.exportDevicesByFilter(filter);
+
+            if (fileResult.Bytes == null || fileResult.Bytes.Count() == 0)
+                return BadRequest(new { message = "No Data To Export." });
+
+            return File(fileResult.Bytes, fileResult.ContentType, fileResult.FileName);
+        }
     }
 }
