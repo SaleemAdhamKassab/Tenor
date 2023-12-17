@@ -2,7 +2,6 @@
 using Infrastructure.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
-using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
 using System.Transactions;
 using Tenor.Data;
@@ -11,7 +10,6 @@ using Tenor.Helper;
 using Tenor.Models;
 using Tenor.Services.DevicesService;
 using Tenor.Services.SubsetsService.ViewModels;
-using static Tenor.Helper.Constant;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
 namespace Tenor.Services.SubsetsService
@@ -67,25 +65,25 @@ namespace Tenor.Services.SubsetsService
 
         private bool isSubsetExtraFieldIdExistsAndActive(int id) => _db.SubsetFields.Where(e => e.Id == id && e.IsActive).FirstOrDefault() is not null;
 
-        //private List<SubsetExtraFieldValueViewModel> getExtraFields(int subsetId)
-        //{
-        //    List<SubsetExtraFieldValueViewModel> extraFields =
-        //    _db.SubsetFieldValues
-        //    .Where(e => e.SubsetId == subsetId)
-        //    .Include(e => e.SubsetField)
-        //    .ThenInclude(e => e.ExtraField)
-        //    .Select(e => new SubsetExtraFieldValueViewModel()
-        //    {
-        //        Id = e.Id,
-        //        FieldId = e.SubsetField.Id,
-        //        Type = e.SubsetField.ExtraField.Type.ToString(),
-        //        FieldName = e.SubsetField.ExtraField.Name,
-        //        Value = e.FieldValue.Contains(',') ? Util.convertStringToList(e.FieldValue) : e.FieldValue
-        //    })
-        //    .ToList();
+        private List<SubsetExtraFieldValueViewModel> getExtraFields(int subsetId)
+        {
+            List<SubsetExtraFieldValueViewModel> extraFields =
+            _db.SubsetFieldValues
+            .Where(e => e.SubsetId == subsetId)
+            .Include(e => e.SubsetField)
+            .ThenInclude(e => e.ExtraField)
+            .Select(e => new SubsetExtraFieldValueViewModel()
+            {
+                Id = e.Id,
+                FieldId = e.SubsetField.Id,
+                Type = e.SubsetField.ExtraField.Type.ToString(),
+                FieldName = e.SubsetField.ExtraField.Name,
+                Value = e.FieldValue.Contains(',') ? Util.convertStringToList(e.FieldValue) : e.FieldValue
+            })
+            .ToList();
 
-        //    return extraFields;
-        //}
+            return extraFields;
+        }
 
         private IQueryable<Subset> getFilteredData(dynamic data, IQueryable<Subset> query, SubsetFilterModel subsetFilterModel, List<string> subsetFields)
         {
