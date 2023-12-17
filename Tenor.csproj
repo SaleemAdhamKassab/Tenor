@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Services\GlobalService\**" />
+    <Content Remove="Services\GlobalService\**" />
+    <EmbeddedResource Remove="Services\GlobalService\**" />
+    <None Remove="Services\GlobalService\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
     <PackageReference Include="EPPlus" Version="7.0.4" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.14" />
@@ -26,10 +33,6 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="6.5.0" />
     <PackageReference Include="System.DirectoryServices.AccountManagement" Version="7.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Services\GlobalService\" />
   </ItemGroup>
 
 </Project>

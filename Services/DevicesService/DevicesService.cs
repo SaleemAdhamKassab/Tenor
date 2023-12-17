@@ -264,7 +264,7 @@ namespace Tenor.Services.DevicesService
         //Export Data With Excel
         public FileBytesModel exportDevicesByFilter(DeviceFilterModel filter)
         {
-            var list = getByFilter(filter);
+            var list = getDevicesData(filter);
             var result = convertDevicesToListViewModel(list);
 
             if (result == null || result.Count() == 0)
