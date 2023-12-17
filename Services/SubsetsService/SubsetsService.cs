@@ -405,81 +405,83 @@ namespace Tenor.Services.SubsetsService
             if (subset is null)
                 return new ResultWithMessage(null, $"Not found Subset with id: {model.Id}");
 
-            subset.Id = model.Id;
-            subset.SupplierId = model.SupplierId;
-            subset.Name = model.Name;
-            subset.Description = model.Description;
-            subset.TableName = model.TableName;
-            subset.RefTableName = model.RefTableName;
-            subset.SchemaName = model.SchemaName;
-            subset.MaxDataDate = model.MaxDataDate;
-            subset.IsLoad = model.IsLoad;
-            subset.DataTS = model.DataTS;
-            subset.IndexTS = model.IndexTS;
-            subset.DbLink = model.DbLink;
-            subset.RefDbLink = model.RefDbLink;
-            subset.GranularityPeriod = model.GranularityPeriod;
-            subset.DimensionTable = model.DimensionTable;
-            subset.JoinExpression = model.JoinExpression;
-            subset.StartChar = model.StartChar;
-            subset.FactDimensionReference = model.FactDimensionReference;
-            subset.LoadPriorety = model.LoadPriorety;
-            subset.SummaryType = model.SummaryType;
-            subset.IsDeleted = model.IsDeleted;
-
-
-            try
+            using (TransactionScope transaction = new())
             {
-                List<SubsetFieldValue> subsetFieldValuesToDelete = _db.SubsetFieldValues.Where(e => e.SubsetId == model.Id).ToList();
-                _db.RemoveRange(subsetFieldValuesToDelete);
-
-                _db.Update(subset);
-
-                if (model.ExtraFields.Count != 0)
-                    addSubsetExtraFieldValues(model.ExtraFields, subset.Id);
-
-                _db.SaveChanges();
-
-                subset = _db.Subsets.Include(e => e.Device).Single(e => e.Id == subset.Id);
-
-                SubsetViewModel subsetViewModel = new()
+                try
                 {
-                    Id = subset.Id,
-                    SupplierId = subset.SupplierId,
-                    Name = subset.Name,
-                    Description = subset.Description,
-                    TableName = subset.TableName,
-                    RefTableName = subset.RefTableName,
-                    SchemaName = subset.SchemaName,
-                    RefSchema = subset.RefSchema,
-                    MaxDataDate = subset.MaxDataDate,
-                    IsLoad = subset.IsLoad,
-                    DataTS = subset.DataTS,
-                    IndexTS = subset.IndexTS,
-                    DbLink = subset.DbLink,
-                    RefDbLink = subset.RefDbLink,
-                    GranularityPeriod = subset.GranularityPeriod,
-                    DimensionTable = subset.DimensionTable,
-                    JoinExpression = subset.JoinExpression,
-                    StartChar = subset.StartChar,
-                    FactDimensionReference = subset.FactDimensionReference,
-                    LoadPriorety = subset.LoadPriorety,
-                    SummaryType = subset.SummaryType,
-                    IsDeleted = subset.IsDeleted,
-                    DeviceId = subset.DeviceId,
-                    DeviceName = subset.Device.Name,
-                    ExtraFields = getExtraFields(subset.Id)
-                };
+                    subset.Id = model.Id;
+                    subset.SupplierId = model.SupplierId;
+                    subset.Name = model.Name;
+                    subset.Description = model.Description;
+                    subset.TableName = model.TableName;
+                    subset.RefTableName = model.RefTableName;
+                    subset.SchemaName = model.SchemaName;
+                    subset.MaxDataDate = model.MaxDataDate;
+                    subset.IsLoad = model.IsLoad;
+                    subset.DataTS = model.DataTS;
+                    subset.IndexTS = model.IndexTS;
+                    subset.DbLink = model.DbLink;
+                    subset.RefDbLink = model.RefDbLink;
+                    subset.GranularityPeriod = model.GranularityPeriod;
+                    subset.DimensionTable = model.DimensionTable;
+                    subset.JoinExpression = model.JoinExpression;
+                    subset.StartChar = model.StartChar;
+                    subset.FactDimensionReference = model.FactDimensionReference;
+                    subset.LoadPriorety = model.LoadPriorety;
+                    subset.SummaryType = model.SummaryType;
+                    subset.IsDeleted = model.IsDeleted;
 
-                return new ResultWithMessage(subsetViewModel, "");
-            }
+                    List<SubsetFieldValue> subsetFieldValuesToDelete = _db.SubsetFieldValues.Where(e => e.SubsetId == model.Id).ToList();
+                    _db.RemoveRange(subsetFieldValuesToDelete);
 
-            catch (Exception e)
-            {
-                return new ResultWithMessage(model, e.Message);
+                    _db.Update(subset);
+
+                    if (model.ExtraFields.Count != 0)
+                        addSubsetExtraFieldValues(model.ExtraFields, subset.Id);
+
+                    _db.SaveChanges();
+
+                    subset = _db.Subsets.Include(e => e.Device).Single(e => e.Id == subset.Id);
+
+                    SubsetViewModel subsetViewModel = new()
+                    {
+                        Id = subset.Id,
+                        SupplierId = subset.SupplierId,
+                        Name = subset.Name,
+                        Description = subset.Description,
+                        TableName = subset.TableName,
+                        RefTableName = subset.RefTableName,
+                        SchemaName = subset.SchemaName,
+                        RefSchema = subset.RefSchema,
+                        MaxDataDate = subset.MaxDataDate,
+                        IsLoad = subset.IsLoad,
+                        DataTS = subset.DataTS,
+                        IndexTS = subset.IndexTS,
+                        DbLink = subset.DbLink,
+                        RefDbLink = subset.RefDbLink,
+                        GranularityPeriod = subset.GranularityPeriod,
+                        DimensionTable = subset.DimensionTable,
+                        JoinExpression = subset.JoinExpression,
+                        StartChar = subset.StartChar,
+                        FactDimensionReference = subset.FactDimensionReference,
+                        LoadPriorety = subset.LoadPriorety,
+                        SummaryType = subset.SummaryType,
+                        IsDeleted = subset.IsDeleted,
+                        DeviceId = subset.DeviceId,
+                        DeviceName = subset.Device.Name,
+                        ExtraFields = getExtraFields(subset.Id)
+                    };
+
+                    transaction.Complete();
+                    return new ResultWithMessage(subsetViewModel, "");
+                }
+
+                catch (Exception e)
+                {
+                    return new ResultWithMessage(model, e.Message);
+                }
             }
         }
-
         public ResultWithMessage delete(int id)
         {
             Subset subset = _db.Subsets.Find(id);

@@ -357,51 +357,71 @@ namespace Tenor.Services.CountersService
 
         public ResultWithMessage edit(CounterBindingModel model)
         {
-            if (model is null)
-                return new ResultWithMessage(null, "Empty Model!!");
+            string validaitingModelErrorMessage = getValidaitingModelErrorMessage(model);
+
+            if (!string.IsNullOrEmpty(validaitingModelErrorMessage))
+                return new ResultWithMessage(null, validaitingModelErrorMessage);
 
             Counter counter = _db.Counters.Find(model.Id);
 
             if (counter is null)
                 return new ResultWithMessage(null, $"Not found Counter with id: {model.Id}");
 
-            counter.Id = model.Id;
-            counter.Name = model.Name;
-            counter.Code = model.Code;
-            counter.ColumnName = model.ColumnName;
-            counter.RefColumnName = model.RefColumnName;
-            counter.Description = model.Description;
-            counter.Aggregation = model.Aggregation;
-            counter.IsDeleted = model.IsDeleted;
-            counter.SupplierId = model.SupplierId;
-            counter.SubsetId = model.SubsetId;
-
-            try
+            using (TransactionScope transaction = new())
             {
-                _db.Update(counter);
-                _db.SaveChanges();
-
-                CounterViewModel counterViewModel = new()
+                try
                 {
-                    Id = counter.Id,
-                    Name = counter.Name,
-                    Code = counter.Code,
-                    ColumnName = counter.ColumnName,
-                    RefColumnName = counter.RefColumnName,
-                    Description = counter.Description,
-                    Aggregation = counter.Aggregation,
-                    IsDeleted = counter.IsDeleted,
-                    SupplierId = counter.SupplierId,
-                    SubsetId = counter.SubsetId,
-                    SubsetName = counter.Subset.Name
-                };
+                    counter.Id = model.Id;
+                    counter.Name = model.Name;
+                    counter.Code = model.Code;
+                    counter.ColumnName = model.ColumnName;
+                    counter.RefColumnName = model.RefColumnName;
+                    counter.Description = model.Description;
+                    counter.Aggregation = model.Aggregation;
+                    counter.IsDeleted = model.IsDeleted;
+                    counter.SupplierId = model.SupplierId;
+                    counter.SubsetId = model.SubsetId;
 
-                return new ResultWithMessage(counterViewModel, "");
-            }
+                    List<CounterFieldValue> counterFieldValuesToDelete = _db.CounterFieldValues.Where(e => e.CounterId == model.Id).ToList();
+                    _db.RemoveRange(counterFieldValuesToDelete);
 
-            catch (Exception e)
-            {
-                return new ResultWithMessage(model, e.Message);
+                    _db.Update(counter);
+                    _db.SaveChanges();
+
+                    if (model.ExtraFields.Count != 0)
+                        addCounterExtraFieldValues(model.ExtraFields, counter.Id);
+
+                    _db.SaveChanges();
+
+                    counter = _db.Counters.Include(e => e.Subset).ThenInclude(e => e.Device).Single(e => e.Id == counter.Id);
+
+                    CounterViewModel counterViewModel = new()
+                    {
+                        Id = counter.Id,
+                        Name = counter.Name,
+                        Code = counter.Code,
+                        ColumnName = counter.ColumnName,
+                        RefColumnName = counter.RefColumnName,
+                        Description = counter.Description,
+                        Aggregation = counter.Aggregation,
+                        IsDeleted = counter.IsDeleted,
+                        SupplierId = counter.SupplierId,
+                        SubsetId = counter.SubsetId,
+                        SubsetName = counter.Subset.Name,
+                        DeviceId = counter.Subset.Device.Id,
+                        DeviceName = counter.Subset.Device.Name,
+                        ExtraFields = getExtraFields(counter.Id)
+                    };
+
+                    transaction.Complete();
+
+                    return new ResultWithMessage(counterViewModel, "");
+                }
+
+                catch (Exception e)
+                {
+                    return new ResultWithMessage(model, e.Message);
+                }
             }
         }
 
