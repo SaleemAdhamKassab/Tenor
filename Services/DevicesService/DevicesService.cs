@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
 using Tenor.Data;
 using Tenor.Dtos;
 using Tenor.Helper;
@@ -17,6 +18,7 @@ namespace Tenor.Services.DevicesService
         ResultWithMessage add(DeviceBindingModel model);
         ResultWithMessage edit(DeviceBindingModel subsetDto);
         ResultWithMessage delete(int id);
+        FileBytesModel exportDevicesByFilter(DeviceFilterModel filter);
     }
 
     public class DevicesService : IDevicesService
@@ -61,7 +63,7 @@ namespace Tenor.Services.DevicesService
             return qeury;
         }
 
-        private IQueryable<DeviceListViewModel> convertDevicesToViewModel(IQueryable<Device> model) =>
+        private IQueryable<DeviceListViewModel> convertDevicesToListViewModel(IQueryable<Device> model) =>
           model.Select(e => new DeviceListViewModel
           {
               Id = e.Id,
@@ -121,7 +123,7 @@ namespace Tenor.Services.DevicesService
             var query = getDevicesData(filter);
 
             //2- Generate List View Model
-            var queryViewModel = convertDevicesToViewModel(query);
+            var queryViewModel = convertDevicesToListViewModel(query);
 
             //3- Sorting using our extension
             filter.SortActive = filter.SortActive == string.Empty ? "Id" : filter.SortActive;
@@ -256,6 +258,46 @@ namespace Tenor.Services.DevicesService
             {
                 return new ResultWithMessage(null, e.Message);
             }
+        }
+
+
+        //Export Data With Excel
+        public FileBytesModel exportDevicesByFilter(DeviceFilterModel filter)
+        {
+            var list = getDevicesData(filter);
+            var result = convertDevicesToListViewModel(list);
+
+            if (result == null || result.Count() == 0)
+                return new FileBytesModel();
+
+            FileBytesModel excelfile = new();
+
+            ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+            var stream = new MemoryStream();
+            var package = new ExcelPackage(stream);
+            var workSheet = package.Workbook.Worksheets.Add("Sheet1");
+            workSheet.Cells.LoadFromCollection(result, true);
+
+            List<int> dateColumns = new();
+            int datecolumn = 1;
+            foreach (var PropertyInfo in result.FirstOrDefault().GetType().GetProperties())
+            {
+                if (PropertyInfo.PropertyType == typeof(DateTime) || PropertyInfo.PropertyType == typeof(DateTime?))
+                {
+                    dateColumns.Add(datecolumn);
+                }
+                datecolumn++;
+            }
+            dateColumns.ForEach(item => workSheet.Column(item).Style.Numberformat.Format = "dd/mm/yyyy hh:mm:ss AM/PM");
+            package.Save();
+            excelfile.Bytes = stream.ToArray();
+            stream.Position = 0;
+            stream.Close();
+            string excelName = $"Posts-{DateTime.Now.ToString("yyyyMMddHHmmssfff")}.xlsx";
+            string contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            excelfile.FileName = excelName;
+            excelfile.ContentType = contentType;
+            return excelfile;
         }
     }
 }

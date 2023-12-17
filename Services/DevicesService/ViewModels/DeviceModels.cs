@@ -34,5 +34,12 @@ namespace Tenor.Services.DevicesService.ViewModels
         public int? ParentId { get; set; }
     }
 
-    public class DeviceFilterModel : GeneralFilterModel{}
+    public class DeviceFilterModel : GeneralFilterModel { }
+
+    public class FileBytesModel
+    {
+        public byte[]? Bytes { get; set; } = null;
+        public string? FileName { get; set; }
+        public string? ContentType { get; set; }
+    }
 }
