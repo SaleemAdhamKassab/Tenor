@@ -75,17 +75,15 @@ namespace Tenor.Services.DevicesService
               ParentName = e.Parent.Name
           });
 
-        private string getValidatingModelErrorMessage(DeviceBindingModel model)
+        private string getValidatingModelErrorMessage(DeviceBindingModel model, bool isUpdateMode = false)
         {
             if (model is null)
                 return "Empty Model!";
 
-            bool isParentIdExists = model.ParentId is null || _db.Devices.Any(e => e.Id == model.ParentId);
-            if (!isParentIdExists)
+            if (model.ParentId != 0 && !_db.Devices.Any(e => e.Id == model.ParentId))
                 return $"Invalid Parent Id: {model.ParentId}!";
 
-            bool isNameExists = _db.Devices.Any(e => e.Name.Trim().ToLower() == model.Name.Trim().ToLower());
-            if (isNameExists)
+            if (!isUpdateMode && _db.Devices.Any(e => e.Name.Trim().ToLower() == model.Name.Trim().ToLower()))
                 return $"The Device Name [{model.Name}] is already used!";
 
             return string.Empty;
@@ -197,7 +195,7 @@ namespace Tenor.Services.DevicesService
             if (model is null)
                 return new ResultWithMessage(null, "Empty Model!!");
 
-            string validatingModelErrorMessage = getValidatingModelErrorMessage(model);
+            string validatingModelErrorMessage = getValidatingModelErrorMessage(model, true);
 
             if (!string.IsNullOrEmpty(validatingModelErrorMessage))
                 return new ResultWithMessage(null, validatingModelErrorMessage);
@@ -218,6 +216,9 @@ namespace Tenor.Services.DevicesService
             {
                 _db.Update(device);
                 _db.SaveChanges();
+
+                device = _db.Devices.Include(e => e.Parent).Single(e => e.Id == device.Id);
+
 
                 DeviceViewModel deviceViewModel = new()
                 {
