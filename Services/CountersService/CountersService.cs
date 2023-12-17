@@ -182,7 +182,6 @@ namespace Tenor.Services.CountersService
 
         private bool isCounterExtraFieldIdExistsAndActive(int id) => _db.CounterFields.Where(e => e.Id == id && e.IsActive).FirstOrDefault() is not null;
 
-
         private string getValidaitingModelErrorMessage(CounterBindingModel model)
         {
             if (model is null)
@@ -198,6 +197,26 @@ namespace Tenor.Services.CountersService
             return string.Empty;
         }
 
+        private bool addCounterExtraFieldValues(List<ExtraFieldValue> extraFieldValues, int countertId)
+        {
+            foreach (ExtraFieldValue extraField in extraFieldValues)
+            {
+                var extraFieldValue = Convert.ToString(extraField.Value);
+                extraFieldValue = Util.cleanExtraFieldValue(extraFieldValue);
+
+                CounterFieldValue counterFieldValue = new()
+                {
+                    CounterId = countertId,
+                    CounterFieldId = extraField.FieldId,
+                    FieldValue = extraFieldValue
+                };
+
+                _db.Add(counterFieldValue);
+            }
+
+            _db.SaveChanges();
+            return true;
+        }
 
 
 
@@ -298,6 +317,12 @@ namespace Tenor.Services.CountersService
                 _db.Add(counter);
                 _db.SaveChanges();
 
+                if (model.ExtraFields.Count != 0)
+                    addCounterExtraFieldValues(model.ExtraFields, counter.Id);
+
+                counter = _db.Counters.Include(e => e.Subset).ThenInclude(e => e.Device).Single(e => e.Id == counter.Id);
+
+
                 CounterViewModel counterViewModel = new()
                 {
                     Id = counter.Id,
@@ -310,7 +335,10 @@ namespace Tenor.Services.CountersService
                     IsDeleted = counter.IsDeleted,
                     SupplierId = counter.SupplierId,
                     SubsetId = counter.SubsetId,
-                    SubsetName = counter.Subset.Name
+                    SubsetName = counter.Subset.Name,
+                    DeviceId = counter.Subset.Device.Id,
+                    DeviceName = counter.Subset.Device.Name,
+                    ExtraFields = getExtraFields(counter.Id)
                 };
 
                 return new ResultWithMessage(counterViewModel, "");

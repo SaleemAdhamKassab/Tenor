@@ -20,6 +20,8 @@ namespace Tenor.Services.CountersService.ViewModels
         public bool IsDeleted { get; set; }
         public int SubsetId { get; set; }
         public string SubsetName { get; set; }
+        public int DeviceId { get; set; }
+        public string DeviceName { get; set; }
         public List<CounterExtraFieldValueViewModel> ExtraFields { get; set; }
 
     }

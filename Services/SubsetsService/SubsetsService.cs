@@ -8,7 +8,6 @@ using Tenor.Data;
 using Tenor.Dtos;
 using Tenor.Helper;
 using Tenor.Models;
-using Tenor.Services.CountersService.ViewModels;
 using Tenor.Services.DevicesService;
 using Tenor.Services.SubsetsService.ViewModels;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
