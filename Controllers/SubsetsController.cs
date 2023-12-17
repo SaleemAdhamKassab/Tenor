@@ -29,10 +29,21 @@ namespace Tenor.Controllers
 
 
         [HttpPut("edit")]
-        public IActionResult edit(SubsetBindingModel model) => _returnResult(_subsetservice.edit(model));
+        public IActionResult edit(int id,SubsetBindingModel model) =>_returnResult(_subsetservice.edit(id,model));
 
 
         [HttpDelete("delete")]
         public IActionResult delete(int id) => _returnResult(_subsetservice.delete(id));
+
+        [HttpPost("exportDevicesByFilter")]
+        public IActionResult exportDevicesByFilter(object filter)
+        {
+            var fileResult = _subsetservice.exportDevicesByFilter(filter);
+
+            if (fileResult.Bytes == null || fileResult.Bytes.Count() == 0)
+                return BadRequest(new { message = "No Data To Export." });
+
+            return File(fileResult.Bytes, fileResult.ContentType, fileResult.FileName);
+        }
     }
 }

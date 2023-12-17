@@ -16,7 +16,7 @@ namespace Tenor.Services.DevicesService
         ResultWithMessage getSubsets();
         bool isDeviceExists(int id);
         ResultWithMessage add(DeviceBindingModel model);
-        ResultWithMessage edit(DeviceBindingModel subsetDto);
+        ResultWithMessage edit(int id,DeviceBindingModel subsetDto);
         ResultWithMessage delete(int id);
         FileBytesModel exportDevicesByFilter(DeviceFilterModel filter);
     }
@@ -193,8 +193,9 @@ namespace Tenor.Services.DevicesService
             }
         }
 
-        public ResultWithMessage edit(DeviceBindingModel model)
+        public ResultWithMessage edit(int id,DeviceBindingModel model)
         {
+            model.Id = id;
             if (model is null)
                 return new ResultWithMessage(null, "Empty Model!!");
 

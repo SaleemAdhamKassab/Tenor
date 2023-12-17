@@ -2,13 +2,16 @@
 using Infrastructure.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using OfficeOpenXml;
 using System.Text.RegularExpressions;
 using System.Transactions;
 using Tenor.Data;
 using Tenor.Dtos;
 using Tenor.Helper;
 using Tenor.Models;
+using Tenor.Services.CountersService.ViewModels;
 using Tenor.Services.DevicesService;
+using Tenor.Services.DevicesService.ViewModels;
 using Tenor.Services.SubsetsService.ViewModels;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
@@ -21,8 +24,10 @@ namespace Tenor.Services.SubsetsService
         ResultWithMessage getExtraFields();
         bool isSubsetExists(int subsetId);
         ResultWithMessage add(SubsetBindingModel model);
-        ResultWithMessage edit(SubsetBindingModel subsetDto);
+        ResultWithMessage edit(int id ,SubsetBindingModel subsetDto);
         ResultWithMessage delete(int id);
+        FileBytesModel exportDevicesByFilter(object FilterM);
+
     }
 
     public class SubsetsService : ISubsetsService
@@ -393,8 +398,9 @@ namespace Tenor.Services.SubsetsService
             }
         }
 
-        public ResultWithMessage edit(SubsetBindingModel model)
+        public ResultWithMessage edit(int id,SubsetBindingModel model)
         {
+            model.Id = id;
             string validaitingModelErrorMessage = getValidaitingModelErrorMessage(model);
 
             if (!string.IsNullOrEmpty(validaitingModelErrorMessage))
@@ -502,6 +508,61 @@ namespace Tenor.Services.SubsetsService
             {
                 return new ResultWithMessage(null, e.Message);
             }
+        }
+
+        public FileBytesModel exportDevicesByFilter(object subsetfilter)
+        {
+            //--------------------------Data Source---------------------------------------
+            IQueryable<Subset> query = _db.Subsets.Include(x => x.SubsetFieldValues).ThenInclude(x => x.SubsetField).
+            ThenInclude(x => x.ExtraField).AsQueryable();
+            List<string> subsetFields = _db.SubsetFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList();
+            //------------------------------Conver Dynamic filter--------------------------
+            dynamic data = JsonConvert.DeserializeObject<dynamic>(subsetfilter.ToString());
+            SubsetFilterModel subsetFilterModel = new SubsetFilterModel()
+            {
+                SearchQuery = subsetfilter.ToString().Contains("SearchQuery") ? data["SearchQuery"] : data["searchQuery"],
+                PageIndex = subsetfilter.ToString().Contains("PageIndex") ? data["PageIndex"] : data["pageIndex"],
+                PageSize = subsetfilter.ToString().Contains("PageSize") ? data["PageSize"] : data["pageSize"],
+                SortActive = subsetfilter.ToString().Contains("SortActive") ? data["SortActive"] : data["sortActive"],
+                SortDirection = subsetfilter.ToString().Contains("SortDirection") ? data["SortDirection"] : data["sortDirection"],
+                DeviceId = subsetfilter.ToString().Contains("DeviceId") ? data["DeviceId"] : data["deviceId"]
+
+            };
+            //--------------------------------Filter and conver data to VM----------------------------------------------
+            IQueryable<Subset> fiteredData = getFilteredData(data, query, subsetFilterModel, subsetFields);
+            //-------------------------------Data sorting and pagination------------------------------------------
+            var result = convertSubsetsToListViewModel(fiteredData);
+            if (result == null || result.Count() == 0)
+                return new FileBytesModel();
+
+            FileBytesModel excelfile = new();
+
+            ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+            var stream = new MemoryStream();
+            var package = new ExcelPackage(stream);
+            var workSheet = package.Workbook.Worksheets.Add("Sheet1");
+            workSheet.Cells.LoadFromCollection(result, true);
+
+            List<int> dateColumns = new();
+            int datecolumn = 1;
+            foreach (var PropertyInfo in result.FirstOrDefault().GetType().GetProperties())
+            {
+                if (PropertyInfo.PropertyType == typeof(DateTime) || PropertyInfo.PropertyType == typeof(DateTime?))
+                {
+                    dateColumns.Add(datecolumn);
+                }
+                datecolumn++;
+            }
+            dateColumns.ForEach(item => workSheet.Column(item).Style.Numberformat.Format = "dd/mm/yyyy hh:mm:ss AM/PM");
+            package.Save();
+            excelfile.Bytes = stream.ToArray();
+            stream.Position = 0;
+            stream.Close();
+            string excelName = $"Posts-{DateTime.Now.ToString("yyyyMMddHHmmssfff")}.xlsx";
+            string contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            excelfile.FileName = excelName;
+            excelfile.ContentType = contentType;
+            return excelfile;
         }
     }
 }

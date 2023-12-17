@@ -22,6 +22,8 @@ using static Azure.Core.HttpHeader;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Tenor.Services.SubsetsService.ViewModels;
 using Microsoft.IdentityModel.Tokens;
+using Tenor.Services.DevicesService.ViewModels;
+using OfficeOpenXml;
 
 namespace Tenor.Services.KpisService
 {
@@ -30,11 +32,13 @@ namespace Tenor.Services.KpisService
         ResultWithMessage GetListAsync(object kpiFilterM);
         Task<ResultWithMessage> GetByIdAsync(int id);
         Task<ResultWithMessage> Add(CreateKpi kpiModel);
-        Task<ResultWithMessage> Update(CreateKpi Kpi);
+        Task<ResultWithMessage> Update(int id,CreateKpi Kpi);
         Task<ResultWithMessage> Delete(int id);
         Task<ResultWithMessage> GetExtraFields();
         ResultWithMessage GetOperators();
         ResultWithMessage GetFunctions();
+        FileBytesModel exportDevicesByFilter(object kpiFilterM);
+
 
     }
 
@@ -131,8 +135,12 @@ namespace Tenor.Services.KpisService
             }
         }
 
-        public async Task<ResultWithMessage> Update(CreateKpi Kpi)
+        public async Task<ResultWithMessage> Update(int id,CreateKpi Kpi)
         {
+            if (id != Kpi.Id)
+            {
+                return  new ResultWithMessage(null,"Invalid KPI Id");
+            }
             using (TransactionScope transaction = new TransactionScope())
             {
                 try
@@ -189,6 +197,69 @@ namespace Tenor.Services.KpisService
             var func = _db.Functions.ToList();
             return new ResultWithMessage(func, null);
 
+        }
+
+        public FileBytesModel exportDevicesByFilter(object kpiFilterM)
+        {
+            IQueryable<Kpi> query = _db.Kpis.Include(x => x.KpiFieldValues).ThenInclude(x => x.KpiField).
+                  ThenInclude(x => x.ExtraField).AsQueryable();
+            List<string> kpiFields = _db.KpiFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList();
+            //------------------------------Conver Dynamic filter--------------------------
+            dynamic data = JsonConvert.DeserializeObject<dynamic>(kpiFilterM.ToString());
+            KpiFilterModel kpiFilterModel = new KpiFilterModel()
+            {
+                SearchQuery = kpiFilterM.ToString().Contains("SearchQuery") ? data["SearchQuery"] : data["searchQuery"],
+                PageIndex = kpiFilterM.ToString().Contains("PageIndex") ? data["PageIndex"] : data["pageIndex"],
+                PageSize = kpiFilterM.ToString().Contains("PageSize") ? data["PageSize"] : data["pageSize"],
+                SortActive = kpiFilterM.ToString().Contains("SortActive") ? data["SortActive"] : data["sortActive"],
+                SortDirection = kpiFilterM.ToString().Contains("SortDirection") ? data["SortDirection"] : data["sortDirection"],
+                DeviceId = kpiFilterM.ToString().Contains("DeviceId") ? data["DeviceId"] : data["deviceId"],
+
+
+            };
+            //--------------------------------Filter and conver data to VM----------------------------------------------
+            IQueryable<Kpi> list = getFilteredData(data, query, kpiFilterModel, kpiFields);
+            //-------------------------------Data sorting and pagination------------------------------------------
+            var result = list.Select(x => new KpiListViewModel()
+            {
+                Id = x.Id,
+                Name = x.Name,
+                DeviceId = x.DeviceId,
+                DeviceName = x.Device.Name,
+                KpiFileds = _mapper.Map<List<KpiFieldValueViewModel>>(x.KpiFieldValues)
+            });
+
+            if (result == null || result.Count() == 0)
+                return new FileBytesModel();
+
+            FileBytesModel excelfile = new();
+
+            ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+            var stream = new MemoryStream();
+            var package = new ExcelPackage(stream);
+            var workSheet = package.Workbook.Worksheets.Add("Sheet1");
+            workSheet.Cells.LoadFromCollection(result, true);
+
+            List<int> dateColumns = new();
+            int datecolumn = 1;
+            foreach (var PropertyInfo in result.FirstOrDefault().GetType().GetProperties())
+            {
+                if (PropertyInfo.PropertyType == typeof(DateTime) || PropertyInfo.PropertyType == typeof(DateTime?))
+                {
+                    dateColumns.Add(datecolumn);
+                }
+                datecolumn++;
+            }
+            dateColumns.ForEach(item => workSheet.Column(item).Style.Numberformat.Format = "dd/mm/yyyy hh:mm:ss AM/PM");
+            package.Save();
+            excelfile.Bytes = stream.ToArray();
+            stream.Position = 0;
+            stream.Close();
+            string excelName = $"Posts-{DateTime.Now.ToString("yyyyMMddHHmmssfff")}.xlsx";
+            string contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            excelfile.FileName = excelName;
+            excelfile.ContentType = contentType;
+            return excelfile;
         }
         private bool DeleteSelfRelation(int? parentid, List<int> childid)
         {

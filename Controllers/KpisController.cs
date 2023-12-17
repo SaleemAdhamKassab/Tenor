@@ -6,6 +6,7 @@ using System.Text;
 using Tenor.Dtos;
 using Tenor.Helper;
 using Tenor.Models;
+using Tenor.Services.DevicesService.ViewModels;
 using Tenor.Services.KpisService;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
@@ -50,11 +51,8 @@ namespace Tenor.Controllers
         [HttpPut("edit")]
         public async Task<IActionResult> Put(int id, CreateKpi kpi)
         {
-            if(id!=kpi.Id)
-            {
-                return BadRequest();
-            }
-            return _returnResult(await _kpiservice.Update(kpi));
+            
+            return _returnResult(await _kpiservice.Update(id,kpi));
             
         }
 
@@ -86,6 +84,15 @@ namespace Tenor.Controllers
        
         }
 
+        [HttpPost("exportDevicesByFilter")]
+        public IActionResult exportDevicesByFilter(object filter)
+        {
+            var fileResult = _kpiservice.exportDevicesByFilter(filter);
 
+            if (fileResult.Bytes == null || fileResult.Bytes.Count() == 0)
+                return BadRequest(new { message = "No Data To Export." });
+
+            return File(fileResult.Bytes, fileResult.ContentType, fileResult.FileName);
+        }
     }
 }

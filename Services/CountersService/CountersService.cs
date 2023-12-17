@@ -2,6 +2,7 @@
 using Infrastructure.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using OfficeOpenXml;
 using System.Text.RegularExpressions;
 using System.Transactions;
 using Tenor.Data;
@@ -9,6 +10,7 @@ using Tenor.Dtos;
 using Tenor.Helper;
 using Tenor.Models;
 using Tenor.Services.CountersService.ViewModels;
+using Tenor.Services.DevicesService.ViewModels;
 using Tenor.Services.SubsetsService;
 using Tenor.Services.SubsetsService.ViewModels;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
@@ -23,6 +25,8 @@ namespace Tenor.Services.CountersService
         ResultWithMessage add(CounterBindingModel model);
         ResultWithMessage edit(CounterBindingModel CounterDto);
         ResultWithMessage delete(int id);
+        FileBytesModel exportDevicesByFilter(object FilterM);
+
     }
 
     public class CountersService : ICountersService
@@ -227,7 +231,9 @@ namespace Tenor.Services.CountersService
             if (!isCounterExists(id))
                 return new ResultWithMessage(null, $"Invalid Counter Id: {id}");
 
-            CounterViewModel counterViewModel = _db.Counters
+            CounterViewModel counterViewModel = _db.Counters.Include(x => x.CounterFieldValues)
+                .ThenInclude(x => x.CounterField).
+                    ThenInclude(x => x.ExtraField)
                 .Select(e => new CounterViewModel()
                 {
                     Id = e.Id,
@@ -253,7 +259,10 @@ namespace Tenor.Services.CountersService
             try
             {
                 //--------------------------Data Source---------------------------------------
-                IQueryable<Counter> query = _db.Counters.Where(e => true);
+                IQueryable<Counter> query = _db.Counters.Include(x => x.CounterFieldValues)
+                   .ThenInclude(x => x.CounterField).
+                    ThenInclude(x => x.ExtraField).Include(e => e.Subset).
+                    ThenInclude(e => e.Device).Where(e => true);
                 List<string> counterFields = _db.CounterFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList();
                 //------------------------------Conver Dynamic filter--------------------------
                 dynamic data = JsonConvert.DeserializeObject<dynamic>(counterFilter.ToString());
@@ -321,7 +330,10 @@ namespace Tenor.Services.CountersService
                     if (model.ExtraFields.Count != 0)
                         addCounterExtraFieldValues(model.ExtraFields, counter.Id);
 
-                    counter = _db.Counters.Include(e => e.Subset).ThenInclude(e => e.Device).Single(e => e.Id == counter.Id);
+                    counter = _db.Counters.Include(x => x.CounterFieldValues)
+                   .ThenInclude(x => x.CounterField).
+                    ThenInclude(x => x.ExtraField).Include(e => e.Subset).
+                    ThenInclude(e => e.Device).Single(e => e.Id == counter.Id);
 
                     CounterViewModel counterViewModel = new()
                     {
@@ -390,8 +402,10 @@ namespace Tenor.Services.CountersService
 
                     _db.SaveChanges();
 
-                    counter = _db.Counters.Include(e => e.Subset).ThenInclude(e => e.Device).Single(e => e.Id == counter.Id);
-
+                    counter = _db.Counters.Include(x => x.CounterFieldValues)
+                                       .ThenInclude(x => x.CounterField).
+                                        ThenInclude(x => x.ExtraField).Include(e => e.Subset).
+                                        ThenInclude(e => e.Device).Single(e => e.Id == counter.Id);
                     CounterViewModel counterViewModel = new()
                     {
                         Id = counter.Id,
@@ -443,5 +457,60 @@ namespace Tenor.Services.CountersService
             }
         }
 
+        public FileBytesModel exportDevicesByFilter(object counterFilter)
+        {
+            //--------------------------Data Source---------------------------------------
+            IQueryable<Counter> query = _db.Counters.Where(e => true);
+            List<string> counterFields = _db.CounterFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList();
+            //------------------------------Conver Dynamic filter--------------------------
+            dynamic data = JsonConvert.DeserializeObject<dynamic>(counterFilter.ToString());
+            CounterFilterModel counterFilterModel = new CounterFilterModel()
+            {
+                SearchQuery = counterFilter.ToString().Contains("SearchQuery") ? data["SearchQuery"] : data["searchQuery"],
+                PageIndex = counterFilter.ToString().Contains("PageIndex") ? data["PageIndex"] : data["pageIndex"],
+                PageSize = counterFilter.ToString().Contains("PageSize") ? data["PageSize"] : data["pageSize"],
+                SortActive = counterFilter.ToString().Contains("SortActive") ? data["SortActive"] : data["sortActive"],
+                SortDirection = counterFilter.ToString().Contains("SortDirection") ? data["SortDirection"] : data["sortDirection"],
+                SubsetId = counterFilter.ToString().Contains("SubsetId") ? Convert.ToString(data["SubsetId"]) : Convert.ToString(data["subsetId"]),
+                DeviceId = (counterFilter.ToString().Contains("DeviceId") ? data["DeviceId"] : data["deviceId"]) != "" ?
+                           (counterFilter.ToString().Contains("DeviceId") ? data["DeviceId"] : data["deviceId"]) : null
+
+            };
+            //--------------------------------Filter and conver data to VM----------------------------------------------
+            IQueryable<Counter> fiteredData = getFilteredData(data, query, counterFilterModel, counterFields);
+            //-------------------------------Data sorting and pagination------------------------------------------
+            var result = convertCountersToListViewModel(fiteredData);
+            if (result == null || result.Count() == 0)
+                return new FileBytesModel();
+
+            FileBytesModel excelfile = new();
+
+            ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+            var stream = new MemoryStream();
+            var package = new ExcelPackage(stream);
+            var workSheet = package.Workbook.Worksheets.Add("Sheet1");
+            workSheet.Cells.LoadFromCollection(result, true);
+
+            List<int> dateColumns = new();
+            int datecolumn = 1;
+            foreach (var PropertyInfo in result.FirstOrDefault().GetType().GetProperties())
+            {
+                if (PropertyInfo.PropertyType == typeof(DateTime) || PropertyInfo.PropertyType == typeof(DateTime?))
+                {
+                    dateColumns.Add(datecolumn);
+                }
+                datecolumn++;
+            }
+            dateColumns.ForEach(item => workSheet.Column(item).Style.Numberformat.Format = "dd/mm/yyyy hh:mm:ss AM/PM");
+            package.Save();
+            excelfile.Bytes = stream.ToArray();
+            stream.Position = 0;
+            stream.Close();
+            string excelName = $"Posts-{DateTime.Now.ToString("yyyyMMddHHmmssfff")}.xlsx";
+            string contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            excelfile.FileName = excelName;
+            excelfile.ContentType = contentType;
+            return excelfile;
+        }
     }
 }

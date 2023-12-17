@@ -29,7 +29,7 @@ namespace Tenor.Controllers
 
 
         [HttpPut("edit")]
-        public IActionResult edit(DeviceBindingModel model) => _returnResult(_deviceService.edit(model));
+        public IActionResult edit(int id,DeviceBindingModel model) => _returnResult(_deviceService.edit(id,model));
 
 
         [HttpDelete("delete")]
