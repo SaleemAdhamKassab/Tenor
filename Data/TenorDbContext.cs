@@ -35,7 +35,9 @@ namespace Tenor.Data
         public DbSet<Dashboard> Dashboards { get; set; }
         public DbSet<SubsetField> SubsetFields { get; set; }
         public DbSet<SubsetFieldValue> SubsetFieldValues { get; set; }
-
+        public DbSet<Level> Levels { get; set; }
+        public DbSet<DeviceLevel> DeviceLevels { get; set; }
+        public DbSet<Tree> Trees { get; set; }
 
         //Entity Config
         protected override void OnModelCreating(ModelBuilder builder)
