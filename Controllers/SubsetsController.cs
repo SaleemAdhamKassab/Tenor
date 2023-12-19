@@ -35,7 +35,7 @@ namespace Tenor.Controllers
         [HttpDelete("delete")]
         public IActionResult delete(int id) => _returnResult(_subsetservice.delete(id));
 
-        [HttpPost("exportDevicesByFilter")]
+        [HttpPost("exportSubsetByFilter")]
         public IActionResult exportDevicesByFilter(object filter)
         {
             var fileResult = _subsetservice.exportDevicesByFilter(filter);

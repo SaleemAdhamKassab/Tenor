@@ -105,5 +105,8 @@ namespace Tenor.Services.KpisService.ViewModels
             public List<KpiFieldValueViewModel> KpiFileds { get; set; }
 
         }
+        
+       
+       
     }
 }

@@ -24,6 +24,11 @@ using Tenor.Services.SubsetsService.ViewModels;
 using Microsoft.IdentityModel.Tokens;
 using Tenor.Services.DevicesService.ViewModels;
 using OfficeOpenXml;
+using static OfficeOpenXml.ExcelErrorValue;
+using System.Security.Policy;
+using OfficeOpenXml.Drawing.Style.Coloring;
+using System.Collections;
+using System.Linq.Expressions;
 
 namespace Tenor.Services.KpisService
 {
@@ -201,6 +206,7 @@ namespace Tenor.Services.KpisService
 
         public FileBytesModel exportDevicesByFilter(object kpiFilterM)
         {
+            //-------------------------------------------------------------------------------
             IQueryable<Kpi> query = _db.Kpis.Include(x => x.KpiFieldValues).ThenInclude(x => x.KpiField).
                   ThenInclude(x => x.ExtraField).AsQueryable();
             List<string> kpiFields = _db.KpiFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList();
@@ -227,9 +233,12 @@ namespace Tenor.Services.KpisService
                 DeviceId = x.DeviceId,
                 DeviceName = x.Device.Name,
                 KpiFileds = _mapper.Map<List<KpiFieldValueViewModel>>(x.KpiFieldValues)
-            });
+            }).ToList();
+            //-------------------Pivot data--------------------------------------
+            var pivResult = PivotData(result);
 
-            if (result == null || result.Count() == 0)
+            //-----------------------------------------------------------------------
+            if (pivResult == null || pivResult.Count() == 0)
                 return new FileBytesModel();
 
             FileBytesModel excelfile = new();
@@ -238,11 +247,11 @@ namespace Tenor.Services.KpisService
             var stream = new MemoryStream();
             var package = new ExcelPackage(stream);
             var workSheet = package.Workbook.Worksheets.Add("Sheet1");
-            workSheet.Cells.LoadFromCollection(result, true);
+            workSheet.Cells.LoadFromCollection(pivResult, true);
 
             List<int> dateColumns = new();
             int datecolumn = 1;
-            foreach (var PropertyInfo in result.FirstOrDefault().GetType().GetProperties())
+            foreach (var PropertyInfo in pivResult.FirstOrDefault().GetType().GetProperties())
             {
                 if (PropertyInfo.PropertyType == typeof(DateTime) || PropertyInfo.PropertyType == typeof(DateTime?))
                 {
@@ -432,6 +441,75 @@ namespace Tenor.Services.KpisService
             }
 
         }
+        private List<IDictionary<string, Object>> PivotData(List<KpiListViewModel> result)
+        {
+            List<string> ExtField = new List<string>();
+             foreach(var v in result)
+             {
+                foreach(var r in v.KpiFileds)
+                {
+                    ExtField.Add(r.FieldName);
+                    if (r.Type== "List" || r.Type== "MultiSelectList")
+                    {
+                        IList collection = (IList)r.Value;
 
+                        string Val = string.Join(',', collection[0]);
+                        r.Value = Val;
+                   }
+
+                }
+             }
+            //------------------------------------------------------------
+            List<dynamic> convertedData = new List<dynamic>();
+            List<IDictionary<string, Object>> pivotData = new List<IDictionary<string, Object>>();
+
+            var dict = JsonHelper.DeserializeAndFlatten(Newtonsoft.Json.JsonConvert.SerializeObject(result));
+            var expandoObject = new ExpandoObject() as IDictionary<string, Object>;
+            foreach (var kvp in dict)
+            {
+                expandoObject.Add(kvp.Key, kvp.Value);
+            }
+            var pivotedData = expandoObject.ToList();
+             
+            for(int i=0;i<= result.Count-1;i++)
+            {
+                var tmp = new ExpandoObject() as IDictionary<string, Object>;
+                var idxData = pivotedData.Where(x => x.Key.StartsWith(i.ToString())).ToList();
+                foreach(var kvp in idxData)
+                {
+                    int k = kvp.Key.LastIndexOf(".");
+                    string key = (k > -1 ? kvp.Key.Substring(k + 1) : kvp.Key);
+                    Match m = Regex.Match(kvp.Key, @"\.([0-100000]+)\.");
+                    if (m.Success) key += m.Groups[1].Value;
+                    tmp.Add(key, kvp.Value);
+                }
+
+                convertedData.Add(tmp);
+            }
+
+            //-----------------------------------------------
+            foreach (var item in convertedData.Select((value, i) => new { i, value }))
+            {
+                var pivoTmp = new ExpandoObject() as IDictionary<string, Object>;
+
+                pivoTmp.Add("Id", item.value.Id);
+                pivoTmp.Add("Name", item.value.Name);
+                pivoTmp.Add("DeviceName", item.value.DeviceName);
+                foreach (var field in ExtField.Distinct().Select((value2, i2) => new { i2, value2 }))
+                {
+                    pivoTmp.Add(field.value2, (((IDictionary<String, Object>)item.value)["Value" + field.i2.ToString()])!=null?((IDictionary<String, Object>)item.value)["Value" + field.i2.ToString()]:"NA");
+              
+
+                }
+                pivotData.Add(pivoTmp);
+
+            }
+
+
+            return pivotData;
+
+
+        }
+       
     }
 }

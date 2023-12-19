@@ -84,7 +84,7 @@ namespace Tenor.Controllers
        
         }
 
-        [HttpPost("exportDevicesByFilter")]
+        [HttpPost("exportKpiByFilter")]
         public IActionResult exportDevicesByFilter(object filter)
         {
             var fileResult = _kpiservice.exportDevicesByFilter(filter);
