@@ -3,6 +3,7 @@ using Infrastructure.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using OfficeOpenXml;
+using System.Dynamic;
 using System.Text.RegularExpressions;
 using System.Transactions;
 using Tenor.Data;
@@ -26,7 +27,7 @@ namespace Tenor.Services.SubsetsService
         ResultWithMessage add(SubsetBindingModel model);
         ResultWithMessage edit(int id ,SubsetBindingModel subsetDto);
         ResultWithMessage delete(int id);
-        FileBytesModel exportDevicesByFilter(object FilterM);
+        FileBytesModel exportSubsetByFilter(object FilterM);
 
     }
 
@@ -226,6 +227,88 @@ namespace Tenor.Services.SubsetsService
         }
 
         private bool isCounterExists(int counterId) => _db.Counters.Find(counterId) is not null;
+        private List<IDictionary<string, Object>> PivotData(List<SubsetListViewModel> result)
+        {
+            List<string> ExtField = new List<string>();
+            List<dynamic> convertedData = new List<dynamic>();
+            List<IDictionary<string, Object>> pivotData = new List<IDictionary<string, Object>>();
+            var expandoObject = new ExpandoObject() as IDictionary<string, Object>;
+            //-----------------------Faltten Data-------------------------------------
+            foreach (var v in result)
+            {
+                foreach (var r in v.ExtraFields)
+                {
+                    ExtField.Add(r.FieldName);
+                    if (r.Type == "List" || r.Type == "MultiSelectList")
+                    {
+                        List<string> collection = (List<string>)r.Value;
+
+                        string Val = string.Join(',', collection);
+                        r.Value = Val;
+                    }
+
+                }
+            }
+
+            var dict = JsonHelper.DeserializeAndFlatten(Newtonsoft.Json.JsonConvert.SerializeObject(result));
+            foreach (var kvp in dict)
+            {
+                expandoObject.Add(kvp.Key, kvp.Value);
+            }
+            var pivotedData = expandoObject.ToList();
+
+            for (int i = 0; i <= result.Count - 1; i++)
+            {
+                var tmp = new ExpandoObject() as IDictionary<string, Object>;
+                var idxData = pivotedData.Where(x => x.Key.StartsWith(i.ToString())).ToList();
+                foreach (var kvp in idxData)
+                {
+                    int k = kvp.Key.LastIndexOf(".");
+                    string key = (k > -1 ? kvp.Key.Substring(k + 1) : kvp.Key);
+                    Match m = Regex.Match(kvp.Key, @"\.([0-100000]+)\.");
+                    if (m.Success) key += m.Groups[1].Value;
+                    tmp.Add(key, kvp.Value);
+                }
+
+                convertedData.Add(tmp);
+            }
+
+            //---------------------Pivot--------------------------
+            foreach (var item in convertedData.Select((value, i) => new { i, value }))
+            {
+                var pivoTmp = new ExpandoObject() as IDictionary<string, Object>;
+
+                pivoTmp.Add("Id", item.value.Id);
+                pivoTmp.Add("SupplierId", item.value.SupplierId);
+                pivoTmp.Add("Name", item.value.Name);
+                pivoTmp.Add("Description", item.value.Description);
+                pivoTmp.Add("RefTableName", item.value.RefTableName);
+                pivoTmp.Add("SchemaName", item.value.SchemaName);
+                pivoTmp.Add("RefSchema", item.value.RefSchema);
+                pivoTmp.Add("MaxDataDate", item.value.MaxDataDate);
+                pivoTmp.Add("IsLoad", item.value.IsLoad);
+                pivoTmp.Add("DataTS", item.value.DataTS);
+                pivoTmp.Add("IndexTS", item.value.IndexTS);
+                pivoTmp.Add("DbLink", item.value.DbLink);
+                pivoTmp.Add("RefDbLink", item.value.RefDbLink);
+                pivoTmp.Add("GranularityPeriod", item.value.GranularityPeriod);
+                pivoTmp.Add("SummaryType", item.value.SummaryType);
+                pivoTmp.Add("DeviceId", item.value.DeviceId);
+                pivoTmp.Add("DeviceName", item.value.DeviceName);
+
+                foreach (var field in ExtField.Distinct().Select((value2, i2) => new { i2, value2 }))
+                {
+                    pivoTmp.Add(field.value2, (((IDictionary<String, Object>)item.value)["Value" + field.i2.ToString()]) != null ? ((IDictionary<String, Object>)item.value)["Value" + field.i2.ToString()] : "NA");
+
+
+                }
+                pivotData.Add(pivoTmp);
+
+            }
+
+            return pivotData;
+
+        }
 
 
         public ResultWithMessage getById(int id)
@@ -510,11 +593,11 @@ namespace Tenor.Services.SubsetsService
             }
         }
 
-        public FileBytesModel exportDevicesByFilter(object subsetfilter)
+        public FileBytesModel exportSubsetByFilter(object subsetfilter)
         {
             //--------------------------Data Source---------------------------------------
             IQueryable<Subset> query = _db.Subsets.Include(x => x.SubsetFieldValues).ThenInclude(x => x.SubsetField).
-            ThenInclude(x => x.ExtraField).AsQueryable();
+                ThenInclude(x => x.ExtraField).AsQueryable();
             List<string> subsetFields = _db.SubsetFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList();
             //------------------------------Conver Dynamic filter--------------------------
             dynamic data = JsonConvert.DeserializeObject<dynamic>(subsetfilter.ToString());
@@ -530,9 +613,12 @@ namespace Tenor.Services.SubsetsService
             };
             //--------------------------------Filter and conver data to VM----------------------------------------------
             IQueryable<Subset> fiteredData = getFilteredData(data, query, subsetFilterModel, subsetFields);
-            //-------------------------------Data sorting and pagination------------------------------------------
+            //-------------------------------Data Converted------------------------------------------
             var result = convertSubsetsToListViewModel(fiteredData);
-            if (result == null || result.Count() == 0)
+            //-------------------Pivot data--------------------------------------
+            var pivResult = PivotData(result.ToList());
+            //-----------------------------------------------------------------------
+            if (pivResult == null || pivResult.Count() == 0)
                 return new FileBytesModel();
 
             FileBytesModel excelfile = new();
@@ -541,11 +627,11 @@ namespace Tenor.Services.SubsetsService
             var stream = new MemoryStream();
             var package = new ExcelPackage(stream);
             var workSheet = package.Workbook.Worksheets.Add("Sheet1");
-            workSheet.Cells.LoadFromCollection(result, true);
+            workSheet.Cells.LoadFromCollection(pivResult, true);
 
             List<int> dateColumns = new();
             int datecolumn = 1;
-            foreach (var PropertyInfo in result.FirstOrDefault().GetType().GetProperties())
+            foreach (var PropertyInfo in pivResult.GetType().GetProperties())
             {
                 if (PropertyInfo.PropertyType == typeof(DateTime) || PropertyInfo.PropertyType == typeof(DateTime?))
                 {

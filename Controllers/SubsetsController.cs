@@ -36,9 +36,9 @@ namespace Tenor.Controllers
         public IActionResult delete(int id) => _returnResult(_subsetservice.delete(id));
 
         [HttpPost("exportSubsetByFilter")]
-        public IActionResult exportDevicesByFilter(object filter)
+        public IActionResult exportSubsetByFilter(object filter)
         {
-            var fileResult = _subsetservice.exportDevicesByFilter(filter);
+            var fileResult = _subsetservice.exportSubsetByFilter(filter);
 
             if (fileResult.Bytes == null || fileResult.Bytes.Count() == 0)
                 return BadRequest(new { message = "No Data To Export." });
