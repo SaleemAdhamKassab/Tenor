@@ -87,7 +87,7 @@ namespace Tenor.Services.KpisService
                     Name = x.Name,
                     DeviceId = x.DeviceId,
                     DeviceName = x.Device.Name,
-                    KpiFileds = _mapper.Map<List<KpiFieldValueViewModel>>(x.KpiFieldValues)
+                    ExtraFields = _mapper.Map<List<KpiFieldValueViewModel>>(x.KpiFieldValues)
                 });
                
                  return sortAndPagination(kpiFilterModel, queryViewModel);
@@ -234,7 +234,7 @@ namespace Tenor.Services.KpisService
                 Name = x.Name,
                 DeviceId = x.DeviceId,
                 DeviceName = x.Device.Name,
-                KpiFileds = _mapper.Map<List<KpiFieldValueViewModel>>(x.KpiFieldValues)
+                ExtraFields = _mapper.Map<List<KpiFieldValueViewModel>>(x.KpiFieldValues)
             }).ToList();
             //-------------------Pivot data--------------------------------------
             var pivResult = PivotData(result);
@@ -455,7 +455,7 @@ namespace Tenor.Services.KpisService
             //-----------------------Faltten Data-------------------------------------
             foreach (var v in model)
              {
-                foreach(var r in v.KpiFileds)
+                foreach(var r in v.ExtraFields)
                 {
                     ExtField.Add(r.FieldName);
                     if (r.Type== "List" || r.Type== "MultiSelectList")
@@ -528,9 +528,9 @@ namespace Tenor.Services.KpisService
                 {  
                     if(props.Contains(prop))
                     {
-                        if(prop == "KpiFileds")
+                        if(prop == "ExtraFields")
                         {
-                           foreach(var p in s.sortd.KpiFileds)
+                           foreach(var p in s.sortd.ExtraFields)
                             {
                                 if(p.Type== "List" || p.Type== "MultiSelectList")
                                 {

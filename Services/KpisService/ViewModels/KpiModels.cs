@@ -102,7 +102,7 @@ namespace Tenor.Services.KpisService.ViewModels
             public string Name { get; set; }
             public int? DeviceId { get; set; }
             public string? DeviceName { get; set; }
-            public List<KpiFieldValueViewModel> KpiFileds { get; set; }
+            public List<KpiFieldValueViewModel> ExtraFields { get; set; }
 
         }
         

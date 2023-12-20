@@ -135,7 +135,11 @@ namespace Tenor.Services.CountersService
                 var result = queryViewModel.Skip((counterFilterModel.PageIndex) * counterFilterModel.PageSize)
                 .Take(counterFilterModel.PageSize).ToList();
 
-                return new ResultWithMessage(new DataWithSize(Count, result), "");
+
+                var pivotD = PivotData(result);
+                var response = MergData(pivotD, result);
+
+                return new ResultWithMessage(new DataWithSize(Count, response), "");
             }
 
             else
@@ -144,7 +148,9 @@ namespace Tenor.Services.CountersService
                 var result = queryViewModel.Skip((counterFilterModel.PageIndex) * counterFilterModel.PageSize)
                 .Take(counterFilterModel.PageSize).ToList();
 
-                return new ResultWithMessage(new DataWithSize(Count, result), "");
+                var pivotD = PivotData(result);
+                var response = MergData(pivotD, result);
+                return new ResultWithMessage(new DataWithSize(Count, response), "");
             }
 
         }
@@ -299,6 +305,53 @@ namespace Tenor.Services.CountersService
 
             return pivotData;
 
+        }
+        private List<IDictionary<string, Object>> MergData(List<IDictionary<string, Object>> pivotdata, List<CounterListViewModel> datasort)
+        {
+            List<IDictionary<string, Object>> mergData = new List<IDictionary<string, Object>>();
+            var props = typeof(CounterListViewModel).GetProperties().Select(x => x.Name).ToList();
+            var keys = pivotdata.FirstOrDefault().Keys.ToList();
+            var addProps = keys.Union(props).ToList();
+            var resAndPiv = datasort.Zip(pivotdata, (p, d) => new { sortd = p, pivotd = d });
+
+            foreach (var s in resAndPiv)
+            {
+                var mergTmp = new ExpandoObject() as IDictionary<string, Object>;
+                foreach (var prop in addProps)
+                {
+                    if (props.Contains(prop))
+                    {
+                        if (prop == "ExtraFields")
+                        {
+                            foreach (var p in s.sortd.ExtraFields)
+                            {
+                                if (p.Type == "List" || p.Type == "MultiSelectList")
+                                {
+                                    p.Value = p.GetType().GetProperty("Value").GetValue(p).ToString().Split(',').ToList();
+
+                                }
+                                else
+                                {
+                                    p.Value = p.GetType().GetProperty("Value").GetValue(p);
+                                }
+                            }
+                        }
+
+                        mergTmp.Add(prop, s.sortd.GetType().GetProperty(prop).GetValue(s.sortd));
+
+                    }
+                    else
+                    {
+                        mergTmp.Add(prop, s.pivotd[prop]);
+
+                    }
+
+                }
+
+                mergData.Add(mergTmp);
+            }
+
+            return mergData;
         }
 
         public ResultWithMessage getById(int id)
