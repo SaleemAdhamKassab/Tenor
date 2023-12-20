@@ -37,9 +37,9 @@ namespace Tenor.Controllers
         public IActionResult delete(int id) => _returnResult(_countersService.delete(id));
 
         [HttpPost("exportCounterByFilter")]
-        public IActionResult exportDevicesByFilter(object filter)
+        public IActionResult exportCounterByFilter(object filter)
         {
-            var fileResult = _countersService.exportDevicesByFilter(filter);
+            var fileResult = _countersService.exportCounterByFilter(filter);
 
             if (fileResult.Bytes == null || fileResult.Bytes.Count() == 0)
                 return BadRequest(new { message = "No Data To Export." });

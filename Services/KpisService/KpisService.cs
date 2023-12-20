@@ -42,7 +42,7 @@ namespace Tenor.Services.KpisService
         Task<ResultWithMessage> GetExtraFields();
         ResultWithMessage GetOperators();
         ResultWithMessage GetFunctions();
-        FileBytesModel exportDevicesByFilter(object kpiFilterM);
+        FileBytesModel exportKpiByFilter(object kpiFilterM);
 
 
     }
@@ -204,9 +204,9 @@ namespace Tenor.Services.KpisService
 
         }
 
-        public FileBytesModel exportDevicesByFilter(object kpiFilterM)
+        public FileBytesModel exportKpiByFilter(object kpiFilterM)
         {
-            //-------------------------------------------------------------------------------
+            //---------------------------------Data source----------------------------------
             IQueryable<Kpi> query = _db.Kpis.Include(x => x.KpiFieldValues).ThenInclude(x => x.KpiField).
                   ThenInclude(x => x.ExtraField).AsQueryable();
             List<string> kpiFields = _db.KpiFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList();
@@ -223,9 +223,9 @@ namespace Tenor.Services.KpisService
 
 
             };
-            //--------------------------------Filter and conver data to VM----------------------------------------------
+            //--------------------------------Filter and conver data to VM-----------------
             IQueryable<Kpi> list = getFilteredData(data, query, kpiFilterModel, kpiFields);
-            //-------------------------------Data sorting and pagination------------------------------------------
+            //-------------------------------Data Convertint-------------------
             var result = list.Select(x => new KpiListViewModel()
             {
                 Id = x.Id,
@@ -236,7 +236,6 @@ namespace Tenor.Services.KpisService
             }).ToList();
             //-------------------Pivot data--------------------------------------
             var pivResult = PivotData(result);
-
             //-----------------------------------------------------------------------
             if (pivResult == null || pivResult.Count() == 0)
                 return new FileBytesModel();
@@ -444,27 +443,27 @@ namespace Tenor.Services.KpisService
         private List<IDictionary<string, Object>> PivotData(List<KpiListViewModel> result)
         {
             List<string> ExtField = new List<string>();
-             foreach(var v in result)
+            List<dynamic> convertedData = new List<dynamic>();
+            List<IDictionary<string, Object>> pivotData = new List<IDictionary<string, Object>>();
+            var expandoObject = new ExpandoObject() as IDictionary<string, Object>;
+            //-----------------------Faltten Data-------------------------------------
+            foreach (var v in result)
              {
                 foreach(var r in v.KpiFileds)
                 {
                     ExtField.Add(r.FieldName);
                     if (r.Type== "List" || r.Type== "MultiSelectList")
                     {
-                        IList collection = (IList)r.Value;
+                        List<string> collection = (List<string>)r.Value;
 
-                        string Val = string.Join(',', collection[0]);
+                        string Val = string.Join(',', collection);
                         r.Value = Val;
                    }
 
                 }
              }
-            //------------------------------------------------------------
-            List<dynamic> convertedData = new List<dynamic>();
-            List<IDictionary<string, Object>> pivotData = new List<IDictionary<string, Object>>();
-
+            
             var dict = JsonHelper.DeserializeAndFlatten(Newtonsoft.Json.JsonConvert.SerializeObject(result));
-            var expandoObject = new ExpandoObject() as IDictionary<string, Object>;
             foreach (var kvp in dict)
             {
                 expandoObject.Add(kvp.Key, kvp.Value);
@@ -487,7 +486,7 @@ namespace Tenor.Services.KpisService
                 convertedData.Add(tmp);
             }
 
-            //-----------------------------------------------
+            //---------------------Pivot--------------------------
             foreach (var item in convertedData.Select((value, i) => new { i, value }))
             {
                 var pivoTmp = new ExpandoObject() as IDictionary<string, Object>;
@@ -505,9 +504,7 @@ namespace Tenor.Services.KpisService
 
             }
 
-
             return pivotData;
-
 
         }
        
