@@ -29,6 +29,7 @@ using System.Security.Policy;
 using OfficeOpenXml.Drawing.Style.Coloring;
 using System.Collections;
 using System.Linq.Expressions;
+using System.Collections.Generic;
 
 namespace Tenor.Services.KpisService
 {
@@ -88,7 +89,8 @@ namespace Tenor.Services.KpisService
                     DeviceName = x.Device.Name,
                     KpiFileds = _mapper.Map<List<KpiFieldValueViewModel>>(x.KpiFieldValues)
                 });
-                return sortAndPagination(kpiFilterModel, queryViewModel);
+               
+                 return sortAndPagination(kpiFilterModel, queryViewModel);
 
             }
             catch (Exception ex)
@@ -427,7 +429,9 @@ namespace Tenor.Services.KpisService
                 var result = queryViewModel.Skip((kpiFilterModel.PageIndex) * kpiFilterModel.PageSize)
                 .Take(kpiFilterModel.PageSize).ToList();
 
-                return new ResultWithMessage(new DataWithSize(Count, result), "");
+                var pivotD = PivotData(result);
+                var response = MergData(pivotD, result);
+                return new ResultWithMessage(new DataWithSize(Count, response), "");
             }
 
             else
@@ -436,18 +440,20 @@ namespace Tenor.Services.KpisService
                 var result = queryViewModel.Skip((kpiFilterModel.PageIndex) * kpiFilterModel.PageSize)
                 .Take(kpiFilterModel.PageSize).ToList();
 
-                return new ResultWithMessage(new DataWithSize(Count, result), "");
+                var pivotD = PivotData(result);
+                var response = MergData(pivotD, result);
+                return new ResultWithMessage(new DataWithSize(Count, response), "");
             }
 
         }
-        private List<IDictionary<string, Object>> PivotData(List<KpiListViewModel> result)
+        private List<IDictionary<string, Object>> PivotData(List<KpiListViewModel> model)
         {
             List<string> ExtField = new List<string>();
             List<dynamic> convertedData = new List<dynamic>();
             List<IDictionary<string, Object>> pivotData = new List<IDictionary<string, Object>>();
             var expandoObject = new ExpandoObject() as IDictionary<string, Object>;
             //-----------------------Faltten Data-------------------------------------
-            foreach (var v in result)
+            foreach (var v in model)
              {
                 foreach(var r in v.KpiFileds)
                 {
@@ -463,14 +469,14 @@ namespace Tenor.Services.KpisService
                 }
              }
             
-            var dict = JsonHelper.DeserializeAndFlatten(Newtonsoft.Json.JsonConvert.SerializeObject(result));
+            var dict = JsonHelper.DeserializeAndFlatten(Newtonsoft.Json.JsonConvert.SerializeObject(model));
             foreach (var kvp in dict)
             {
                 expandoObject.Add(kvp.Key, kvp.Value);
             }
             var pivotedData = expandoObject.ToList();
              
-            for(int i=0;i<= result.Count-1;i++)
+            for(int i=0;i<= model.Count-1;i++)
             {
                 var tmp = new ExpandoObject() as IDictionary<string, Object>;
                 var idxData = pivotedData.Where(x => x.Key.StartsWith(i.ToString())).ToList();
@@ -506,7 +512,53 @@ namespace Tenor.Services.KpisService
 
             return pivotData;
 
+        }       
+        private List<IDictionary<string, Object>> MergData(List<IDictionary<string, Object>> pivotdata, List<KpiListViewModel> datasort)
+        {
+            List<IDictionary<string, Object>> mergData = new List<IDictionary<string, Object>>();
+            var props = typeof(KpiListViewModel).GetProperties().Select(x=>x.Name).ToList();
+            var keys = pivotdata.FirstOrDefault().Keys.ToList();
+            var addProps = keys.Union(props).ToList();
+            var resAndPiv = datasort.Zip(pivotdata, (p, d) => new { sortd  = p, pivotd  = d });
+
+            foreach (var s in resAndPiv)
+            {             
+                var mergTmp = new ExpandoObject() as IDictionary<string, Object>;
+                foreach (var prop in addProps)
+                {  
+                    if(props.Contains(prop))
+                    {
+                        if(prop == "KpiFileds")
+                        {
+                           foreach(var p in s.sortd.KpiFileds)
+                            {
+                                if(p.Type== "List" || p.Type== "MultiSelectList")
+                                {
+                                    p.Value = p.GetType().GetProperty("Value").GetValue(p).ToString().Split(',').ToList();
+
+                                }
+                                else
+                                {
+                                    p.Value = p.GetType().GetProperty("Value").GetValue(p);
+                                }
+                            }
+                        }
+                       
+                            mergTmp.Add(prop, s.sortd.GetType().GetProperty(prop).GetValue(s.sortd));
+
+                    }
+                    else
+                    {
+                        mergTmp.Add(prop, s.pivotd[prop]);
+
+                    }
+
+                }
+              
+                mergData.Add(mergTmp);
+            }
+
+            return mergData;
         }
-       
     }
 }
