@@ -263,8 +263,38 @@ namespace Tenor.Services.SubsetsService
 
             for (int i = 0; i <= result.Count - 1; i++)
             {
+                List<KeyValuePair<string, object>> idxData = new List<KeyValuePair<string, object>>();
                 var tmp = new ExpandoObject() as IDictionary<string, Object>;
-                var idxData = pivotedData.Where(x => x.Key.StartsWith(i.ToString())).ToList();
+                if (i <= 9)
+                {
+                    idxData = pivotedData.Where(x => x.Key.StartsWith(i.ToString()) &&
+                                   x.Key.Substring(0, 2) == i.ToString() + "."
+                                   ).ToList();
+                }
+                if (i <= 99 && i > 9)
+                {
+                    idxData = pivotedData.Where(x => x.Key.StartsWith(i.ToString()) &&
+                                                       x.Key.Substring(0, 3) == i.ToString() + "."
+                                                       ).ToList();
+                }
+                if (i <= 999 && i > 99)
+                {
+                    idxData = pivotedData.Where(x => x.Key.StartsWith(i.ToString()) &&
+                                                       x.Key.Substring(0, 4) == i.ToString() + "."
+                                                       ).ToList();
+                }
+                if (i <= 9999 && i > 999)
+                {
+                    idxData = pivotedData.Where(x => x.Key.StartsWith(i.ToString()) &&
+                                                       x.Key.Substring(0, 5) == i.ToString() + "."
+                                                       ).ToList();
+                }
+                if (i <= 99999 && i > 10000)
+                {
+                    idxData = pivotedData.Where(x => x.Key.StartsWith(i.ToString()) &&
+                                                       x.Key.Substring(0, 6) == i.ToString() + "."
+                                                       ).ToList();
+                }
                 foreach (var kvp in idxData)
                 {
                     int k = kvp.Key.LastIndexOf(".");
@@ -302,8 +332,11 @@ namespace Tenor.Services.SubsetsService
 
                 foreach (var field in ExtField.Distinct().Select((value2, i2) => new { i2, value2 }))
                 {
-                    pivoTmp.Add(field.value2, (((IDictionary<String, Object>)item.value)["Value" + field.i2.ToString()]) != null ? ((IDictionary<String, Object>)item.value)["Value" + field.i2.ToString()] : "NA");
+                    if((((IDictionary<String, Object>)item.value).ContainsKey("Value" + field.i2.ToString())))
+                    {
+                        pivoTmp.Add(field.value2, (((IDictionary<String, Object>)item.value)["Value" + field.i2.ToString()]) != null ? ((IDictionary<String, Object>)item.value)["Value" + field.i2.ToString()] : "NA");
 
+                    }
 
                 }
                 pivotData.Add(pivoTmp);
@@ -317,7 +350,7 @@ namespace Tenor.Services.SubsetsService
         {
             List<IDictionary<string, Object>> mergData = new List<IDictionary<string, Object>>();
             var props = typeof(SubsetListViewModel).GetProperties().Select(x => x.Name).ToList();
-            var keys = pivotdata.FirstOrDefault().Keys.ToList();
+            var keys = pivotdata.Count!=0? pivotdata.FirstOrDefault().Keys.ToList() : new List<string>() ;
             var addProps = keys.Union(props).ToList();
             var resAndPiv = datasort.Zip(pivotdata, (p, d) => new { sortd = p, pivotd = d });
 

@@ -68,6 +68,7 @@ namespace Tenor.Services.CountersService.ViewModels
     {
         public string? SubsetId { get; set; }
         public int? DeviceId { get; set; }
+        public IDictionary<string,object> ExtraFields { get; set; }
 
     }
 

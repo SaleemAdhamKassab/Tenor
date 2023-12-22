@@ -22,12 +22,13 @@ namespace Tenor.Services.CountersService
     public interface ICountersService
     {
         ResultWithMessage getById(int id);
-        ResultWithMessage getByFilter(object filter);
+        ResultWithMessage getByFilterDyn(object filter);
         ResultWithMessage getExtraFields();
         ResultWithMessage add(CounterBindingModel model);
         ResultWithMessage edit(CounterBindingModel CounterDto);
         ResultWithMessage delete(int id);
         FileBytesModel exportCounterByFilter(object FilterM);
+        ResultWithMessage getByFilter(CounterFilterModel filter);
 
     }
 
@@ -136,10 +137,10 @@ namespace Tenor.Services.CountersService
                 .Take(counterFilterModel.PageSize).ToList();
 
 
-                var pivotD = PivotData(result);
-                var response = MergData(pivotD, result);
+               // var pivotD = PivotData(result);
+               // var response = MergData(pivotD, result);
 
-                return new ResultWithMessage(new DataWithSize(Count, response), "");
+                return new ResultWithMessage(new DataWithSize(Count, result), "");
             }
 
             else
@@ -148,9 +149,9 @@ namespace Tenor.Services.CountersService
                 var result = queryViewModel.Skip((counterFilterModel.PageIndex) * counterFilterModel.PageSize)
                 .Take(counterFilterModel.PageSize).ToList();
 
-                var pivotD = PivotData(result);
-                var response = MergData(pivotD, result);
-                return new ResultWithMessage(new DataWithSize(Count, response), "");
+               // var pivotD = PivotData(result);
+                //var response = MergData(pivotD, result);
+                return new ResultWithMessage(new DataWithSize(Count, result), "");
             }
 
         }
@@ -265,13 +266,47 @@ namespace Tenor.Services.CountersService
 
             for (int i = 0; i <= result.Count - 1; i++)
             {
+                List<KeyValuePair<string, object>> idxData = new List<KeyValuePair<string, object>>();
                 var tmp = new ExpandoObject() as IDictionary<string, Object>;
-                var idxData = pivotedData.Where(x => x.Key.StartsWith(i.ToString())).ToList();
+                if(i<=9)
+                {
+                    idxData = pivotedData.Where(x => x.Key.StartsWith(i.ToString()) &&
+                                   x.Key.Substring(0, 2) == i.ToString() + "."
+                                   ).ToList();
+                }
+
+                if(i<=99 && i>9)
+                {
+                    idxData = pivotedData.Where(x => x.Key.StartsWith(i.ToString()) &&
+                                                       x.Key.Substring(0, 3) == i.ToString() + "."
+                                                       ).ToList();
+                }
+
+                if (i <= 999 && i > 99)
+                {
+                    idxData = pivotedData.Where(x => x.Key.StartsWith(i.ToString()) &&
+                                                       x.Key.Substring(0, 4) == i.ToString() + "."
+                                                       ).ToList();
+                }
+
+                if (i <= 9999 && i > 999)
+                {
+                    idxData = pivotedData.Where(x => x.Key.StartsWith(i.ToString()) &&
+                                                       x.Key.Substring(0, 5) == i.ToString() + "."
+                                                       ).ToList();
+                }
+                if (i <= 99999 && i > 10000)
+                {
+                    idxData = pivotedData.Where(x => x.Key.StartsWith(i.ToString()) &&
+                                                       x.Key.Substring(0, 6) == i.ToString() + "."
+                                                       ).ToList();
+                }
+
                 foreach (var kvp in idxData)
                 {
                     int k = kvp.Key.LastIndexOf(".");
                     string key = (k > -1 ? kvp.Key.Substring(k + 1) : kvp.Key);
-                    Match m = Regex.Match(kvp.Key, @"\.([0-100000]+)\.");
+                    Match m = Regex.Match(kvp.Key, @"\.([0-99999]+)\.");
                     if (m.Success) key += m.Groups[1].Value;
                     tmp.Add(key, kvp.Value);
                 }
@@ -310,7 +345,7 @@ namespace Tenor.Services.CountersService
         {
             List<IDictionary<string, Object>> mergData = new List<IDictionary<string, Object>>();
             var props = typeof(CounterListViewModel).GetProperties().Select(x => x.Name).ToList();
-            var keys = pivotdata.FirstOrDefault().Keys.ToList();
+            var keys = pivotdata.Count != 0 ? pivotdata.FirstOrDefault().Keys.ToList() : new List<string>();
             var addProps = keys.Union(props).ToList();
             var resAndPiv = datasort.Zip(pivotdata, (p, d) => new { sortd = p, pivotd = d });
 
@@ -382,7 +417,7 @@ namespace Tenor.Services.CountersService
             return new ResultWithMessage(counterViewModel, "");
         }
 
-        public ResultWithMessage getByFilter(object counterFilter)
+        public ResultWithMessage getByFilterDyn(object counterFilter)
         {
             try
             {
@@ -647,6 +682,64 @@ namespace Tenor.Services.CountersService
             return excelfile;
         }
 
+        public ResultWithMessage getByFilter(CounterFilterModel filter)
+        {
+            try
+            {
+                //------------------------------Data source------------------------------------------------
+                IQueryable<Counter> query = _db.Counters.Include(x => x.CounterFieldValues)
+                                   .ThenInclude(x => x.CounterField).
+                                    ThenInclude(x => x.ExtraField).Include(e => e.Subset).
+                                    ThenInclude(e => e.Device).Where(e => true);
+                List<string> counterFields = _db.CounterFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList(); 
+                //------------------------------Data filter-----------------------------------------------------------
+           
+                if (!string.IsNullOrEmpty(filter.SearchQuery))
+                {
+                    query = query.Where(x => x.Name.ToLower().Contains(filter.SearchQuery.ToLower())
+                              || x.SupplierId.Contains(filter.SearchQuery)
+                              || x.Id.ToString().Equals(filter.SearchQuery)
+                              );
+                }
+
+                if (filter.DeviceId != null && filter.DeviceId != 0)
+                {
+                    query = query.Where(x => x.Subset.DeviceId == filter.DeviceId);
+                }
+
+                if (!string.IsNullOrEmpty(filter.SubsetId))
+                {
+                    query = query.Where(x => x.SubsetId.ToString() == filter.SubsetId);
+                }
+
+
+                if (filter.ExtraFields.Count()!=0)
+                {
+                    foreach(var s in filter.ExtraFields)
+                    {
+                        string strValue = string.Join(',', s.Value).ToString();
+                        strValue = strValue.Replace("[", "").Replace("]", "").Replace(@"\t|\n|\r|\s+", "").Replace("\"", "");
+
+                        if ( !string.IsNullOrEmpty(strValue))
+                        {
+                            query = query.Where(x => x.CounterFieldValues.Any(y => y.CounterField.ExtraField.Name == s.Key.ToString() && strValue.Contains(y.FieldValue)));
+                        }
+                       
+                    }
+                }
+
+                //mapping wit DTO querable
+                var queryViewModel = convertCountersToListViewModel(query);
+                //Sort and paginition
+                return sortAndPagination(filter, queryViewModel);
+
+            }
+            catch (Exception ex)
+            {
+                return new ResultWithMessage(new DataWithSize(0, null), ex.Message);
+
+            }
+        }
 
     }
 }
