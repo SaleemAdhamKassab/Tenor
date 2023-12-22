@@ -37,7 +37,7 @@ namespace Tenor.Controllers
         public IActionResult delete(int id) => _returnResult(_countersService.delete(id));
 
         [HttpPost("exportCounterByFilter")]
-        public IActionResult exportCounterByFilter(object filter)
+        public IActionResult exportCounterByFilter(CounterFilterModel filter)
         {
             var fileResult = _countersService.exportCounterByFilter(filter);
 
