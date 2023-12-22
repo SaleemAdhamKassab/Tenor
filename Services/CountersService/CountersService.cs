@@ -27,7 +27,7 @@ namespace Tenor.Services.CountersService
         ResultWithMessage add(CounterBindingModel model);
         ResultWithMessage edit(CounterBindingModel CounterDto);
         ResultWithMessage delete(int id);
-        FileBytesModel exportCounterByFilter(object FilterM);
+        FileBytesModel exportCounterByFilter(CounterFilterModel filter);
         ResultWithMessage getByFilter(CounterFilterModel filter);
 
     }
@@ -620,34 +620,49 @@ namespace Tenor.Services.CountersService
             }
         }
 
-        public FileBytesModel exportCounterByFilter(object counterFilter)
+        public FileBytesModel exportCounterByFilter(CounterFilterModel filter)
         {
-            //--------------------------Data Source---------------------------------------
+            //------------------------------Data source------------------------------------------------
             IQueryable<Counter> query = _db.Counters.Include(x => x.CounterFieldValues)
-                     .ThenInclude(x => x.CounterField).
-                      ThenInclude(x => x.ExtraField).Include(e => e.Subset).
-                      ThenInclude(e => e.Device).Where(e => true);
-            List<string> counterFields = _db.CounterFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList();
-            //------------------------------Conver Dynamic filter--------------------------
-            dynamic data = JsonConvert.DeserializeObject<dynamic>(counterFilter.ToString());
-            CounterFilterModel counterFilterModel = new CounterFilterModel()
-            {
-                SearchQuery = counterFilter.ToString().Contains("SearchQuery") ? data["SearchQuery"] : data["searchQuery"],
-                PageIndex = counterFilter.ToString().Contains("PageIndex") ? data["PageIndex"] : data["pageIndex"],
-                PageSize = counterFilter.ToString().Contains("PageSize") ? data["PageSize"] : data["pageSize"],
-                SortActive = counterFilter.ToString().Contains("SortActive") ? data["SortActive"] : data["sortActive"],
-                SortDirection = counterFilter.ToString().Contains("SortDirection") ? data["SortDirection"] : data["sortDirection"],
-                SubsetId = counterFilter.ToString().Contains("SubsetId") ? Convert.ToString(data["SubsetId"]) : Convert.ToString(data["subsetId"]),
-                DeviceId = (counterFilter.ToString().Contains("DeviceId") ? data["DeviceId"] : data["deviceId"]) != "" ?
-                           (counterFilter.ToString().Contains("DeviceId") ? data["DeviceId"] : data["deviceId"]) : null
+                               .ThenInclude(x => x.CounterField).
+                                ThenInclude(x => x.ExtraField).Include(e => e.Subset).
+                                ThenInclude(e => e.Device).Where(e => true);
+            //------------------------------Data filter-----------------------------------------------------------
 
-            };
-            //--------------------------------Filter and conver data to VM----------------------------------------------
-            IQueryable<Counter> fiteredData = getFilteredData(data, query, counterFilterModel, counterFields);
-            //-------------------------------Data sorting and pagination------------------------------------------
-            var result = convertCountersToListViewModel(fiteredData);
+            if (!string.IsNullOrEmpty(filter.SearchQuery))
+            {
+                query = query.Where(x => x.Name.ToLower().Contains(filter.SearchQuery.ToLower())
+                          || x.SupplierId.Contains(filter.SearchQuery)
+                          || x.Id.ToString().Equals(filter.SearchQuery)
+                          );
+            }
+            if (filter.DeviceId != null && filter.DeviceId != 0)
+            {
+                query = query.Where(x => x.Subset.DeviceId == filter.DeviceId);
+            }
+            if (!string.IsNullOrEmpty(filter.SubsetId))
+            {
+                query = query.Where(x => x.SubsetId.ToString() == filter.SubsetId);
+            }
+            if (filter.ExtraFields.Count() != 0)
+            {
+                foreach (var s in filter.ExtraFields)
+                {
+                    string strValue = string.Join(',', s.Value).ToString();
+                    strValue = strValue.Replace("[", "").Replace("]", "").Replace(@"\t|\n|\r|\s+", "").Replace("\"", "");
+
+                    if (!string.IsNullOrEmpty(strValue))
+                    {
+                        query = query.Where(x => x.CounterFieldValues.Any(y => y.CounterField.ExtraField.Name == s.Key.ToString() && strValue.Contains(y.FieldValue)));
+                    }
+
+                }
+            }
+
+            //mapping wit DTO querable
+            var queryViewModel = convertCountersToListViewModel(query);
             //-------------------Pivot data--------------------------------------
-            var pivResult = PivotData(result.ToList());
+            var pivResult = PivotData(queryViewModel.ToList());
             //-----------------------------------------------------------------------
             if (pivResult == null || pivResult.Count() == 0)
                 return new FileBytesModel();
@@ -691,7 +706,6 @@ namespace Tenor.Services.CountersService
                                    .ThenInclude(x => x.CounterField).
                                     ThenInclude(x => x.ExtraField).Include(e => e.Subset).
                                     ThenInclude(e => e.Device).Where(e => true);
-                List<string> counterFields = _db.CounterFields.Include(x => x.ExtraField).Select(x => x.ExtraField.Name).ToList(); 
                 //------------------------------Data filter-----------------------------------------------------------
            
                 if (!string.IsNullOrEmpty(filter.SearchQuery))
