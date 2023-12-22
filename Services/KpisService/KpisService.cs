@@ -532,8 +532,11 @@ namespace Tenor.Services.KpisService
                 pivoTmp.Add("DeviceName", item.value.DeviceName);
                 foreach (var field in ExtField.Distinct().Select((value2, i2) => new { i2, value2 }))
                 {
-                    pivoTmp.Add(field.value2, (((IDictionary<String, Object>)item.value)["Value" + field.i2.ToString()])!=null?((IDictionary<String, Object>)item.value)["Value" + field.i2.ToString()]:"NA");
-              
+                    if ((((IDictionary<String, Object>)item.value).ContainsKey("Value" + field.i2.ToString())))
+                    {
+                        pivoTmp.Add(field.value2, (((IDictionary<String, Object>)item.value)["Value" + field.i2.ToString()]) != null ? ((IDictionary<String, Object>)item.value)["Value" + field.i2.ToString()] : "NA");
+
+                    }
 
                 }
                 pivotData.Add(pivoTmp);
