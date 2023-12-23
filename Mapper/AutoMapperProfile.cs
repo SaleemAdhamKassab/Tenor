@@ -54,7 +54,7 @@ namespace Tenor.Mapper
             CreateMap<Kpi, KpiViewModel>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
-                .ForMember(dest => dest.KpiFileds, opt => opt.MapFrom(src => src.KpiFieldValues))
+                .ForMember(dest => dest.ExtraFields, opt => opt.MapFrom(src => src.KpiFieldValues))
                 .ForMember(dest => dest.Operations, opt => opt.MapFrom(src => src.Operation))
                 .ForMember(dest => dest.DeviceName, opt => opt.MapFrom(src => src.Device.Name))
                 .ReverseMap();

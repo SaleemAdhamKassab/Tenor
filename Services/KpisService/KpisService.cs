@@ -44,6 +44,7 @@ namespace Tenor.Services.KpisService
         ResultWithMessage GetOperators();
         ResultWithMessage GetFunctions();
         FileBytesModel exportKpiByFilter(object kpiFilterM);
+        ResultWithMessage getByFilter(KpiFilterModel filter);
 
 
     }
@@ -131,7 +132,7 @@ namespace Tenor.Services.KpisService
                     _db.Kpis.Add(newKpi);
                     _db.SaveChanges();
 
-                    if (kpi.KpiFields.Count != 0)
+                    if (kpi.KpiFields!=null)
                     {
                         AddExtraFields(newKpi.Id, kpi.KpiFields);
                     }
@@ -174,7 +175,7 @@ namespace Tenor.Services.KpisService
                     //Remove old childs relation
                     DeleteSelfRelation(oldKpi.OperationId, null);
                     //Update Kpi field values
-                    if (Kpi.KpiFields.Count != 0)
+                    if (Kpi.KpiFields!=null)
                     {
                         var KpiFieldValues = _db.KpiFieldValues.Where(x => x.KpiId == Kpi.Id).ToList();
                         _db.KpiFieldValues.RemoveRange(KpiFieldValues);
@@ -416,9 +417,9 @@ namespace Tenor.Services.KpisService
                               || x.Id.ToString().Equals(kpiFilterModel.SearchQuery)
                               );
             }
-            if (!string.IsNullOrEmpty(kpiFilterModel.DeviceId))
+            if (kpiFilterModel.DeviceId!=null  && kpiFilterModel.DeviceId != 0)
             {
-                query = query.Where(x => x.DeviceId.ToString()== kpiFilterModel.DeviceId);
+                query = query.Where(x => x.DeviceId== kpiFilterModel.DeviceId);
 
             }
             return query;
@@ -440,9 +441,9 @@ namespace Tenor.Services.KpisService
                 var result = queryViewModel.Skip((kpiFilterModel.PageIndex) * kpiFilterModel.PageSize)
                 .Take(kpiFilterModel.PageSize).ToList();
 
-                var pivotD = PivotData(result);
-                var response = MergData(pivotD, result);
-                return new ResultWithMessage(new DataWithSize(Count, response), "");
+                //var pivotD = PivotData(result);
+                //var response = MergData(pivotD, result);
+                return new ResultWithMessage(new DataWithSize(Count, result), "");
             }
 
             else
@@ -451,9 +452,9 @@ namespace Tenor.Services.KpisService
                 var result = queryViewModel.Skip((kpiFilterModel.PageIndex) * kpiFilterModel.PageSize)
                 .Take(kpiFilterModel.PageSize).ToList();
 
-                var pivotD = PivotData(result);
-                var response = MergData(pivotD, result);
-                return new ResultWithMessage(new DataWithSize(Count, response), "");
+                //var pivotD = PivotData(result);
+               // var response = MergData(pivotD, result);
+                return new ResultWithMessage(new DataWithSize(Count, result), "");
             }
 
         }
@@ -610,5 +611,64 @@ namespace Tenor.Services.KpisService
             bool isExist = _db.Kpis.Any(x=> x.DeviceId==deviceid && x.Name==kpiname && x.Id!=id);
             return isExist;
         }
+
+        public ResultWithMessage getByFilter(KpiFilterModel filter)
+        {
+            try
+            {
+                //------------------------------Data source------------------------------------------------
+                IQueryable<Kpi> query = _db.Kpis.Include(x => x.KpiFieldValues).ThenInclude(x => x.KpiField).
+                  ThenInclude(x => x.ExtraField).AsQueryable();
+                //------------------------------Data filter-----------------------------------------------------------
+
+                if (!string.IsNullOrEmpty(filter.SearchQuery))
+                {
+                    query = query.Where(x => x.Name.ToLower().Contains(filter.SearchQuery.ToLower())
+                                  || x.DeviceId.ToString().Equals(filter.SearchQuery)
+                                  || x.Id.ToString().Equals(filter.SearchQuery)
+                                  );
+                }
+                if (filter.DeviceId != null && filter.DeviceId!=0)
+                {
+                    query = query.Where(x => x.DeviceId == filter.DeviceId);
+
+                }
+
+
+                if (filter.ExtraFields != null)
+                {
+                    foreach (var s in filter.ExtraFields)
+                    {
+                        string strValue = string.Join(',', s.Value).ToString();
+                        strValue = strValue.Replace("[", "").Replace("]", "").Replace(@"\t|\n|\r|\s+", "").Replace("\"", "");
+
+                        if (!string.IsNullOrEmpty(strValue))
+                        {
+                            query = query.Where(x => x.KpiFieldValues.Any(y => y.KpiField.ExtraField.Name == s.Key.ToString() && strValue.Contains(y.FieldValue)));
+                        }
+
+                    }
+                }
+
+                //mapping wit DTO querable
+                var queryViewModel = query.Select(x => new KpiListViewModel()
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    DeviceId = x.DeviceId,
+                    DeviceName = x.Device.Name,
+                    ExtraFields = _mapper.Map<List<KpiFieldValueViewModel>>(x.KpiFieldValues)
+                });
+                //Sort and paginition
+                return sortAndPagination(filter, queryViewModel);
+
+            }
+            catch (Exception ex)
+            {
+                return new ResultWithMessage(new DataWithSize(0, null), ex.Message);
+
+            }
+        }
+
     }
 }

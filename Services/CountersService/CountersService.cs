@@ -493,7 +493,7 @@ namespace Tenor.Services.CountersService
                     _db.Add(counter);
                     _db.SaveChanges();
 
-                    if (model.ExtraFields.Count != 0)
+                    if (model.ExtraFields!=null)
                         addCounterExtraFieldValues(model.ExtraFields, counter.Id);
 
                     counter = _db.Counters.Include(x => x.CounterFieldValues)
@@ -563,7 +563,7 @@ namespace Tenor.Services.CountersService
                     _db.Update(counter);
                     _db.SaveChanges();
 
-                    if (model.ExtraFields.Count != 0)
+                    if (model.ExtraFields!=null)
                         addCounterExtraFieldValues(model.ExtraFields, counter.Id);
 
                     _db.SaveChanges();
@@ -730,7 +730,7 @@ namespace Tenor.Services.CountersService
                 }
 
 
-                if (filter.ExtraFields.Count()!=0)
+                if (filter.ExtraFields!=null)
                 {
                     foreach(var s in filter.ExtraFields)
                     {

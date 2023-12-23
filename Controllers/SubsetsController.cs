@@ -17,7 +17,7 @@ namespace Tenor.Controllers
 
 
         [HttpPost("getByFilter")]
-        public IActionResult getByFilter([FromBody] object filter) => _returnResult(_subsetservice.getByFilter(filter));
+        public IActionResult getByFilter([FromBody] SubsetFilterModel filter) => _returnResult(_subsetservice.getByFilter(filter));
 
 
         [HttpGet("getExtraFields")]

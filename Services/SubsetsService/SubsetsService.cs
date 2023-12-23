@@ -21,13 +21,14 @@ namespace Tenor.Services.SubsetsService
     public interface ISubsetsService
     {
         ResultWithMessage getById(int id);
-        ResultWithMessage getByFilter(object subsetfilter);
+        ResultWithMessage getByFilter2(object subsetfilter);
         ResultWithMessage getExtraFields();
         bool isSubsetExists(int subsetId);
         ResultWithMessage add(SubsetBindingModel model);
         ResultWithMessage edit(int id ,SubsetBindingModel subsetDto);
         ResultWithMessage delete(int id);
         FileBytesModel exportSubsetByFilter(object FilterM);
+        ResultWithMessage getByFilter(SubsetFilterModel filter);
 
     }
 
@@ -150,9 +151,9 @@ namespace Tenor.Services.SubsetsService
                               );
             }
 
-            if (!string.IsNullOrEmpty(subsetFilterModel.DeviceId))
+            if (subsetFilterModel.DeviceId != null && subsetFilterModel.DeviceId != 0)
             {
-                query = query.Where(x => x.DeviceId.ToString() == subsetFilterModel.DeviceId);
+                query = query.Where(x => x.DeviceId == subsetFilterModel.DeviceId);
 
             }
 
@@ -176,9 +177,9 @@ namespace Tenor.Services.SubsetsService
                 var result = queryViewModel.Skip((kpiFilterModel.PageIndex) * kpiFilterModel.PageSize)
                 .Take(kpiFilterModel.PageSize).ToList();
 
-                var pivotD = PivotData(result);
-                var response = MergData(pivotD, result);
-                return new ResultWithMessage(new DataWithSize(Count, response), "");
+               // var pivotD = PivotData(result);
+                //var response = MergData(pivotD, result);
+                return new ResultWithMessage(new DataWithSize(Count, result), "");
             }
 
             else
@@ -187,9 +188,9 @@ namespace Tenor.Services.SubsetsService
                 var result = queryViewModel.Skip((kpiFilterModel.PageIndex) * kpiFilterModel.PageSize)
                 .Take(kpiFilterModel.PageSize).ToList();
 
-                var pivotD = PivotData(result);
-                var response = MergData(pivotD, result);
-                return new ResultWithMessage(new DataWithSize(Count, response), "");
+                //var pivotD = PivotData(result);
+                //var response = MergData(pivotD, result);
+                return new ResultWithMessage(new DataWithSize(Count, result), "");
             }
 
         }
@@ -436,7 +437,7 @@ namespace Tenor.Services.SubsetsService
             return new ResultWithMessage(model, "");
         }
 
-        public ResultWithMessage getByFilter(object subsetfilter)
+        public ResultWithMessage getByFilter2(object subsetfilter)
         {
             try
             {
@@ -519,7 +520,7 @@ namespace Tenor.Services.SubsetsService
                     _db.Add(subset);
                     _db.SaveChanges();
 
-                    if (model.ExtraFields.Count != 0)
+                    if (model.ExtraFields!=null)
                         addSubsetExtraFieldValues(model.ExtraFields, subset.Id);
 
                     subset = _db.Subsets.Include(x => x.SubsetFieldValues).ThenInclude(x => x.SubsetField).
@@ -609,7 +610,7 @@ namespace Tenor.Services.SubsetsService
 
                     _db.Update(subset);
 
-                    if (model.ExtraFields.Count != 0)
+                    if (model.ExtraFields!=null)
                         addSubsetExtraFieldValues(model.ExtraFields, subset.Id);
 
                     _db.SaveChanges();
@@ -733,6 +734,60 @@ namespace Tenor.Services.SubsetsService
             excelfile.FileName = excelName;
             excelfile.ContentType = contentType;
             return excelfile;
+        }
+
+        public ResultWithMessage getByFilter(SubsetFilterModel filter)
+        {
+            try
+            {
+                //------------------------------Data source------------------------------------------------
+                IQueryable<Subset> query = _db.Subsets.Include(x => x.SubsetFieldValues).
+                    ThenInclude(x => x.SubsetField).
+                    ThenInclude(x => x.ExtraField).AsQueryable();
+                //------------------------------Data filter-----------------------------------------------------------
+
+                if (!string.IsNullOrEmpty(filter.SearchQuery))
+                {
+                    query = query.Where(x => x.Name.ToLower().Contains(filter.SearchQuery.ToLower())
+                                  || x.SupplierId.Contains(filter.SearchQuery)
+                                  || x.TableName.Contains(filter.SearchQuery)
+                                  || x.Id.ToString().Equals(filter.SearchQuery)
+                                  );
+                }
+
+                if (filter.DeviceId!=null && filter.DeviceId!=0)
+                {
+                    query = query.Where(x => x.DeviceId == filter.DeviceId);
+
+                }
+
+
+                if (filter.ExtraFields != null)
+                {
+                    foreach (var s in filter.ExtraFields)
+                    {
+                        string strValue = string.Join(',', s.Value).ToString();
+                        strValue = strValue.Replace("[", "").Replace("]", "").Replace(@"\t|\n|\r|\s+", "").Replace("\"", "");
+
+                        if (!string.IsNullOrEmpty(strValue))
+                        {
+                            query = query.Where(x => x.SubsetFieldValues.Any(y => y.SubsetField.ExtraField.Name == s.Key.ToString() && strValue.Contains(y.FieldValue)));
+                        }
+
+                    }
+                }
+
+                //mapping wit DTO querable
+                var queryViewModel = convertSubsetsToListViewModel(query);
+                //Sort and paginition
+                return sortAndPagination(filter, queryViewModel);
+
+            }
+            catch (Exception ex)
+            {
+                return new ResultWithMessage(new DataWithSize(0, null), ex.Message);
+
+            }
         }
     }
 }

@@ -27,9 +27,9 @@ namespace Tenor.Controllers
         }
 
         [HttpPost("getByFilter")]
-        public IActionResult getSubsetsByFilter(object filter)
+        public IActionResult getSubsetsByFilter(KpiFilterModel filter)
         {
-          return  _returnResult(_kpiservice.GetListAsync(filter));
+          return  _returnResult(_kpiservice.getByFilter(filter));
 
         }
 
