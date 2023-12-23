@@ -118,6 +118,11 @@ namespace Tenor.Services.KpisService
 
         public async Task<ResultWithMessage> Add(CreateKpi kpi)
         {
+            if(IsKpiExist(0,kpi.DeviceId,kpi.Name))
+            {
+                return new ResultWithMessage(null,"This Kpi name alraedy exsit on the same device");
+
+            }
             using (TransactionScope transaction = new TransactionScope())
             {
                 try
@@ -144,9 +149,15 @@ namespace Tenor.Services.KpisService
 
         public async Task<ResultWithMessage> Update(int id,CreateKpi Kpi)
         {
+            
             if (id != Kpi.Id)
             {
                 return  new ResultWithMessage(null,"Invalid KPI Id");
+            }
+            if (IsKpiExist(Kpi.Id, Kpi.DeviceId, Kpi.Name))
+            {
+                return new ResultWithMessage(null, "This Kpi name alraedy exsit on the same device");
+
             }
             using (TransactionScope transaction = new TransactionScope())
             {
@@ -592,6 +603,12 @@ namespace Tenor.Services.KpisService
             }
 
             return mergData;
+        }
+
+        private bool IsKpiExist(int id,int? deviceid,string kpiname)
+        {
+            bool isExist = _db.Kpis.Any(x=> x.DeviceId==deviceid && x.Name==kpiname && x.Id!=id);
+            return isExist;
         }
     }
 }
