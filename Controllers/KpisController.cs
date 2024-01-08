@@ -94,5 +94,12 @@ namespace Tenor.Controllers
 
             return File(fileResult.Bytes, fileResult.ContentType, fileResult.FileName);
         }
+
+        [HttpGet("GetKpiQuery")]
+        public async Task<IActionResult> GetKpiQuery(int kpiid)
+        {
+            return _returnResult(await _kpiservice.GetKpiQuery(kpiid));
+
+        }
     }
 }

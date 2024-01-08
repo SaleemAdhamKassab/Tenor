@@ -106,7 +106,13 @@ namespace Tenor.Services.KpisService.ViewModels
             public List<KpiFieldValueViewModel> ? ExtraFields { get; set; }
 
         }
-        
-          
+        public class QueryExpress
+        {
+            public string LeftSide { get; set; }
+            public string Inside { get; set; }
+            public string RightSide { get; set; }
+        }
+
+
     }
 }
