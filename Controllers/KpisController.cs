@@ -8,6 +8,7 @@ using Tenor.Helper;
 using Tenor.Models;
 using Tenor.Services.DevicesService.ViewModels;
 using Tenor.Services.KpisService;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
 namespace Tenor.Controllers
@@ -101,5 +102,7 @@ namespace Tenor.Controllers
             return _returnResult(await _kpiservice.GetKpiQuery(kpiid));
 
         }
+
+       
     }
 }

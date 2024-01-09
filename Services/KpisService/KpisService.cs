@@ -49,7 +49,6 @@ namespace Tenor.Services.KpisService
         ResultWithMessage getByFilter(KpiFilterModel filter);
         Task<ResultWithMessage> GetKpiQuery(int kpiid);
 
-
     }
 
     public class KpisService : IKpisService
@@ -57,6 +56,8 @@ namespace Tenor.Services.KpisService
         private readonly TenorDbContext _db;
         private readonly IMapper _mapper;
         private string query = "";
+        
+
         public KpisService(TenorDbContext tenorDbContext, IMapper mapper)
         {
             _db = tenorDbContext;
@@ -287,35 +288,6 @@ namespace Tenor.Services.KpisService
             excelfile.ContentType = contentType;
             return excelfile;
         }
-        private bool DeleteSelfRelation(int? parentid, List<int> childid)
-        {
-            List<Operation> childOpt = new List<Operation>();
-            //remove main parent
-            if (parentid != null)
-            {
-                var OldRelation = _db.Operations.FirstOrDefault(x => x.Id == parentid);
-                _db.Operations.Remove(OldRelation);
-                childOpt = _db.Operations.Where(x => x.ParentId == parentid).ToList();
-            }
-            else
-            {
-                childOpt = _db.Operations.Where(x => childid.Contains((int)x.ParentId)).ToList();
-            }
-
-            //-------------------remove cascade
-            if (childOpt.Count == 0)
-            {
-                _db.SaveChanges();
-                return true;
-            }
-            foreach (var s in childOpt)
-            {
-                _db.Operations.Remove(s);
-            }
-            _db.SaveChanges();
-            DeleteSelfRelation(null, childOpt.Select(x => x.Id).ToList());
-            return true;
-        }
         public ResultWithMessage getByFilter(KpiFilterModel filter)
         {
             try
@@ -376,23 +348,41 @@ namespace Tenor.Services.KpisService
 
         public async Task<ResultWithMessage> GetKpiQuery(int kpiid)
         {
-            var kpi = _db.Kpis.Include(x => x.Device).Include(x => x.Operation).Include(x => x.KpiFieldValues)
-                .ThenInclude(x => x.KpiField).ThenInclude(x => x.ExtraField)
-                .FirstOrDefault(x => x.Id == kpiid);
-
-            if (kpi == null)
-            {
-                return new ResultWithMessage(null, "This KPI Id is invalid");
-
-            }
-            GetSelfRelation(kpi.OperationId);
-            var kpiMap = _mapper.Map<KpiViewModel>(kpi);
-            string queryBuilder = GetQeuryExpress(kpiMap.Operations,null);
-            return new ResultWithMessage(queryBuilder, null);
+            var response = GetKpiForm(kpiid);
+            return new ResultWithMessage(response.Result.Data, null);
 
         }
 
 
+        private bool DeleteSelfRelation(int? parentid, List<int> childid)
+        {
+            List<Operation> childOpt = new List<Operation>();
+            //remove main parent
+            if (parentid != null)
+            {
+                var OldRelation = _db.Operations.FirstOrDefault(x => x.Id == parentid);
+                _db.Operations.Remove(OldRelation);
+                childOpt = _db.Operations.Where(x => x.ParentId == parentid).ToList();
+            }
+            else
+            {
+                childOpt = _db.Operations.Where(x => childid.Contains((int)x.ParentId)).ToList();
+            }
+
+            //-------------------remove cascade
+            if (childOpt.Count == 0)
+            {
+                _db.SaveChanges();
+                return true;
+            }
+            foreach (var s in childOpt)
+            {
+                _db.Operations.Remove(s);
+            }
+            _db.SaveChanges();
+            DeleteSelfRelation(null, childOpt.Select(x => x.Id).ToList());
+            return true;
+        }
 
         private bool AddExtraFields(int kpiId, List<ExtraFieldValue> extFields)
         {
@@ -694,11 +684,10 @@ namespace Tenor.Services.KpisService
         }
         private string GetQeuryExpress(OperationDto opt, string? tag)
         {
-
+            ConvertKpiForm kpiFormat = new ConvertKpiForm(_db,_mapper);
             string pointerTag = "tag";
             string funcTag = "func";
             QueryExpress qe = new QueryExpress();
-
             if (opt.Type == "voidFunction")
             {
                 if (!string.IsNullOrEmpty(tag))
@@ -738,51 +727,59 @@ namespace Tenor.Services.KpisService
                 qe.LeftSide = ""; qe.Inside = opt.Value; qe.RightSide = "";
                 query = query.Insert(query.Length - 1, qe.LeftSide + qe.Inside + qe.RightSide);
 
-                if (opt.Childs.Count != 0)
-                {
-                    foreach (var c in opt.Childs)
-                    {
+                //if (opt.Childs.Count != 0)
+                //{
+                //    foreach (var c in opt.Childs)
+                //    {
 
-                        GetQeuryExpress(c, null);
+                //        GetQeuryExpress(c, null);
 
-                    }
-                }
+                //    }
+                //}
             }
             if (opt.Type == "opt")
             {
 
                 qe.LeftSide = ""; qe.Inside = opt.OperatorName; qe.RightSide = "";
                 query= query.Insert(query.Length-1,qe.LeftSide + qe.Inside + qe.RightSide);
-                if (opt.Childs.Count != 0)
-                {
-                    foreach (var c in opt.Childs)
-                    {
+                //if (opt.Childs.Count != 0)
+                //{
+                //    foreach (var c in opt.Childs)
+                //    {
 
-                        GetQeuryExpress(c, null);
+                //        GetQeuryExpress(c, null);
 
 
 
-                    }
-                }
+                //    }
+                //}
             }
             if (opt.Type == "kpi")
             {
-
+                string kpiNewFormat = kpiFormat.GetKpiFomat((int)opt.KpiId);
                 qe.LeftSide = "(";
-                qe.Inside = opt.Aggregation == "na" ? opt.KpiName : opt.Aggregation + "(" + opt.KpiName + ")";
+                qe.Inside = opt.Aggregation == "na" ? opt.KpiName : opt.Aggregation + "(" + kpiNewFormat + ")";
                 qe.RightSide = ")";
-                query += qe.LeftSide + qe.Inside + qe.RightSide;
-                if (opt.Childs.Count != 0)
+                string kpiState= qe.LeftSide + qe.Inside + qe.RightSide;
+                if (!query.Contains(pointerTag))
                 {
-                    foreach (var c in opt.Childs)
-                    {
+                    query = query.Insert(query.Length - 1, kpiState);
 
-                        GetQeuryExpress(c, null);
-
-
-
-                    }
                 }
+                else
+                {
+                    query = query.Replace(pointerTag, kpiState);
+
+                }
+                //if (opt.Childs.Count != 0)
+                //{
+                //    foreach (var c in opt.Childs)
+                //    {
+
+                //        GetQeuryExpress(c, null);
+
+                //    }
+                //}
             }
             if (opt.Type == "counter")
             {
@@ -847,9 +844,29 @@ namespace Tenor.Services.KpisService
                     }
                 }
             }
+            
             return query;
 
         }
+
+        private async Task<ResultWithMessage> GetKpiForm(int kpiId)
+        {
+            var kpi = _db.Kpis.Include(x => x.Device).Include(x => x.Operation).Include(x => x.KpiFieldValues)
+                .ThenInclude(x => x.KpiField).ThenInclude(x => x.ExtraField)
+                .FirstOrDefault(x => x.Id == kpiId);
+
+            if (kpi == null)
+            {
+                return new ResultWithMessage(null, "This KPI Is invalid");
+
+            }
+            GetSelfRelation(kpi.OperationId);
+            var kpiMap = _mapper.Map<KpiViewModel>(kpi);
+            string queryBuilder = GetQeuryExpress(kpiMap.Operations, null);
+
+            return new ResultWithMessage(queryBuilder, null);
+        }
+
 
     }
 }
