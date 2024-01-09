@@ -736,7 +736,8 @@ namespace Tenor.Services.KpisService
             {
 
                 qe.LeftSide = ""; qe.Inside = opt.Value; qe.RightSide = "";
-                query += qe.LeftSide + qe.Inside + qe.RightSide;
+                query = query.Insert(query.Length - 1, qe.LeftSide + qe.Inside + qe.RightSide);
+
                 if (opt.Childs.Count != 0)
                 {
                     foreach (var c in opt.Childs)
