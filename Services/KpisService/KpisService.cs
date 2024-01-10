@@ -48,6 +48,7 @@ namespace Tenor.Services.KpisService
         FileBytesModel exportKpiByFilter(object kpiFilterM);
         ResultWithMessage getByFilter(KpiFilterModel filter);
         Task<ResultWithMessage> GetKpiQuery(int kpiid);
+        FileBytesModel exportKpiByFilter2(KpiFilterModel filter);
 
     }
 
@@ -353,6 +354,86 @@ namespace Tenor.Services.KpisService
 
         }
 
+        public FileBytesModel exportKpiByFilter2(KpiFilterModel filter)
+        {
+            //------------------------------Data source------------------------------------------------
+            IQueryable<Kpi> query = _db.Kpis.Include(x => x.KpiFieldValues).ThenInclude(x => x.KpiField).
+              ThenInclude(x => x.ExtraField).AsQueryable();
+            //------------------------------Data filter-----------------------------------------------------------
+
+            if (!string.IsNullOrEmpty(filter.SearchQuery))
+            {
+                query = query.Where(x => x.Name.ToLower().Contains(filter.SearchQuery.ToLower())
+                              || x.DeviceId.ToString().Equals(filter.SearchQuery)
+                              || x.Id.ToString().Equals(filter.SearchQuery)
+                              );
+            }
+            if (filter.DeviceId != null && filter.DeviceId != 0)
+            {
+                query = query.Where(x => x.DeviceId == filter.DeviceId);
+
+            }
+
+
+            if (filter.ExtraFields != null)
+            {
+                foreach (var s in filter.ExtraFields)
+                {
+                    string strValue = string.Join(',', s.Value).ToString();
+                    strValue = strValue.Replace("[", "").Replace("]", "").Replace(@"\t|\n|\r|\s+", "").Replace("\"", "");
+
+                    if (!string.IsNullOrEmpty(strValue))
+                    {
+                        query = query.Where(x => x.KpiFieldValues.Any(y => y.KpiField.ExtraField.Name == s.Key.ToString() && strValue.Contains(y.FieldValue)));
+                    }
+
+                }
+            }
+
+            //mapping wit DTO querable
+            var queryViewModel = query.Select(x => new KpiListViewModel()
+            {
+                Id = x.Id,
+                Name = x.Name,
+                DeviceId = x.DeviceId,
+                DeviceName = x.Device.Name,
+                ExtraFields = _mapper.Map<List<KpiFieldValueViewModel>>(x.KpiFieldValues)
+            });
+            //-------------------Pivot data--------------------------------------
+            var pivResult = PivotData(queryViewModel.ToList());
+            //-----------------------------------------------------------------------
+            if (pivResult == null || pivResult.Count() == 0)
+                return new FileBytesModel();
+
+            FileBytesModel excelfile = new();
+
+            ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+            var stream = new MemoryStream();
+            var package = new ExcelPackage(stream);
+            var workSheet = package.Workbook.Worksheets.Add("Sheet1");
+            workSheet.Cells.LoadFromCollection(pivResult, true);
+
+            List<int> dateColumns = new();
+            int datecolumn = 1;
+            foreach (var PropertyInfo in pivResult.FirstOrDefault().GetType().GetProperties())
+            {
+                if (PropertyInfo.PropertyType == typeof(DateTime) || PropertyInfo.PropertyType == typeof(DateTime?))
+                {
+                    dateColumns.Add(datecolumn);
+                }
+                datecolumn++;
+            }
+            dateColumns.ForEach(item => workSheet.Column(item).Style.Numberformat.Format = "dd/mm/yyyy hh:mm:ss AM/PM");
+            package.Save();
+            excelfile.Bytes = stream.ToArray();
+            stream.Position = 0;
+            stream.Close();
+            string excelName = $"Posts-{DateTime.Now.ToString("yyyyMMddHHmmssfff")}.xlsx";
+            string contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            excelfile.FileName = excelName;
+            excelfile.ContentType = contentType;
+            return excelfile;
+        }
 
         private bool DeleteSelfRelation(int? parentid, List<int> childid)
         {

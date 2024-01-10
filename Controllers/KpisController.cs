@@ -86,9 +86,9 @@ namespace Tenor.Controllers
         }
 
         [HttpPost("exportKpiByFilter")]
-        public IActionResult exportKpiByFilter(object filter)
+        public IActionResult exportKpiByFilter(KpiFilterModel filter)
         {
-            var fileResult = _kpiservice.exportKpiByFilter(filter);
+            var fileResult = _kpiservice.exportKpiByFilter2(filter);
 
             if (fileResult.Bytes == null || fileResult.Bytes.Count() == 0)
                 return BadRequest(new { message = "No Data To Export." });
