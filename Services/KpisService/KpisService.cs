@@ -839,7 +839,7 @@ namespace Tenor.Services.KpisService
             {
                 string kpiNewFormat = kpiFormat.GetKpiFomat((int)opt.KpiId);
                 qe.LeftSide = "(";
-                qe.Inside = opt.Aggregation == "na" ? opt.KpiName : opt.Aggregation + "(" + kpiNewFormat + ")";
+                qe.Inside = opt.Aggregation == "na" ? kpiNewFormat : opt.Aggregation + "(" + kpiNewFormat + ")";
                 qe.RightSide = ")";
                 string kpiState= qe.LeftSide + qe.Inside + qe.RightSide;
                 if (!query.Contains(pointerTag))
