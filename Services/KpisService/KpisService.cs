@@ -57,7 +57,6 @@ namespace Tenor.Services.KpisService
         private readonly TenorDbContext _db;
         private readonly IMapper _mapper;
         private string query = "";
-        
 
         public KpisService(TenorDbContext tenorDbContext, IMapper mapper)
         {
@@ -769,13 +768,24 @@ namespace Tenor.Services.KpisService
             string pointerTag = "tag";
             string funcTag = "func";
             QueryExpress qe = new QueryExpress();
+            IDictionary<string,string> funcDic= new Dictionary<string,string>();
             if (opt.Type == "voidFunction")
             {
-                if (!string.IsNullOrEmpty(tag))
+                if (!string.IsNullOrEmpty(tag) || query.Contains(pointerTag))
                 {
                     qe.LeftSide = "("; qe.Inside = pointerTag; qe.RightSide = ")";
                     string chageStr = qe.LeftSide + qe.Inside + qe.RightSide;
-                    query = query.Replace(tag, chageStr);
+                    if(!string.IsNullOrEmpty(tag))
+                    {
+                        query = query.Replace(tag, chageStr);
+
+                    }
+                    else
+                    {
+                        query = query.Replace(pointerTag, chageStr);
+
+                    }
+
                     if (opt.Childs.Count != 0)
                     {
                         foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
@@ -821,8 +831,10 @@ namespace Tenor.Services.KpisService
             if (opt.Type == "opt")
             {
 
-                qe.LeftSide = ""; qe.Inside = opt.OperatorName; qe.RightSide = "";
-                query= query.Insert(query.Length-1,qe.LeftSide + qe.Inside + qe.RightSide);
+             qe.LeftSide = ""; qe.Inside = opt.OperatorName; qe.RightSide = "";                           
+             query = query.Insert(query.Length - 1, qe.LeftSide + qe.Inside + qe.RightSide);
+
+                
                 //if (opt.Childs.Count != 0)
                 //{
                 //    foreach (var c in opt.Childs)
@@ -869,7 +881,7 @@ namespace Tenor.Services.KpisService
                 qe.Inside = opt.Aggregation == "na" ? opt.CounterName : opt.Aggregation + "(" + opt.CounterName + ")";
                 qe.RightSide = "";
                 string chageStr = qe.LeftSide + qe.Inside + qe.RightSide;
-                if(!query.Contains(pointerTag))
+                if (!query.Contains(pointerTag))
                 {
                     query = query.Insert(query.Length - 1, chageStr);
 
@@ -883,6 +895,7 @@ namespace Tenor.Services.KpisService
                 {
                     foreach (var c in opt.Childs)
                     {
+                       
                         GetQeuryExpress(c, null);
                     }
 
@@ -913,17 +926,30 @@ namespace Tenor.Services.KpisService
                 qe.LeftSide = opt.FunctionName + "(";
                 qe.RightSide = ")";
                 string Chang = qe.LeftSide + qe.Inside + qe.RightSide;
-                query = query.Replace(pointerTag, Chang);
+                if(query.Contains(pointerTag))
+                {
+                    query = query.Replace(pointerTag, Chang);
+
+                }
+                else
+                {
+                    query = query.Insert(query.Length - 1, Chang);
+
+                }
+
 
                 if (opt.Childs.Count != 0)
                 {
 
                     foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
                     {
-                        GetQeuryExpress(c.value, funcTag + c.i);
-
+                        //GetQeuryExpress(c.value, funcTag + c.i);
+                        kpiFormat = new ConvertKpiForm(_db, _mapper);
+                        string repFunc=  kpiFormat.GetQeuryExpress(c.value, null);
+                        query = query.Replace(funcTag+c.i, repFunc);
                     }
                 }
+                
             }
             
             return query;

@@ -3,6 +3,7 @@ using Tenor.Dtos;
 using Tenor.Data;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace Tenor.Helper
 {
@@ -56,7 +57,7 @@ namespace Tenor.Helper
             return result;
         }
 
-        private string GetQeuryExpress(OperationDto opt, string? tag)
+        public string GetQeuryExpress(OperationDto opt, string? tag)
         {
 
             string pointerTag = "tag";
@@ -64,11 +65,21 @@ namespace Tenor.Helper
             QueryExpress qe = new QueryExpress();
             if (opt.Type == "voidFunction")
             {
-                if (!string.IsNullOrEmpty(tag))
+                if (!string.IsNullOrEmpty(tag) || query.Contains(pointerTag))
                 {
-                    qe.LeftSide = "("; qe.Inside = pointerTag; qe.RightSide = ")";
+                    qe.LeftSide = "("; qe.Inside = pointerTag; qe.RightSide = "";
                     string chageStr = qe.LeftSide + qe.Inside + qe.RightSide;
-                    query = query.Replace(tag, chageStr);
+                    if (!string.IsNullOrEmpty(tag))
+                    {
+                        query = query.Replace(tag, chageStr);
+
+                    }
+                    else
+                    {
+                        query = query.Replace(pointerTag, chageStr);
+
+                    }
+
                     if (opt.Childs.Count != 0)
                     {
                         foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
@@ -76,6 +87,7 @@ namespace Tenor.Helper
                             GetQeuryExpress(c.value, null);
 
                         }
+                        query = query + ")";
                     }
                 }
                 else
@@ -99,7 +111,16 @@ namespace Tenor.Helper
             {
 
                 qe.LeftSide = ""; qe.Inside = opt.Value; qe.RightSide = "";
-                query = query.Insert(query.Length - 1, qe.LeftSide + qe.Inside + qe.RightSide);
+                string repStr = qe.LeftSide + qe.Inside + qe.RightSide;
+                if (query.Contains(pointerTag))
+                {
+                    query = query.Replace(pointerTag, repStr);
+                }
+                else
+                {
+                    query = query.Insert(query.Length - 1, repStr);
+
+                }
 
                 //if (opt.Childs.Count != 0)
                 //{
@@ -116,6 +137,8 @@ namespace Tenor.Helper
 
                 qe.LeftSide = ""; qe.Inside = opt.OperatorName; qe.RightSide = "";
                 query = query.Insert(query.Length - 1, qe.LeftSide + qe.Inside + qe.RightSide);
+
+
                 //if (opt.Childs.Count != 0)
                 //{
                 //    foreach (var c in opt.Childs)
@@ -130,8 +153,9 @@ namespace Tenor.Helper
             }
             if (opt.Type == "kpi")
             {
+                string kpiNewFormat = GetKpiFomat((int)opt.KpiId);
                 qe.LeftSide = "(";
-                qe.Inside = opt.Aggregation == "na" ? opt.KpiName : opt.Aggregation + "(" + opt.KpiName + ")";
+                qe.Inside = opt.Aggregation == "na" ? kpiNewFormat : opt.Aggregation + "(" + kpiNewFormat + ")";
                 qe.RightSide = ")";
                 string kpiState = qe.LeftSide + qe.Inside + qe.RightSide;
                 if (!query.Contains(pointerTag))
@@ -175,6 +199,7 @@ namespace Tenor.Helper
                 {
                     foreach (var c in opt.Childs)
                     {
+
                         GetQeuryExpress(c, null);
                     }
 
@@ -205,15 +230,23 @@ namespace Tenor.Helper
                 qe.LeftSide = opt.FunctionName + "(";
                 qe.RightSide = ")";
                 string Chang = qe.LeftSide + qe.Inside + qe.RightSide;
-                query = query.Replace(pointerTag, Chang);
+                if (query.Contains(pointerTag))
+                {
+                    query = query.Replace(pointerTag, Chang);
+
+                }
+                query = query.Insert(query.Length - 1, Chang);
+
 
                 if (opt.Childs.Count != 0)
                 {
 
                     foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
                     {
-                        GetQeuryExpress(c.value, funcTag + c.i);
-
+                        //GetQeuryExpress(c.value, funcTag + c.i);
+                        string funcParam = funcTag + c.i;
+                        funcParam =GetQeuryExpress(c.value, null);
+                        query = query.Replace(funcParam,funcParam);
                     }
                 }
             }
