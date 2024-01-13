@@ -4,6 +4,7 @@ using Tenor.Data;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using System;
+using Tenor.Services.KpisService;
 
 namespace Tenor.Helper
 {
@@ -12,11 +13,11 @@ namespace Tenor.Helper
         private  readonly TenorDbContext _db;
         private   readonly IMapper _mapper;
         private   string query = "";
-
         public   ConvertKpiForm( TenorDbContext tenorDbContext, IMapper mapper)
         {
             _db = tenorDbContext;
             _mapper = mapper;
+            
         }
 
         public  string GetKpiFomat(int kpiid)
@@ -63,6 +64,12 @@ namespace Tenor.Helper
             string pointerTag = "tag";
             string funcTag = "func";
             QueryExpress qe = new QueryExpress();
+            KpisService kpiFormat = new KpisService(_db, _mapper);
+            IDictionary<string, string> funcDic = new Dictionary<string, string>()
+            {
+                {"func0","Case When" },{"func1","Then" },{"func2","else" }
+            };
+
             if (opt.Type == "voidFunction")
             {
                 if (!string.IsNullOrEmpty(tag) || query.Contains(pointerTag))
@@ -136,20 +143,17 @@ namespace Tenor.Helper
             {
 
                 qe.LeftSide = ""; qe.Inside = opt.OperatorName; qe.RightSide = "";
-                query = query.Insert(query.Length - 1, qe.LeftSide + qe.Inside + qe.RightSide);
+                string changeStr = qe.LeftSide + qe.Inside + qe.RightSide;
+                if (query.Contains(pointerTag))
+                {
+                    query = query.Replace(pointerTag, changeStr);
+                }
+                else
+                {
+                    query = query.Insert(query.Length - 1, changeStr);
 
+                }
 
-                //if (opt.Childs.Count != 0)
-                //{
-                //    foreach (var c in opt.Childs)
-                //    {
-
-                //        GetQeuryExpress(c, null);
-
-
-
-                //    }
-                //}
             }
             if (opt.Type == "kpi")
             {
@@ -211,44 +215,80 @@ namespace Tenor.Helper
             {
 
                 var func = _db.Functions.FirstOrDefault(f => f.Id == opt.FunctionId);
-
-                for (int i = 0; i <= func.ArgumentsCount - 1; i++)
+                if(func.Name.ToLower()=="if")
                 {
-                    if (opt.Aggregation == "na")
+                    qe.Inside = "Case when func0 then func1 else func2";
+                    qe.LeftSide = opt.FunctionName + "(";
+                    qe.RightSide = ")";
+                    string Chang = qe.LeftSide + qe.Inside + qe.RightSide;
+                    if (query.Contains(pointerTag))
                     {
-                        qe.Inside += i < func.ArgumentsCount - 1 ? funcTag + i + "," : funcTag + i;
+                        query = query.Replace(pointerTag, Chang);
 
                     }
                     else
                     {
-                        qe.Inside += i < func.ArgumentsCount - 1 ? opt.Aggregation + "(" + funcTag + i + ")" + "," : opt.Aggregation + "(" + funcTag + i + ")";
+                        query = query.Insert(query.Length > 0 ? query.Length - 1 : 0, Chang);
 
                     }
 
-                }
-
-                qe.LeftSide = opt.FunctionName + "(";
-                qe.RightSide = ")";
-                string Chang = qe.LeftSide + qe.Inside + qe.RightSide;
-                if (query.Contains(pointerTag))
-                {
-                    query = query.Replace(pointerTag, Chang);
-
-                }
-                query = query.Insert(query.Length - 1, Chang);
-
-
-                if (opt.Childs.Count != 0)
-                {
-
-                    foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
+                    if (opt.Childs.Count != 0)
                     {
-                        //GetQeuryExpress(c.value, funcTag + c.i);
-                        string funcParam = funcTag + c.i;
-                        funcParam =GetQeuryExpress(c.value, null);
-                        query = query.Replace(funcParam,funcParam);
+
+                        foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
+                        {
+                            kpiFormat = new KpisService(_db, _mapper);
+                            string funcParam = funcTag + c.i;
+                            string repFuncParam = kpiFormat.GetQeuryExpress(c.value, null);
+                            query = query.Replace(funcParam, repFuncParam);
+                        }
                     }
                 }
+                else
+                {
+                    for (int i = 0; i <= func.ArgumentsCount - 1; i++)
+                    {
+                        if (opt.Aggregation == "na")
+                        {
+                            qe.Inside += i < func.ArgumentsCount - 1 ? funcTag + i + "," : funcTag + i;
+
+                        }
+                        else
+                        {
+                            qe.Inside += i < func.ArgumentsCount - 1 ? opt.Aggregation + "(" + funcTag + i + ")" + "," : opt.Aggregation + "(" + funcTag + i + ")";
+
+                        }
+
+
+
+                    }
+                    qe.LeftSide = opt.FunctionName + "(";
+                    qe.RightSide = ")";
+                    string Chang = qe.LeftSide + qe.Inside + qe.RightSide;
+                    if (query.Contains(pointerTag))
+                    {
+                        query = query.Replace(pointerTag, Chang);
+
+                    }
+                    else
+                    {
+                        query = query.Insert(query.Length > 0 ? query.Length - 1 : 0, Chang);
+
+                    }
+
+                    if (opt.Childs.Count != 0)
+                    {
+
+                        foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
+                        {
+                            kpiFormat = new KpisService(_db, _mapper);
+                            string funcParam = funcTag + c.i;
+                            string repFuncParam = kpiFormat.GetQeuryExpress(c.value, null);
+                            query = query.Replace(funcParam, repFuncParam);
+                        }
+                    }
+                }
+              
             }
 
             return query;
