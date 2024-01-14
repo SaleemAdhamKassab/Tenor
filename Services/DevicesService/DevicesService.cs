@@ -16,9 +16,10 @@ namespace Tenor.Services.DevicesService
         ResultWithMessage getSubsets();
         bool isDeviceExists(int id);
         ResultWithMessage add(DeviceBindingModel model);
-        ResultWithMessage edit(int id,DeviceBindingModel subsetDto);
+        ResultWithMessage edit(int id, DeviceBindingModel subsetDto);
         ResultWithMessage delete(int id);
         FileBytesModel exportDevicesByFilter(DeviceFilterModel filter);
+        ResultWithMessage validateDevice(int deviceId, string name);
     }
 
     public class DevicesService : IDevicesService
@@ -193,7 +194,7 @@ namespace Tenor.Services.DevicesService
             }
         }
 
-        public ResultWithMessage edit(int id,DeviceBindingModel model)
+        public ResultWithMessage edit(int id, DeviceBindingModel model)
         {
             model.Id = id;
             if (model is null)
@@ -303,6 +304,17 @@ namespace Tenor.Services.DevicesService
             excelfile.FileName = excelName;
             excelfile.ContentType = contentType;
             return excelfile;
+        }
+
+        public ResultWithMessage validateDevice(int deviceId, string name)
+        {
+
+            Device device = _db.Devices.SingleOrDefault(e => e.Id == deviceId || e.Name.Trim().ToLower() == name.Trim().ToLower());
+
+            if (device is not null)
+                return new ResultWithMessage(null, $"The Device with Id: {device.Id} and name: '{device.Name}' is already exists");
+
+            return new ResultWithMessage(true,string.Empty);
         }
     }
 }

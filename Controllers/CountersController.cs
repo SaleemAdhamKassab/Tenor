@@ -46,5 +46,9 @@ namespace Tenor.Controllers
 
             return File(fileResult.Bytes, fileResult.ContentType, fileResult.FileName);
         }
+
+        [HttpGet("validateCounter")]
+        public IActionResult validateCounter(int subsetId, string name) => _returnResult(_countersService.validateCounter(subsetId, name));
+
     }
 }

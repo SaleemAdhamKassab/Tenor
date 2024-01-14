@@ -29,7 +29,7 @@ namespace Tenor.Controllers
 
 
         [HttpPut("edit")]
-        public IActionResult edit(int id,SubsetBindingModel model) =>_returnResult(_subsetservice.edit(id,model));
+        public IActionResult edit(int id, SubsetBindingModel model) => _returnResult(_subsetservice.edit(id, model));
 
 
         [HttpDelete("delete")]
@@ -45,5 +45,10 @@ namespace Tenor.Controllers
 
             return File(fileResult.Bytes, fileResult.ContentType, fileResult.FileName);
         }
+
+
+        [HttpGet("validateSubset")]
+        public IActionResult validateSubset(int deviceId, string name) => _returnResult(_subsetservice.validateSubset(deviceId, name));
+
     }
 }

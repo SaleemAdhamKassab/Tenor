@@ -29,7 +29,7 @@ namespace Tenor.Services.CountersService
         ResultWithMessage delete(int id);
         FileBytesModel exportCounterByFilter(CounterFilterModel filter);
         ResultWithMessage getByFilter(CounterFilterModel filter);
-
+        ResultWithMessage validateCounter(int subsetId, string name);
     }
 
     public class CountersService : ICountersService
@@ -758,5 +758,15 @@ namespace Tenor.Services.CountersService
             }
         }
 
+        public ResultWithMessage validateCounter(int subsetId, string name)
+        {
+
+            Counter counter = _db.Counters.SingleOrDefault(e => e.SubsetId == subsetId || e.Name.Trim().ToLower() == name.Trim().ToLower());
+
+            if (counter is not null)
+                return new ResultWithMessage(null, $"The Counter with Subset Id: {counter.SubsetId} and name: '{counter.Name}' is already exists");
+
+            return new ResultWithMessage(true, string.Empty);
+        }
     }
 }

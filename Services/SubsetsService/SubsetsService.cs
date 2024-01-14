@@ -29,7 +29,7 @@ namespace Tenor.Services.SubsetsService
         ResultWithMessage delete(int id);
         FileBytesModel exportSubsetByFilter(object FilterM);
         ResultWithMessage getByFilter(SubsetFilterModel filter);
-
+        ResultWithMessage validateSubset(int deviceId, string name);
     }
 
     public class SubsetsService : ISubsetsService
@@ -788,6 +788,17 @@ namespace Tenor.Services.SubsetsService
                 return new ResultWithMessage(new DataWithSize(0, null), ex.Message);
 
             }
+        }
+
+        public ResultWithMessage validateSubset(int deviceId, string name)
+        {
+
+            Subset subset = _db.Subsets.SingleOrDefault(e => e.Id == deviceId || e.Name.Trim().ToLower() == name.Trim().ToLower());
+
+            if (subset is not null)
+                return new ResultWithMessage(null, $"The subset with Id: {subset.Id} and name: '{subset.Name}' is already exists");
+
+            return new ResultWithMessage(true, string.Empty);
         }
     }
 }
