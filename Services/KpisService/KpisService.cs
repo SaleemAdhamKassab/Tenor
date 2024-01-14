@@ -50,6 +50,8 @@ namespace Tenor.Services.KpisService
         Task<ResultWithMessage> GetKpiQuery(int kpiid);
         FileBytesModel exportKpiByFilter2(KpiFilterModel filter);
         string GetQeuryExpress(OperationDto opt, string? tag);
+        ResultWithMessage ValidateKpi(int? deviceid, string kpiname);
+
     }
 
     public class KpisService : IKpisService
@@ -642,6 +644,16 @@ namespace Tenor.Services.KpisService
             return query;
 
         }
+
+        public ResultWithMessage ValidateKpi(int? deviceid, string kpiname)
+        {
+            if(IsKpiExist(0, deviceid, kpiname))
+            {
+                return new ResultWithMessage(null, "This KPI name is already exsist on this device.");
+            }
+            return new ResultWithMessage(true,null);
+        }
+
 
         private bool DeleteSelfRelation(int? parentid, List<int> childid)
         {

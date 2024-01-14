@@ -103,6 +103,12 @@ namespace Tenor.Controllers
 
         }
 
-       
+        [HttpGet("ValidateKpi")]
+        public  IActionResult ValidateKpi(int? deviceid, string kpiname)
+        {
+            return _returnResult( _kpiservice.ValidateKpi(deviceid, kpiname));
+
+        }
+
     }
 }
