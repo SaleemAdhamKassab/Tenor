@@ -29,7 +29,7 @@ namespace Tenor.Controllers
 
 
         [HttpPut("edit")]
-        public IActionResult edit(int id,DeviceBindingModel model) => _returnResult(_deviceService.edit(id,model));
+        public IActionResult edit(int id, DeviceBindingModel model) => _returnResult(_deviceService.edit(id, model));
 
 
         [HttpDelete("delete")]
@@ -46,5 +46,8 @@ namespace Tenor.Controllers
 
             return File(fileResult.Bytes, fileResult.ContentType, fileResult.FileName);
         }
+
+        [HttpGet("validateDevice")]
+        public IActionResult validateDevice(int deviceId, string name) => _returnResult(_deviceService.validateDevice(deviceId, name));
     }
 }
