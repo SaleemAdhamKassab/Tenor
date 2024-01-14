@@ -186,7 +186,7 @@ namespace Tenor.Helper
             {
 
                 qe.LeftSide = "";
-                qe.Inside = opt.Aggregation == "na" ? opt.CounterName : opt.Aggregation + "(" + opt.CounterName + ")";
+                qe.Inside = opt.Aggregation == "na" ? opt.TableName + "." + opt.ColumnName : opt.Aggregation + "(" + opt.TableName + "." + opt.ColumnName + ")";
                 qe.RightSide = "";
                 string chageStr = qe.LeftSide + qe.Inside + qe.RightSide;
                 if (!query.Contains(pointerTag))

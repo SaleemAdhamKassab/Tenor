@@ -35,6 +35,11 @@ namespace Tenor.Services.KpisService.ViewModels
             public int? OperatorId { get; set; }
             public string? OperatorName { get; set; }
             public int? ParentId { get; set; } //Self Join
+            public int ? SubsetId { get; set; }
+            public string ? SubsetName { get; set; }
+            public string? TableName { get; set; }
+            public string ? ColumnName { get; set; }
+
             public List<OperationDto>? Childs { get; set; }
 
         }

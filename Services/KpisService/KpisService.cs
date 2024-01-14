@@ -105,10 +105,10 @@ namespace Tenor.Services.KpisService
 
             }
         }
-
         public async Task<ResultWithMessage> GetByIdAsync(int id)
         {
-            var kpi = _db.Kpis.Include(x => x.Device).Include(x => x.Operation).Include(x => x.KpiFieldValues)
+            var kpi = _db.Kpis.Include(x => x.Device).Include(x => x.Operation)
+                .Include(x => x.KpiFieldValues)
                  .ThenInclude(x => x.KpiField).ThenInclude(x => x.ExtraField)
                  .FirstOrDefault(x => x.Id == id);
 
@@ -121,7 +121,6 @@ namespace Tenor.Services.KpisService
             var kpiMap = _mapper.Map<KpiViewModel>(kpi);
             return new ResultWithMessage(kpiMap, null);
         }
-
         public async Task<ResultWithMessage> Add(CreateKpi kpi)
         {
             if (IsKpiExist(0, kpi.DeviceId, kpi.Name))
@@ -152,7 +151,6 @@ namespace Tenor.Services.KpisService
                 }
             }
         }
-
         public async Task<ResultWithMessage> Update(int id, CreateKpi Kpi)
         {
 
@@ -197,19 +195,16 @@ namespace Tenor.Services.KpisService
                 }
             }
         }
-
         public async Task<ResultWithMessage> Delete(int id)
         {
             return new ResultWithMessage(null, "");
         }
-
         public async Task<ResultWithMessage> GetExtraFields()
         {
             var extraFields = _mapper.Map<List<KpiExtraField>>(_db.KpiFields.Where(x => x.IsActive).Include(x => x.ExtraField).ToList());
             return new ResultWithMessage(extraFields, null);
 
         }
-
         public ResultWithMessage GetOperators()
         {
             var opt = _db.Operators.ToList();
@@ -222,7 +217,6 @@ namespace Tenor.Services.KpisService
             return new ResultWithMessage(func, null);
 
         }
-
         public FileBytesModel exportKpiByFilter(object kpiFilterM)
         {
             //---------------------------------Data source----------------------------------
@@ -345,14 +339,12 @@ namespace Tenor.Services.KpisService
 
             }
         }
-
         public async Task<ResultWithMessage> GetKpiQuery(int kpiid)
         {
             var response = GetKpiForm(kpiid);
             return new ResultWithMessage(response.Result.Data, null);
 
         }
-
         public FileBytesModel exportKpiByFilter2(KpiFilterModel filter)
         {
             //------------------------------Data source------------------------------------------------
@@ -542,7 +534,7 @@ namespace Tenor.Services.KpisService
             {
 
                 qe.LeftSide = "";
-                qe.Inside = opt.Aggregation == "na" ? opt.CounterName : opt.Aggregation + "(" + opt.CounterName + ")";
+                qe.Inside = opt.Aggregation == "na" ? opt.TableName+"."+opt.ColumnName : opt.Aggregation + "(" + opt.TableName + "." + opt.ColumnName + ")";
                 qe.RightSide = "";
                 string chageStr = qe.LeftSide + qe.Inside + qe.RightSide;
                 if (!query.Contains(pointerTag))
@@ -680,7 +672,6 @@ namespace Tenor.Services.KpisService
             DeleteSelfRelation(null, childOpt.Select(x => x.Id).ToList());
             return true;
         }
-
         private bool AddExtraFields(int kpiId, List<ExtraFieldValue> extFields)
         {
             foreach (var s in extFields)
@@ -714,7 +705,7 @@ namespace Tenor.Services.KpisService
         private List<OperationDto> GetSelfRelation(int optid)
         {
             List<OperationDto> result = new List<OperationDto>();
-            var opt = _db.Operations.Include(x => x.Function).Include(x => x.Counter)
+            var opt = _db.Operations.Include(x => x.Function).Include(x => x.Counter).ThenInclude(x=>x.Subset)
                 .Include(x => x.Kpi).Include(x => x.Operator)
                 .Include(x => x.Childs).FirstOrDefault(x => x.Id == optid);
 
@@ -979,7 +970,6 @@ namespace Tenor.Services.KpisService
             bool isExist = _db.Kpis.Any(x => x.DeviceId == deviceid && x.Name == kpiname && x.Id != id);
             return isExist;
         }
-
         private async Task<ResultWithMessage> GetKpiForm(int kpiId)
         {
             var kpi = _db.Kpis.Include(x => x.Device).Include(x => x.Operation).Include(x => x.KpiFieldValues)

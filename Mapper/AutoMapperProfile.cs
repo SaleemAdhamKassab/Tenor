@@ -31,7 +31,11 @@ namespace Tenor.Mapper
                 .ForMember(dest => dest.OperatorName, opt => opt.MapFrom(src => src.Operator != null ? src.Operator.Name : null))
                 .ForMember(dest => dest.FunctionName, opt => opt.MapFrom(src => src.Function != null ? src.Function.Name : null))
                 .ForMember(dest => dest.KpiName, opt => opt.MapFrom(src => src.Kpi != null ? src.Kpi.Name : null))
-                .ForMember(dest => dest.CounterName, opt => opt.MapFrom(src => src.Counter != null ? src.Counter.Name : null)).ReverseMap();
+                .ForMember(dest => dest.CounterName, opt => opt.MapFrom(src => src.Counter != null ? src.Counter.Name : null))
+                .ForMember(dest => dest.SubsetId, opt => opt.MapFrom(src => src.Counter != null ? src.Counter.Subset.Id : 0))
+                .ForMember(dest => dest.SubsetName, opt => opt.MapFrom(src => src.Counter != null ? src.Counter.Subset.Name : null))
+                .ForMember(dest => dest.TableName, opt => opt.MapFrom(src => src.Counter != null ? src.Counter.Subset.TableName : null))
+                .ForMember(dest => dest.ColumnName, opt => opt.MapFrom(src => src.Counter != null ? src.Counter.ColumnName : null)).ReverseMap();
 
             CreateMap<Operation, OperationBinding>().ReverseMap();
             CreateMap<Kpi, CreateKpi>().ReverseMap();
