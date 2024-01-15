@@ -32,6 +32,7 @@ using System.Linq.Expressions;
 using System.Collections.Generic;
 using System.Net.Quic;
 using System;
+using System.Runtime.InteropServices;
 
 namespace Tenor.Services.KpisService
 {
@@ -541,7 +542,7 @@ namespace Tenor.Services.KpisService
                 string chageStr = qe.LeftSide + qe.Inside + qe.RightSide;
                 if (!query.Contains(pointerTag))
                 {
-                    query = query.Insert(query.Length - 1, chageStr);
+                    query = query.Insert(query.Length > 0 ? query.Length - 1 : 0, chageStr);
 
                 }
                 else
@@ -982,7 +983,7 @@ namespace Tenor.Services.KpisService
             bool isExist = _db.Kpis.Any(x => x.DeviceId == deviceid && x.Name == kpiname && x.Id != id);
             return isExist;
         }
-        private async Task<ResultWithMessage> GetKpiForm(int kpiId)
+        public async Task<ResultWithMessage> GetKpiForm(int kpiId)
         {
             var kpi = _db.Kpis.Include(x => x.Device).Include(x => x.Operation).Include(x => x.KpiFieldValues)
                 .ThenInclude(x => x.KpiField).ThenInclude(x => x.ExtraField)

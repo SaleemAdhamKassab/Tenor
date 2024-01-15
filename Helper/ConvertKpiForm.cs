@@ -41,7 +41,7 @@ namespace Tenor.Helper
         private List<OperationDto> GetSelfRelation(int optid)
         {
             List<OperationDto> result = new List<OperationDto>();
-            var opt = _db.Operations.Include(x => x.Function).Include(x => x.Counter)
+            var opt = _db.Operations.Include(x => x.Function).Include(x => x.Counter).ThenInclude(x => x.Subset)
                 .Include(x => x.Kpi).Include(x => x.Operator)
                 .Include(x => x.Childs).FirstOrDefault(x => x.Id == optid);
 
@@ -129,15 +129,7 @@ namespace Tenor.Helper
 
                 }
 
-                //if (opt.Childs.Count != 0)
-                //{
-                //    foreach (var c in opt.Childs)
-                //    {
-
-                //        GetQeuryExpress(c, null);
-
-                //    }
-                //}
+               
             }
             if (opt.Type == "opt")
             {
@@ -157,7 +149,7 @@ namespace Tenor.Helper
             }
             if (opt.Type == "kpi")
             {
-                string kpiNewFormat = GetKpiFomat((int)opt.KpiId);
+                string kpiNewFormat = kpiFormat.GetKpiForm((int)opt.KpiId).Result.Data.ToString();
                 qe.LeftSide = "(";
                 qe.Inside = opt.Aggregation == "na" ? kpiNewFormat : opt.Aggregation + "(" + kpiNewFormat + ")";
                 qe.RightSide = ")";
