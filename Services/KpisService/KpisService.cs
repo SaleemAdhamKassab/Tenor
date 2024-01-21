@@ -61,7 +61,7 @@ namespace Tenor.Services.KpisService
         private readonly TenorDbContext _db;
         private readonly IMapper _mapper;
         private string query = "";
-
+        private bool checkResult = true;
         public KpisService(TenorDbContext tenorDbContext, IMapper mapper)
         {
             _db = tenorDbContext;
@@ -1037,6 +1037,7 @@ namespace Tenor.Services.KpisService
 
         private bool IsFormatValid(OperationBinding input)
         {
+           
             try
             {
                 if (input.Type.GetDisplayName() == "voidFunction")
@@ -1047,7 +1048,8 @@ namespace Tenor.Services.KpisService
                     {
                         if (levelType[i].Type == levelType[i - 1].Type)
                         {
-                            return false;
+                            checkResult = false;
+                            return checkResult;
                         }
                     }
 
@@ -1058,7 +1060,8 @@ namespace Tenor.Services.KpisService
                     Function func = _db.Functions.FirstOrDefault(x => x.Id == (int)input.FunctionId);
                     if (func.ArgumentsCount != input.Childs.Count())
                     {
-                        return false;
+                        checkResult = false;
+                        return checkResult;
 
                     }
                 }
@@ -1071,12 +1074,13 @@ namespace Tenor.Services.KpisService
 
                     }
                 }
+                return checkResult;
 
-                return true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                return false;
+                checkResult = false;
+                return checkResult;
 
             }
 
