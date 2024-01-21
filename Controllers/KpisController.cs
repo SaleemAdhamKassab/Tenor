@@ -110,5 +110,12 @@ namespace Tenor.Controllers
 
         }
 
+        [HttpPost("CheckFormatValidation")]
+        public IActionResult CheckFormatValidation(CreateKpi input)
+        {
+            return _returnResult(_kpiservice.CheckValidFormat(input));
+
+        }
+
     }
 }
