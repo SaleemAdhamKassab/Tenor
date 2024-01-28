@@ -1051,6 +1051,18 @@ namespace Tenor.Services.KpisService
                             checkResult = false;
                             return checkResult;
                         }
+
+                        if (levelType[i].Type.GetDisplayName()!= "opt" && levelType[i-1].Type.GetDisplayName()!= "opt")
+                        {
+                            checkResult = false;
+                            return checkResult;
+                        }
+
+                        if (levelType[levelType.Count()-1].Type.GetDisplayName()== "opt")
+                        {
+                            checkResult = false;
+                            return checkResult;
+                        }
                     }
 
                 }
