@@ -1043,9 +1043,19 @@ namespace Tenor.Services.KpisService
                 if (input.Type.GetDisplayName() == "voidFunction")
                 {
                     List<OperationBinding> data = input.Childs.ToList();
-                    var levelType = data.Select(x => new { x.Type, x.Order }).ToList();
+                    var levelType = data.Select(x => new { x.Type, x.Order,x.OperatorId,x.FunctionId }).ToList();
                     for (int i = 1; i < levelType.Count; i++)
                     {
+                        if (levelType[i].Type.GetDisplayName() == "opt" && levelType[i].OperatorId == 4)
+                        {
+                            if (!(levelType[i+1].Type.GetDisplayName()== "function" && levelType[i+1].FunctionId==3))
+                            {
+                                checkResult = false;
+                                return checkResult;
+                            }
+                           
+                        }
+
                         if (levelType[i].Type == levelType[i - 1].Type)
                         {
                             checkResult = false;
