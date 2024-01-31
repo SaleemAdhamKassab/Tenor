@@ -33,6 +33,7 @@ using System.Collections.Generic;
 using System.Net.Quic;
 using System;
 using System.Runtime.InteropServices;
+using static Tenor.Helper.Constant;
 
 namespace Tenor.Services.KpisService
 {
@@ -127,6 +128,10 @@ namespace Tenor.Services.KpisService
         }
         public async Task<ResultWithMessage> Add(CreateKpi kpi)
         {
+           
+            var convertedKpiData = AddNoZeroToKpi(kpi.Operation);
+            kpi.Operation = convertedKpiData;
+
             if (IsKpiExist(0, kpi.DeviceId, kpi.Name))
             {
                 return new ResultWithMessage(null, "This Kpi name alraedy exsit on the same device");
@@ -182,6 +187,8 @@ namespace Tenor.Services.KpisService
             {
                 try
                 {
+                    var convertedKpiData = AddNoZeroToKpi(Kpi.Operation);
+                    Kpi.Operation = convertedKpiData;
                     Kpi oldKpi = _db.Kpis.AsNoTracking().FirstOrDefault(x => x.Id == Kpi.Id);
                     if (oldKpi == null)
                     {
@@ -682,10 +689,11 @@ namespace Tenor.Services.KpisService
 
             return new ResultWithMessage(queryBuilder, null);
         }
-
         public ResultWithMessage CheckValidFormat(CreateKpi input)
         {
-            if(input.Operation.Type.GetDisplayName()!= "voidFunction")
+            var convertedKpiData = AddNoZeroToKpi(input.Operation);
+            input.Operation = convertedKpiData;
+            if (input.Operation.Type.GetDisplayName()!= "voidFunction")
             {
                 return new ResultWithMessage(false, "KPI format is invalid");
 
@@ -1034,7 +1042,6 @@ namespace Tenor.Services.KpisService
             bool isExist = _db.Kpis.Any(x => x.DeviceId == deviceid && x.Name == kpiname && x.Id != id);
             return isExist;
         }
-
         private bool IsFormatValid(OperationBinding input)
         {
            
@@ -1106,8 +1113,48 @@ namespace Tenor.Services.KpisService
 
             }
 
+        }    
+        private OperationBinding AddNoZeroToKpi(OperationBinding input)
+        {
+            List<OperationBinding> data = input.Childs.ToList();
+            for (int i = 0; i < data.Count()-1; i++)
+            {
+                if ((data[i].Type.GetDisplayName() == "opt" && data[i].OperatorId == 4) && 
+                    !(data[i+1].Type.GetDisplayName()== "function" && data[i + 1].FunctionId==3))
+                {
+                    OperationBinding convertData=new OperationBinding();
+                    OperationBinding convertChildData = new OperationBinding();
+
+                    convertData.Type = enOPerationTypes.function;
+                    convertData.Order = data[i].Order;
+                    convertData.FunctionId = 3;
+                    convertData.Childs = new List<OperationBinding>();
+                    //------------------Add void to function--------------------
+                    convertChildData.Type = enOPerationTypes.voidFunction;
+                    convertChildData.Order = 1;
+                    convertChildData.Childs = data.GetRange(i + 1, data.Count()-(i+1));
+                    //------------------------------------------------------
+                    convertData.Childs.Add(convertChildData);
+                    data[i+1] = convertData;
+
+                    break;
+
+                }
+                if (data[i].Childs.Count() > 0)
+                {
+                    foreach (var c in data[i].Childs)
+                    {
+                        AddNoZeroToKpi(c);
+
+                    }
+                }
+
+            }
+
+            input.Childs=data;
+            return input;
         }
-         
+      
     }
 }
     
