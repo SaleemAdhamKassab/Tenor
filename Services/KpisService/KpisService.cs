@@ -130,9 +130,6 @@ namespace Tenor.Services.KpisService
         public async Task<ResultWithMessage> Add(CreateKpi kpi)
         {
            
-            var convertedKpiData = AddNoZeroToKpi(kpi.Operation);
-            kpi.Operation = convertedKpiData;
-
             if (IsKpiExist(0, kpi.DeviceId, kpi.Name))
             {
                 return new ResultWithMessage(null, "This Kpi name alraedy exsit on the same device");
@@ -188,8 +185,6 @@ namespace Tenor.Services.KpisService
             {
                 try
                 {
-                    var convertedKpiData = AddNoZeroToKpi(Kpi.Operation);
-                    Kpi.Operation = convertedKpiData;
                     Kpi oldKpi = _db.Kpis.AsNoTracking().FirstOrDefault(x => x.Id == Kpi.Id);
                     if (oldKpi == null)
                     {
@@ -748,14 +743,18 @@ namespace Tenor.Services.KpisService
             }
             GetSelfRelation(kpi.OperationId);
             var kpiMap = _mapper.Map<KpiViewModel>(kpi);
+
+            var convertedKpiData = AddNoZeroToKpi(kpiMap.Operations);
+            kpiMap.Operations = convertedKpiData;
+            //-------------------------------------------
             string queryBuilder = GetQeuryExpress(kpiMap.Operations, null, kpiMap.Operations.Childs.Count());
 
             return new ResultWithMessage(queryBuilder, null);
         }
         public ResultWithMessage CheckValidFormat(CreateKpi input)
         {
-            var convertedKpiData = AddNoZeroToKpi(input.Operation);
-            input.Operation = convertedKpiData;
+            //var convertedKpiData = AddNoZeroToKpi(input.Operation);
+           // input.Operation = convertedKpiData;
             if (input.Operation.Type.GetDisplayName()!= "voidFunction")
             {
                 return new ResultWithMessage(false, "KPI format is invalid");
@@ -1116,15 +1115,15 @@ namespace Tenor.Services.KpisService
                     var levelType = data.Select(x => new { x.Type, x.Order,x.OperatorId,x.FunctionId }).ToList();
                     for (int i = 1; i < levelType.Count; i++)
                     {
-                        if (levelType[i].Type.GetDisplayName() == "opt" && levelType[i].OperatorId == 4)
-                        {
-                            if (!(levelType[i+1].Type.GetDisplayName()== "function" && levelType[i+1].FunctionId==3))
-                            {
-                                checkResult = false;
-                                return checkResult;
-                            }
+                        //if (levelType[i].Type.GetDisplayName() == "opt" && levelType[i].OperatorId == 4)
+                        //{
+                        //    if (!(levelType[i+1].Type.GetDisplayName()== "function" && levelType[i+1].FunctionId==3))
+                        //    {
+                        //        checkResult = false;
+                        //        return checkResult;
+                        //    }
                            
-                        }
+                        //}
 
                         if (levelType[i].Type == levelType[i - 1].Type)
                         {
@@ -1177,23 +1176,24 @@ namespace Tenor.Services.KpisService
             }
 
         }    
-        private OperationBinding AddNoZeroToKpi(OperationBinding input)
+        private OperationDto AddNoZeroToKpi(OperationDto input)
         {
-            List<OperationBinding> data = input.Childs.ToList();
+            List<OperationDto> data = input.Childs.ToList();
             for (int i = 0; i < data.Count()-1; i++)
             {
-                if ((data[i].Type.GetDisplayName() == "opt" && data[i].OperatorId == 4) && 
-                    !(data[i+1].Type.GetDisplayName()== "function" && data[i + 1].FunctionId==3))
+                if ((data[i].Type == "opt" && data[i].OperatorId == 4) && 
+                    !(data[i+1].Type== "function" && data[i + 1].FunctionId==3))
                 {
-                    OperationBinding convertData=new OperationBinding();
-                    OperationBinding convertChildData = new OperationBinding();
+                    OperationDto convertData =new OperationDto();
+                    OperationDto convertChildData = new OperationDto();
 
-                    convertData.Type = enOPerationTypes.function;
+                    convertData.Type = "function";
                     convertData.Order = data[i].Order;
                     convertData.FunctionId = 3;
-                    convertData.Childs = new List<OperationBinding>();
+                    convertData.FunctionName = "NoZero";
+                    convertData.Childs = new List<OperationDto>();
                     //------------------Add void to function--------------------
-                    convertChildData.Type = enOPerationTypes.voidFunction;
+                    convertChildData.Type = "voidFunction";
                     convertChildData.Order = 1;
                     convertChildData.Childs = data.GetRange(i + 1, data.Count()-(i+1));
                     //------------------------------------------------------
