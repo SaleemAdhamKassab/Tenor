@@ -13,7 +13,9 @@ namespace Tenor.Helper
         private  readonly TenorDbContext _db;
         private   readonly IMapper _mapper;
         private   string query = "";
-        public   ConvertKpiForm( TenorDbContext tenorDbContext, IMapper mapper)
+        private int voidIdx = 0;
+
+        public ConvertKpiForm( TenorDbContext tenorDbContext, IMapper mapper)
         {
             _db = tenorDbContext;
             _mapper = mapper;
@@ -33,7 +35,7 @@ namespace Tenor.Helper
             }
             GetSelfRelation(kpi.OperationId);
             var kpiMap = _mapper.Map<KpiViewModel>(kpi);
-            string queryBuilder = GetQeuryExpress(kpiMap.Operations, null);
+            string queryBuilder = GetQeuryExpress(kpiMap.Operations, null, kpiMap.Operations.Childs.Count());
 
             return queryBuilder;
         }
@@ -58,7 +60,7 @@ namespace Tenor.Helper
             return result;
         }
 
-        public string GetQeuryExpress(OperationDto opt, string? tag)
+        public string GetQeuryExpress(OperationDto opt, string? tag, int? voidChildCount)
         {
 
             string pointerTag = "tag";
@@ -74,6 +76,8 @@ namespace Tenor.Helper
             {
                 if (!string.IsNullOrEmpty(tag) || query.Contains(pointerTag))
                 {
+                    voidIdx = opt.Childs.Count();
+
                     qe.LeftSide = "("; qe.Inside = pointerTag; qe.RightSide = "";
                     string chageStr = qe.LeftSide + qe.Inside + qe.RightSide;
                     if (!string.IsNullOrEmpty(tag))
@@ -91,7 +95,7 @@ namespace Tenor.Helper
                     {
                         foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
                         {
-                            GetQeuryExpress(c.value, null);
+                            GetQeuryExpress(c.value, null, voidIdx);
 
                         }
                         query = query + ")";
@@ -107,7 +111,7 @@ namespace Tenor.Helper
                         foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
                         {
 
-                            GetQeuryExpress(c.value, null);
+                            GetQeuryExpress(c.value, null, voidIdx);
 
                         }
                     }
@@ -125,7 +129,17 @@ namespace Tenor.Helper
                 }
                 else
                 {
-                    query = query.Insert(query.Length - 1, repStr);
+                    if (voidChildCount >= 1)
+                    {
+                        voidIdx -= 1;
+                        query = query.Insert(query.Length - 2, repStr);
+
+                    }
+                    else
+                    {
+                        query = query.Insert(query.Length - 1, repStr);
+
+                    }
 
                 }
 
@@ -142,7 +156,18 @@ namespace Tenor.Helper
                 }
                 else
                 {
-                    query = query.Insert(query.Length - 1, changeStr);
+                    if (voidChildCount >= 1)
+                    {
+                        voidIdx -= 1;
+
+                        query = query.Insert(query.Length - 2, changeStr);
+
+                    }
+                    else
+                    {
+                        query = query.Insert(query.Length - 1, changeStr);
+
+                    }
 
                 }
 
@@ -156,7 +181,19 @@ namespace Tenor.Helper
                 string kpiState = qe.LeftSide + qe.Inside + qe.RightSide;
                 if (!query.Contains(pointerTag))
                 {
-                    query = query.Insert(query.Length - 1, kpiState);
+                    if (voidChildCount >= 1)
+                    {
+                        voidIdx -= 1;
+                        query = query.Insert(query.Length - 2, kpiState);
+
+                    }
+                    else
+                    {
+                        voidIdx -= 1;
+
+                        query = query.Insert(query.Length - 1, kpiState);
+
+                    }
 
                 }
                 else
@@ -164,15 +201,7 @@ namespace Tenor.Helper
                     query = query.Replace(pointerTag, kpiState);
 
                 }
-                //if (opt.Childs.Count != 0)
-                //{
-                //    foreach (var c in opt.Childs)
-                //    {
-
-                //        GetQeuryExpress(c, null);
-
-                //    }
-                //}
+                
             }
             if (opt.Type == "counter")
             {
@@ -183,7 +212,19 @@ namespace Tenor.Helper
                 string chageStr = qe.LeftSide + qe.Inside + qe.RightSide;
                 if (!query.Contains(pointerTag))
                 {
-                    query = query.Insert(query.Length - 1, chageStr);
+                    if (voidChildCount >= 1)
+                    {
+                        voidIdx -= 1;
+
+                        query = query.Insert(query.Length > 0 ? query.Length - 2 : 0, chageStr);
+
+                    }
+                    else
+                    {
+                        voidIdx -= 1;
+                        query = query.Insert(query.Length > 0 ? query.Length - 1 : 0, chageStr);
+
+                    }
 
                 }
                 else
@@ -191,17 +232,7 @@ namespace Tenor.Helper
                     query = query.Replace(pointerTag, chageStr);
 
                 }
-                if (opt.Childs.Count != 0)
-                {
-                    foreach (var c in opt.Childs)
-                    {
-
-                        GetQeuryExpress(c, null);
-                    }
-
-                }
-
-
+               
             }
             if (opt.Type == "function")
             {
@@ -220,7 +251,18 @@ namespace Tenor.Helper
                     }
                     else
                     {
-                        query = query.Insert(query.Length > 0 ? query.Length - 1 : 0, Chang);
+                        if (voidChildCount >= 1)
+                        {
+                            voidIdx -= 1;
+
+                            query = query.Insert(query.Length > 0 ? query.Length - 2 : 0, Chang);
+
+                        }
+                        else
+                        {
+                            query = query.Insert(query.Length > 0 ? query.Length - 1 : 0, Chang);
+
+                        }
 
                     }
 
@@ -231,7 +273,7 @@ namespace Tenor.Helper
                         {
                             kpiFormat = new KpisService(_db, _mapper);
                             string funcParam = funcTag + c.i;
-                            string repFuncParam = kpiFormat.GetQeuryExpress(c.value, null);
+                            string repFuncParam = kpiFormat.GetQeuryExpress(c.value, null, voidIdx);
                             query = query.Replace(funcParam, repFuncParam);
                         }
                     }
@@ -264,7 +306,18 @@ namespace Tenor.Helper
                     }
                     else
                     {
-                        query = query.Insert(query.Length > 0 ? query.Length - 1 : 0, Chang);
+                        if (voidChildCount >= 1)
+                        {
+                            voidIdx -= 1;
+
+                            query = query.Insert(query.Length - 2, Chang);
+
+                        }
+                        else
+                        {
+                            query = query.Insert(query.Length - 1, Chang);
+
+                        }
 
                     }
 
@@ -275,7 +328,7 @@ namespace Tenor.Helper
                         {
                             kpiFormat = new KpisService(_db, _mapper);
                             string funcParam = funcTag + c.i;
-                            string repFuncParam = kpiFormat.GetQeuryExpress(c.value, null);
+                            string repFuncParam = kpiFormat.GetQeuryExpress(c.value, null, voidIdx);
                             query = query.Replace(funcParam, repFuncParam);
                         }
                     }
@@ -286,9 +339,5 @@ namespace Tenor.Helper
             return query;
 
         }
-
-
-
-
     }
 }

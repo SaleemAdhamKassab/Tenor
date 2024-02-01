@@ -51,7 +51,7 @@ namespace Tenor.Services.KpisService
         ResultWithMessage getByFilter(KpiFilterModel filter);
         Task<ResultWithMessage> GetKpiQuery(int kpiid);
         FileBytesModel exportKpiByFilter2(KpiFilterModel filter);
-        string GetQeuryExpress(OperationDto opt, string? tag);
+        string GetQeuryExpress(OperationDto opt, string? tag,int? voidChildCount);
         ResultWithMessage ValidateKpi(int? deviceid, string kpiname);
         ResultWithMessage CheckValidFormat(CreateKpi input);
 
@@ -63,6 +63,7 @@ namespace Tenor.Services.KpisService
         private readonly IMapper _mapper;
         private string query = "";
         private bool checkResult = true;
+        private int voidIdx = 0;
         public KpisService(TenorDbContext tenorDbContext, IMapper mapper)
         {
             _db = tenorDbContext;
@@ -235,7 +236,7 @@ namespace Tenor.Services.KpisService
         }
         public ResultWithMessage GetFunctions()
         {
-            var func = _db.Functions.ToList();
+            var func = _db.Functions.Where(x=>x.Id!=3).ToList();
             return new ResultWithMessage(func, null);
 
         }
@@ -447,7 +448,7 @@ namespace Tenor.Services.KpisService
             excelfile.ContentType = contentType;
             return excelfile;
         }
-        public string GetQeuryExpress(OperationDto opt, string? tag)
+        public string GetQeuryExpress(OperationDto opt, string? tag,int? voidChildCount)
         {
             ConvertKpiForm kpiFormat = new ConvertKpiForm(_db, _mapper);
             string pointerTag = "tag";
@@ -459,8 +460,11 @@ namespace Tenor.Services.KpisService
             };
             if (opt.Type == "voidFunction")
             {
+
                 if (!string.IsNullOrEmpty(tag) || query.Contains(pointerTag))
                 {
+                    voidIdx = opt.Childs.Count();
+
                     qe.LeftSide = "("; qe.Inside = pointerTag; qe.RightSide = ")";
                     string chageStr = qe.LeftSide + qe.Inside + qe.RightSide;
                     if (!string.IsNullOrEmpty(tag))
@@ -478,7 +482,7 @@ namespace Tenor.Services.KpisService
                     {
                         foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
                         {
-                            GetQeuryExpress(c.value, null);
+                            GetQeuryExpress(c.value, null, voidIdx);
 
                         }
                     }
@@ -493,7 +497,7 @@ namespace Tenor.Services.KpisService
                         foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
                         {
 
-                            GetQeuryExpress(c.value, null);
+                            GetQeuryExpress(c.value, null, voidIdx);
 
                         }
                     }
@@ -512,8 +516,17 @@ namespace Tenor.Services.KpisService
                 }
                 else
                 {
-                    query = query.Insert(query.Length - 1, ChangStr);
+                    if(voidChildCount>=1)
+                    {
+                        voidIdx -= 1;
+                        query = query.Insert(query.Length - 2, ChangStr);
 
+                    }
+                    else
+                    {
+                        query = query.Insert(query.Length - 1, ChangStr);
+
+                    }
                 }
 
             }
@@ -528,7 +541,18 @@ namespace Tenor.Services.KpisService
                 }
                 else
                 {
-                    query = query.Insert(query.Length - 1, changeStr);
+                    if(voidChildCount>=1)
+                    {
+                        voidIdx -= 1;
+
+                        query = query.Insert(query.Length - 2, changeStr);
+
+                    }
+                    else
+                    {
+                        query = query.Insert(query.Length - 1, changeStr);
+
+                    }
 
                 }
 
@@ -542,7 +566,19 @@ namespace Tenor.Services.KpisService
                 string kpiState = qe.LeftSide + qe.Inside + qe.RightSide;
                 if (!query.Contains(pointerTag))
                 {
-                    query = query.Insert(query.Length - 1, kpiState);
+                    if(voidChildCount>=1)
+                    {
+                        voidIdx -= 1;
+                        query = query.Insert(query.Length - 2, kpiState);
+
+                    }
+                    else
+                    {
+                        voidIdx -= 1;
+
+                        query = query.Insert(query.Length - 1, kpiState);
+
+                    }
 
                 }
                 else
@@ -561,24 +597,29 @@ namespace Tenor.Services.KpisService
                 string chageStr = qe.LeftSide + qe.Inside + qe.RightSide;
                 if (!query.Contains(pointerTag))
                 {
-                    query = query.Insert(query.Length > 0 ? query.Length - 1 : 0, chageStr);
+                    if(voidChildCount>=1)
+                    {
+                        voidIdx -= 1;
+
+                        query = query.Insert(query.Length > 0 ? query.Length - 2 : 0, chageStr);
+
+                    }
+                    else
+                    {
+                        query = query.Insert(query.Length > 0 ? query.Length - 1 : 0, chageStr);
+
+                    }
+
 
                 }
                 else
                 {
+                    voidIdx -= 1;
+
                     query = query.Replace(pointerTag, chageStr);
 
                 }
-                if (opt.Childs.Count != 0)
-                {
-                    foreach (var c in opt.Childs)
-                    {
-
-                        GetQeuryExpress(c, null);
-                    }
-
-                }
-
+               
 
             }
             if (opt.Type == "function")
@@ -598,7 +639,18 @@ namespace Tenor.Services.KpisService
                     }
                     else
                     {
-                        query = query.Insert(query.Length > 0 ? query.Length - 1 : 0, Chang);
+                        if(voidChildCount>=1)
+                        {
+                            voidIdx -= 1;
+
+                            query = query.Insert(query.Length > 0 ? query.Length - 2 : 0, Chang);
+
+                        }
+                        else
+                        {
+                            query = query.Insert(query.Length > 0 ? query.Length - 1 : 0, Chang);
+
+                        }
 
                     }
 
@@ -608,7 +660,7 @@ namespace Tenor.Services.KpisService
                         foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
                         {
                             kpiFormat = new ConvertKpiForm(_db, _mapper);
-                            string repFunc = kpiFormat.GetQeuryExpress(c.value, null);
+                            string repFunc = kpiFormat.GetQeuryExpress(c.value, null, voidIdx);
                             query = query.Replace(funcTag + c.i, repFunc);
                         }
                     }
@@ -641,7 +693,18 @@ namespace Tenor.Services.KpisService
                     }
                     else
                     {
-                        query = query.Insert(query.Length - 1, Chang);
+                        if(voidChildCount>=1)
+                        {
+                            voidIdx -= 1;
+
+                            query = query.Insert(query.Length - 2, Chang);
+
+                        }
+                        else
+                        {
+                            query = query.Insert(query.Length - 1, Chang);
+
+                        }
 
                     }
 
@@ -652,7 +715,7 @@ namespace Tenor.Services.KpisService
                         foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
                         {
                             kpiFormat = new ConvertKpiForm(_db, _mapper);
-                            string repFunc = kpiFormat.GetQeuryExpress(c.value, null);
+                            string repFunc = kpiFormat.GetQeuryExpress(c.value, null, voidIdx);
                             query = query.Replace(funcTag + c.i, repFunc);
                         }
                     }
@@ -685,7 +748,7 @@ namespace Tenor.Services.KpisService
             }
             GetSelfRelation(kpi.OperationId);
             var kpiMap = _mapper.Map<KpiViewModel>(kpi);
-            string queryBuilder = GetQeuryExpress(kpiMap.Operations, null);
+            string queryBuilder = GetQeuryExpress(kpiMap.Operations, null, kpiMap.Operations.Childs.Count());
 
             return new ResultWithMessage(queryBuilder, null);
         }
