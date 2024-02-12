@@ -623,7 +623,7 @@ namespace Tenor.Services.KpisService
                 var func = _db.Functions.FirstOrDefault(f => f.Id == opt.FunctionId);
                 if (func.Name.ToLower() == "if")
                 {
-                    qe.Inside = "Case when func0 then func1 else func2";
+                    qe.Inside = "Case when func0 then func1 else func2  end";
                     qe.LeftSide = "";
                     qe.RightSide = "";
                     string Chang = qe.LeftSide + qe.Inside + qe.RightSide;
