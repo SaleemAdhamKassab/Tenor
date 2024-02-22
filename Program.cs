@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.Negotiate;
+using Microsoft.AspNetCore.Server.IISIntegration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
@@ -52,7 +53,7 @@ builder.Services.AddSwaggerGen(setup =>
 
 });
 //Add Windows auth-----------------------
-builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme).AddNegotiate();
+builder.Services.AddAuthentication(IISDefaults.AuthenticationScheme).AddNegotiate();
 //----------------------------------------
 builder.Services.AddHttpContextAccessor();
 //-------------------------------------

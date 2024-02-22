@@ -32,6 +32,7 @@ namespace Tenor.ActionFilters
                 string Header = context.HttpContext.Request.Headers["Authorization"];
                 var clientIPAddress = context.HttpContext.Connection.RemoteIpAddress.ToString();
                 var winUser = _windowsAuthService.GetLoggedUser();
+                var principal = context.HttpContext.User;
                 string userTenantName = context.HttpContext.Request.Headers["Tenant"];
 
                 if (context.HttpContext.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
@@ -63,7 +64,7 @@ namespace Tenor.ActionFilters
                 // check token and refresh token
                 if (_jwtService.CheckExpiredToken(winUser, token))
                 {
-                    if (_jwtService.IsGrantAccess(winUser, userTenantName, userRoleNames))
+                    if (_jwtService.IsGrantAccess(principal, userTenantName, userRoleNames))
                     {
                         return;
 
@@ -75,7 +76,7 @@ namespace Tenor.ActionFilters
 
                 if (_jwtService.CheckExpiredUserRefreshToken(winUser, token))
                 {
-                    if (_jwtService.IsGrantAccess(winUser, userTenantName, userRoleNames))
+                    if (_jwtService.IsGrantAccess(principal, userTenantName, userRoleNames))
                     {
                         return;
 

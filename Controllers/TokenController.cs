@@ -10,7 +10,6 @@ namespace Tenor.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class TokenController : ControllerBase
     {
         private readonly IHttpContextAccessor _contextAccessor;
@@ -25,24 +24,31 @@ namespace Tenor.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public ActionResult Get()
         {
-            string userName = _windowsAuthService.GetLoggedUser();
-            var responseToken = _jwtService.GenerateToken(userName);
-            if (responseToken == null)
+            try
             {
-                return Unauthorized();
+                var responseToken = _jwtService.GenerateToken(User);
+                if (responseToken == null)
+                {
+                    return Unauthorized();
+                }
+                return Ok(responseToken);
             }
-            return Ok(responseToken);
+            catch(Exception ex)
+            {
+                return BadRequest(ex.Message+" "+ex.InnerException);
+            }
+           
         }
 
         [HttpGet("refreshToken")]
         public ActionResult refreshToken()
         {
-            string userName = _windowsAuthService.GetLoggedUser();
             string Header = _contextAccessor.HttpContext.Request.Headers["Authorization"];
             var token = Header.Split(' ').Last();
-            var refresh = _jwtService.RefreshToken(userName, token);
+            var refresh = _jwtService.RefreshToken(User, token);
             if (refresh == null)
             {
                 return Unauthorized();

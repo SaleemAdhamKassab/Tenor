@@ -21,14 +21,16 @@ namespace Tenor.Services.AuthServives
 
     public interface IJwtService
     {
-        TokenDto GenerateToken(string userName);
+        TokenDto GenerateToken(ClaimsPrincipal principal);
+
+
         bool CheckExpiredToken(string username, string token);
         TenantDto TokenConverter(string token);
         bool CheckExpiredCookiesRefreshToken();
         bool CheckExpiredUserRefreshToken(string username, string refreshtoken);
-        TokenDto RefreshToken(string userName, string reftoken);
+        TokenDto RefreshToken(ClaimsPrincipal principal, string reftoken);
         bool RevokeToken(string username);
-        bool IsGrantAccess(string userName,string tenant,List<string> roles);
+        bool IsGrantAccess(ClaimsPrincipal principal,string tenant,List<string> roles);
     }
     public class JwtService: IJwtService
     {
@@ -48,19 +50,20 @@ namespace Tenor.Services.AuthServives
             _httpContextAccessor=httpContextAccessor;
         }
 
-        public TokenDto GenerateToken(string userName)
+        public TokenDto GenerateToken(ClaimsPrincipal principal)
         {
             try
             {
                 //Check if user has active token
-                var userToken = _dbcontext.UserTokens.FirstOrDefault(x=>x.UserName==userName && x.IsActive);
-                if(userToken!=null)
+                var userName = principal.Identity.Name;
+                var userToken = _dbcontext.UserTokens.FirstOrDefault(x => x.UserName == userName && x.IsActive);
+                if (userToken != null)
                 {
 
                     RevokeToken(userName);
                 }
 
-                TenantDto TenantAccessData = CovertToTenantDto(userName);
+                TenantDto TenantAccessData = CovertToTenantDto(principal);
                 if(TenantAccessData==null)
                 {
                     return null;
@@ -175,8 +178,9 @@ namespace Tenor.Services.AuthServives
            
             return true;
         }
-        public TokenDto RefreshToken(string userName,string reftoken)
+        public TokenDto RefreshToken(ClaimsPrincipal principal,string reftoken)
         {
+            var userName = principal.Identity.Name;
             var userToken = _dbcontext.UserTokens.FirstOrDefault(x=>x.UserName==userName && x.RefreshToken==reftoken);
             if (userToken == null)
             {
@@ -185,7 +189,7 @@ namespace Tenor.Services.AuthServives
             userToken.IsActive = false;
             _dbcontext.Entry(userToken).State = EntityState.Modified;
             _dbcontext.SaveChanges();
-             return GenerateToken(userName);
+             return GenerateToken(principal);
            
         }
         public bool RevokeToken(string username)
@@ -205,9 +209,10 @@ namespace Tenor.Services.AuthServives
             return false;
         }
 
-        public bool IsGrantAccess(string userName, string tenant, List<string> roles)
+        public bool IsGrantAccess(ClaimsPrincipal principal, string tenant, List<string> roles)
         {
-            TenantDto tenantDto = CovertToTenantDto(userName);
+            string userName = principal.Identity.Name;
+            TenantDto tenantDto = CovertToTenantDto(principal);
             if(tenantDto!=null)
             {
                 var userData = tenantDto.tenantAccesses.FirstOrDefault(x => x.tenantName == tenant);
@@ -253,36 +258,46 @@ namespace Tenor.Services.AuthServives
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
-        private TenantDto CovertToTenantDto(string userName)
+        private TenantDto CovertToTenantDto(ClaimsPrincipal principal)
         {
-            TenantDto tenantDto = new TenantDto();
-            List<TenantAccess> tenantAccList = new List<TenantAccess>();
-            // List<string> userGroups = _windowsAuthService.GetUserGroupsFromAD(userName);
-            List<string> userGroups=new List<string>() {"MIS-TECH" };
+            string userName = principal.Identity.Name;
+                TenantDto tenantDto = new TenantDto();
+                List<TenantAccess> tenantAccList = new List<TenantAccess>();
+                var userIdentity = (ClaimsIdentity)principal.Identity;
+                var claims = userIdentity.Claims;
+                var roleClaimType = userIdentity.RoleClaimType;
+            List<string> userGroups = claims.Where(c => c.Type == ClaimTypes.GroupSid).Select(x =>
+                new System.Security.Principal.SecurityIdentifier(x.Value).Translate(
+                typeof(System.Security.Principal.NTAccount)).ToString().ToLower()
+                ).ToList();
+            // List<string> userGroups=new List<string>() {"MIS-TECH" };
             List<UserTenantDto> userTenant = _mapper.Map<List<UserTenantDto>>(_dbcontext.UserTenantRoles.Include(x => x.Tenant).Include(y => y.Role).Where(x => x.UserName == userName).ToList());
-            List<GroupTenantDto> groupTenant = _mapper.Map<List<GroupTenantDto>>(_dbcontext.GroupTenantRoles.Include(x => x.Tenant).Include(y => y.Role).Where(x => userGroups.Contains(x.GroupName)).ToList());
-            //-----------------------------------------------
+                List<GroupTenantDto> groupTenant = _mapper.Map<List<GroupTenantDto>>(_dbcontext.GroupTenantRoles.Include(x => x.Tenant).Include(y => y.Role).Where(x => userGroups.Contains(x.GroupName)).ToList());
+                //-----------------------------------------------
 
-            foreach(var t in userTenant.Select(x=>x.TenantName).Distinct().ToList())
-            {
-                TenantAccess userAccess = new TenantAccess();
-                userAccess.tenantName = t;
-                userAccess.RoleList.AddRange(userTenant.Where(x => x.userName == userName && x.TenantName==t).Select(x => x.RoleName).ToList());
-                tenantAccList.Add(userAccess);
-            }
-                  
-            foreach (var g in groupTenant.Select(x=>new { x.groupName, x.TenantName }).Distinct().ToList())
-            {
-                TenantAccess groupAccess = new TenantAccess();
-                groupAccess.tenantName = g.TenantName;
-                groupAccess.RoleList.AddRange(groupTenant.Where(x => x.groupName == g.groupName).Select(x => x.RoleName).ToList());
-                tenantAccList.Add(groupAccess);
-            }
-            tenantDto.userName = userName;
-            tenantDto.tenantAccesses = tenantAccList;
-            return tenantDto;
+                foreach (var t in userTenant.Select(x => x.TenantName).Distinct().ToList())
+                {
+                    TenantAccess userAccess = new TenantAccess();
+                    userAccess.tenantName = t;
+                    userAccess.RoleList.AddRange(userTenant.Where(x => x.userName == userName && x.TenantName == t).Select(x => x.RoleName).ToList());
+                    tenantAccList.Add(userAccess);
+                }
+
+                foreach (var g in groupTenant.Select(x => new { x.groupName, x.TenantName }).Distinct().ToList())
+                {
+                    TenantAccess groupAccess = new TenantAccess();
+                    groupAccess.tenantName = g.TenantName;
+                    groupAccess.RoleList.AddRange(groupTenant.Where(x => x.groupName == g.groupName).Select(x => x.RoleName).ToList());
+                    tenantAccList.Add(groupAccess);
+                }
+                tenantDto.userName = userName;
+                tenantDto.tenantAccesses = tenantAccList;
+                return tenantDto;
+            
+            
 
         }
+
         private void SetRefreshToken(RefreshToken newRefreshToken)
         {
             var cookieOptions = new CookieOptions

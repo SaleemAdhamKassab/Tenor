@@ -30,6 +30,7 @@ namespace Tenor.Services.AuthServives
         }     
         public string GetLoggedUser()
         {
+          
           string  user = _httpContextAccessor.HttpContext.User.Identity.Name;
           return user.Substring(user.IndexOf("\\")+1);
 
