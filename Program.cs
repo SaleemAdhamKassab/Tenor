@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.Negotiate;
 using Microsoft.AspNetCore.Server.IISIntegration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using System.Security.Claims;
 using System.Text.Json.Serialization;
 using Tenor.Data;
 using Tenor.Helper;
@@ -56,6 +57,11 @@ builder.Services.AddSwaggerGen(setup =>
 builder.Services.AddAuthentication(IISDefaults.AuthenticationScheme).AddNegotiate();
 //----------------------------------------
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<ClaimsPrincipal>(s =>
+    s.GetService<IHttpContextAccessor>().HttpContext.User);
+
+builder.Services.AddMemoryCache();
+
 //-------------------------------------
 //builder.Services.AddDbContext<TenorDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddDbContext<TenorDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("RemoteConnection")));

@@ -1,78 +1,71 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using System.Reflection.PortableExecutable;
+using System.Security.Claims;
 using Tenor.ActionFilters;
 using Tenor.Models;
 using Tenor.Services.AuthServives;
+using static System.Collections.Specialized.BitVector32;
+using static Tenor.Services.AuthServives.ViewModels.AuthModels;
 
 namespace Tenor.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class TokenController : ControllerBase
+    public class TokenController : BaseController
     {
         private readonly IHttpContextAccessor _contextAccessor;
         private readonly IJwtService _jwtService;
-        public readonly IWindowsAuthService _windowsAuthService;
+        private static ClaimsPrincipal authPrincipal = null;
 
-        public TokenController(IHttpContextAccessor contextAccessor, IJwtService jwtService, IWindowsAuthService windowsAuthService)
+        public TokenController(IHttpContextAccessor contextAccessor, IJwtService jwtService)
         {
             _contextAccessor = contextAccessor;
             _jwtService = jwtService;
-            _windowsAuthService = windowsAuthService;
         }
 
         [HttpGet]
         [Authorize]
-        public ActionResult Get()
+        public IActionResult Get()
         {
-            try
-            {
-                var responseToken = _jwtService.GenerateToken(User);
-                if (responseToken == null)
-                {
-                    return Unauthorized();
-                }
-                return Ok(responseToken);
-            }
-            catch(Exception ex)
-            {
-                return BadRequest(ex.Message+" "+ex.InnerException);
-            }
            
+             authPrincipal = User;
+             return _returnResult(_jwtService.GenerateToken(User));
+
         }
 
-        [HttpGet("refreshToken")]
-        public ActionResult refreshToken()
+        [HttpPost("refreshToken")]
+        public IActionResult refreshToken(RefreshTokenDto input)
+        {          
+            
+            return _returnResult(_jwtService.RefreshToken(authPrincipal, input.RefreshToken));
+        }
+
+        [HttpGet("UserProfile")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+        public IActionResult GetProfile()
         {
-            string Header = _contextAccessor.HttpContext.Request.Headers["Authorization"];
+            string Header = _contextAccessor.HttpContext.Request.Headers["Authorization"];          
             var token = Header.Split(' ').Last();
-            var refresh = _jwtService.RefreshToken(User, token);
-            if (refresh == null)
+            var result = _jwtService.TokenConverter(token);
+            if(result==null)
             {
-                return Unauthorized();
+                return BadRequest("token is invalid");
             }
-            return Ok(refresh);
+            return Ok(result);
         }
 
-        [HttpGet("TestToken")]
-        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,Editor" })]
-        public ActionResult TestToken()
+        [HttpPost("RevokeToken")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin" })]
+        public IActionResult RevokeToken(RevokeTokenDto input)
         {
-            string Header = _contextAccessor.HttpContext.Request.Headers["Authorization"];
-            if(Header==null)
-            {
-                return Unauthorized();
-            }
-            var token = Header.Split(' ').Last();
-            return Ok(_jwtService.TokenConverter(token));
-        }
-        [HttpGet("RevokeToken")]
-        public ActionResult RevokeToken(string userName)
-        {
-            return Ok(_jwtService.RevokeToken(userName));
+           
+            return _returnResult(_jwtService.RevokeToken(input.token));
         }
 
+       
+      
     }
 }

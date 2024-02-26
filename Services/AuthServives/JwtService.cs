@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OfficeOpenXml.FormulaParsing.LexicalAnalysis;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -13,6 +14,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Tenor.Data;
+using Tenor.Dtos;
 using Tenor.Models;
 using static Tenor.Services.AuthServives.ViewModels.AuthModels;
 
@@ -21,74 +23,83 @@ namespace Tenor.Services.AuthServives
 
     public interface IJwtService
     {
-        TokenDto GenerateToken(ClaimsPrincipal principal);
-
-
-        bool CheckExpiredToken(string username, string token);
+        ResultWithMessage GenerateToken(ClaimsPrincipal principal);
         TenantDto TokenConverter(string token);
-        bool CheckExpiredCookiesRefreshToken();
-        bool CheckExpiredUserRefreshToken(string username, string refreshtoken);
-        TokenDto RefreshToken(ClaimsPrincipal principal, string reftoken);
-        bool RevokeToken(string username);
-        bool IsGrantAccess(ClaimsPrincipal principal,string tenant,List<string> roles);
+        bool CheckExpiredToken(string token);
+        ResultWithMessage RefreshToken(ClaimsPrincipal principal,string reftoken);
+        ResultWithMessage RevokeToken(string token);
+        bool IsGrantAccess(string token, string tenant,List<string> roles);
     }
     public class JwtService: IJwtService
     {
         private readonly IConfiguration _config;
-        private readonly IWindowsAuthService _windowsAuthService;
         private readonly TenorDbContext _dbcontext;
         private readonly IMapper _mapper;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private static UserDto user= new UserDto();
-        public JwtService(IConfiguration config, IWindowsAuthService windowsAuthService,
+        public JwtService(IConfiguration config,
             TenorDbContext dbcontext, IMapper mapper, IHttpContextAccessor httpContextAccessor)
         {
             _config=config;
-            _windowsAuthService=windowsAuthService;
             _dbcontext=dbcontext;
             _mapper=mapper;
             _httpContextAccessor=httpContextAccessor;
         }
 
-        public TokenDto GenerateToken(ClaimsPrincipal principal)
+        public ResultWithMessage GenerateToken(ClaimsPrincipal principal)
         {
             try
             {
+                string userName = null;
                 //Check if user has active token
-                var userName = principal.Identity.Name;
-                var userToken = _dbcontext.UserTokens.FirstOrDefault(x => x.UserName == userName && x.IsActive);
+                try
+                {
+                    userName = principal.Identity.Name;
+
+                }
+                catch
+                {
+                    userName = principal.Claims.ToList()[0].Value.ToString();
+
+                }
+                var userToken = _dbcontext.UserTokens.FirstOrDefault(x => x.UserName.ToLower() == userName.ToLower() && x.IsActive);
                 if (userToken != null)
                 {
 
-                    RevokeToken(userName);
+                    RevokeToken(userToken.Token);
                 }
 
                 TenantDto TenantAccessData = CovertToTenantDto(principal);
                 if(TenantAccessData==null)
                 {
-                    return null;
+                    return new ResultWithMessage(null,"Access denied") ;
                 }
                 string jwtToken = BuildToken(TenantAccessData);
                 RefreshToken refTokent = GenerateRefreshToken();
                 SetRefreshToken(refTokent);
                 SetUserTokensCfg(userName, jwtToken, refTokent.Token);
-                return new TokenDto {userInfo= TenantAccessData,
+                TokenDto result= new TokenDto {userInfo= TenantAccessData,
                     token = jwtToken,
                     refreshToken = refTokent.Token,
                     ExpiryTime= DateTime.Now.AddMinutes(Convert.ToDouble(_config["JWT:TokenValidityInMinutes"]))
                 };
 
+                return new ResultWithMessage(result,null);
             }
             catch (Exception ex)
             {
-                return null;
+                return new ResultWithMessage(null, ex.Message);
+
             }
         }
-        public bool CheckExpiredToken(string username, string token)
+        public bool CheckExpiredToken(string token)
         {
+            var username = TokenConverter(token).userName;
+
             try
             {
-                var userToken = _dbcontext.UserTokens.FirstOrDefault(x=>x.UserName==username && x.Token==token && x.IsActive);
+
+                var userToken = _dbcontext.UserTokens.FirstOrDefault(x=>x.UserName.ToLower()==username.ToLower() && x.Token==token && x.IsActive);
                 if(userToken==null)
                 {
                     return false;
@@ -106,7 +117,7 @@ namespace Tenor.Services.AuthServives
                 };
 
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
+                var tokenPrincipal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
                 JwtSecurityToken jwtSecurityToken = securityToken as JwtSecurityToken;
                 if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha512, StringComparison.InvariantCultureIgnoreCase))
                 {
@@ -130,7 +141,7 @@ namespace Tenor.Services.AuthServives
                 {
                     ValidateIssuer = false,
                     ValidateAudience = false,
-                    ValidateLifetime = true,
+                    ValidateLifetime = false,
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(hmac.Key),
                     ClockSkew = TimeSpan.Zero
@@ -153,48 +164,39 @@ namespace Tenor.Services.AuthServives
                 return null;
             }
         }
-        public bool CheckExpiredCookiesRefreshToken()
+        public ResultWithMessage RefreshToken(ClaimsPrincipal principal, string reftoken)
         {
-            string cookiesToken = _httpContextAccessor.HttpContext.Request.Cookies["refreshToken"];
-            if(!user.refreshToken.Equals(cookiesToken) || (user.tokenExpired < DateTime.Now))
-            {
-                return false;
-            }
-            return true;
-
-        }
-        public bool CheckExpiredUserRefreshToken(string username,string refreshtoken)
-        {
-            var activeRefTokent = _dbcontext.UserTokens.FirstOrDefault(x=>x.UserName==username && x.IsActive);
-            if (activeRefTokent == null || !activeRefTokent.RefreshToken.Equals(refreshtoken))
-            {
-                return false;
-            }
-            if (activeRefTokent.RefreshTokenExpired < DateTime.Now)
-            {
-                RevokeToken(username);
-                return false;
-            }
            
-            return true;
-        }
-        public TokenDto RefreshToken(ClaimsPrincipal principal,string reftoken)
-        {
-            var userName = principal.Identity.Name;
-            var userToken = _dbcontext.UserTokens.FirstOrDefault(x=>x.UserName==userName && x.RefreshToken==reftoken);
+            string userName = null;
+            try
+            {
+                userName = principal.Identity.Name;
+
+            }
+            catch
+            {
+                userName = principal.Claims.ToList()[0].Value.ToString();
+
+            }
+            if (!CheckExpiredUserRefreshToken(userName, reftoken))
+            {
+                return new ResultWithMessage(null,"Refresh token is invalid");
+            }
+            var userToken = _dbcontext.UserTokens.FirstOrDefault(x=>x.UserName.ToLower()== userName.ToLower() && x.RefreshToken==reftoken && x.RefreshTokenExpired >= DateTime.Now && x.IsActive);
             if (userToken == null)
             {
-                return null;
+                return new ResultWithMessage(null, "Refresh token is invalid");
             }
-            userToken.IsActive = false;
+             userToken.IsActive = false;
             _dbcontext.Entry(userToken).State = EntityState.Modified;
             _dbcontext.SaveChanges();
              return GenerateToken(principal);
            
         }
-        public bool RevokeToken(string username)
+        public ResultWithMessage RevokeToken(string token)
         {
-           List<UserToken> userTokens = _dbcontext.UserTokens.Where(x => x.UserName == username && x.IsActive).ToList();
+           string username = TokenConverter(token).userName;            
+           List<UserToken> userTokens = _dbcontext.UserTokens.Where(x => x.UserName.ToLower() == username.ToLower() && x.Token== token && x.IsActive).ToList();
             if (userTokens != null || userTokens.Count!=0)
             {
                  foreach(UserToken userToken in userTokens)
@@ -204,15 +206,14 @@ namespace Tenor.Services.AuthServives
                     _dbcontext.SaveChanges();
                 }
                
-                return true;
+                return new ResultWithMessage(true,null);
             }
-            return false;
+            return new ResultWithMessage(false, "token is invalid");
         }
-
-        public bool IsGrantAccess(ClaimsPrincipal principal, string tenant, List<string> roles)
+        public bool IsGrantAccess(string token, string tenant, List<string> roles)
         {
-            string userName = principal.Identity.Name;
-            TenantDto tenantDto = CovertToTenantDto(principal);
+            var userName = TokenConverter(token).userName;
+            TenantDto tenantDto = TokenConverter(token);
             if(tenantDto!=null)
             {
                 var userData = tenantDto.tenantAccesses.FirstOrDefault(x => x.tenantName == tenant);
@@ -228,8 +229,10 @@ namespace Tenor.Services.AuthServives
                      
             return false;
         }
+
         private RefreshToken GenerateRefreshToken()
         {
+           
             var refreshToken = new RefreshToken()
             {
                 Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
@@ -260,18 +263,28 @@ namespace Tenor.Services.AuthServives
         }
         private TenantDto CovertToTenantDto(ClaimsPrincipal principal)
         {
-            string userName = principal.Identity.Name;
+            string userName = null;
+            //Check if user has active token
+            try
+            {
+                userName = principal.Identity.Name;
+
+            }
+            catch
+            {
+                userName = principal.Claims.ToList()[0].Value.ToString();
+
+            }
                 TenantDto tenantDto = new TenantDto();
                 List<TenantAccess> tenantAccList = new List<TenantAccess>();
                 var userIdentity = (ClaimsIdentity)principal.Identity;
                 var claims = userIdentity.Claims;
                 var roleClaimType = userIdentity.RoleClaimType;
-            List<string> userGroups = claims.Where(c => c.Type == ClaimTypes.GroupSid).Select(x =>
+              List<string> userGroups = claims.Where(c => c.Type == ClaimTypes.GroupSid).Select(x =>
                 new System.Security.Principal.SecurityIdentifier(x.Value).Translate(
                 typeof(System.Security.Principal.NTAccount)).ToString().ToLower()
                 ).ToList();
-            // List<string> userGroups=new List<string>() {"MIS-TECH" };
-            List<UserTenantDto> userTenant = _mapper.Map<List<UserTenantDto>>(_dbcontext.UserTenantRoles.Include(x => x.Tenant).Include(y => y.Role).Where(x => x.UserName == userName).ToList());
+                List<UserTenantDto> userTenant = _mapper.Map<List<UserTenantDto>>(_dbcontext.UserTenantRoles.Include(x => x.Tenant).Include(y => y.Role).Where(x => x.UserName == userName).ToList());
                 List<GroupTenantDto> groupTenant = _mapper.Map<List<GroupTenantDto>>(_dbcontext.GroupTenantRoles.Include(x => x.Tenant).Include(y => y.Role).Where(x => userGroups.Contains(x.GroupName)).ToList());
                 //-----------------------------------------------
 
@@ -297,7 +310,6 @@ namespace Tenor.Services.AuthServives
             
 
         }
-
         private void SetRefreshToken(RefreshToken newRefreshToken)
         {
             var cookieOptions = new CookieOptions
@@ -318,6 +330,31 @@ namespace Tenor.Services.AuthServives
 
             _dbcontext.UserTokens.Add(userToken);
             _dbcontext.SaveChanges();
+        }
+        private bool CheckExpiredCookiesRefreshToken()
+        {
+            string cookiesToken = _httpContextAccessor.HttpContext.Request.Cookies["refreshToken"];
+            if (!user.refreshToken.Equals(cookiesToken) || (user.tokenExpired < DateTime.Now))
+            {
+                return false;
+            }
+            return true;
+
+        }
+        private bool CheckExpiredUserRefreshToken(string username, string refreshtoken)
+        {
+            var activeRefTokent = _dbcontext.UserTokens.FirstOrDefault(x => x.UserName.ToLower() == username.ToLower() && x.IsActive);
+            if (activeRefTokent == null || !activeRefTokent.RefreshToken.Equals(refreshtoken))
+            {
+                return false;
+            }
+            if (activeRefTokent.RefreshTokenExpired < DateTime.Now)
+            {
+                RevokeToken(activeRefTokent.Token);
+                return false;
+            }
+
+            return true;
         }
     }
 }

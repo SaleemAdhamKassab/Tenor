@@ -60,5 +60,15 @@ namespace Tenor.Services.AuthServives.ViewModels
             public string TenantName { get; set; }
             public string RoleName { get; set; }
         }
+
+        public class RevokeTokenDto
+        {
+            public string ? token { get; set; }
+        }
+
+        public class RefreshTokenDto
+        {
+            public string? RefreshToken { get; set; }
+        }
     }
 }

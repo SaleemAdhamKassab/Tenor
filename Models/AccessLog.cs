@@ -14,7 +14,7 @@ namespace Tenor.Models
         public AccessLog() { }
         public AccessLog(string userName, string iP, string responseMessage, DateTime actionDate)
         {
-            UserName = userName;
+            UserName = userName!=null?userName:"NA";
             IP = iP;
             ResponseMessage = responseMessage;
             ActionDate = actionDate;
