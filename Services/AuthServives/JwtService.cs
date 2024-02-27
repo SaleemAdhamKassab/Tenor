@@ -70,7 +70,7 @@ namespace Tenor.Services.AuthServives
                 }
 
                 TenantDto TenantAccessData = CovertToTenantDto(principal);
-                if(TenantAccessData==null)
+                if(TenantAccessData==null || TenantAccessData.tenantAccesses.Count()==0)
                 {
                     return new ResultWithMessage(null,"Access denied") ;
                 }
@@ -277,6 +277,7 @@ namespace Tenor.Services.AuthServives
             }
                 TenantDto tenantDto = new TenantDto();
                 List<TenantAccess> tenantAccList = new List<TenantAccess>();
+                List<DeviceAccess> deviceAccList = new List<DeviceAccess>();
                 var userIdentity = (ClaimsIdentity)principal.Identity;
                 var claims = userIdentity.Claims;
                 var roleClaimType = userIdentity.RoleClaimType;
@@ -284,8 +285,9 @@ namespace Tenor.Services.AuthServives
                 new System.Security.Principal.SecurityIdentifier(x.Value).Translate(
                 typeof(System.Security.Principal.NTAccount)).ToString().ToLower()
                 ).ToList();
-                List<UserTenantDto> userTenant = _mapper.Map<List<UserTenantDto>>(_dbcontext.UserTenantRoles.Include(x => x.Tenant).Include(y => y.Role).Where(x => x.UserName == userName).ToList());
-                List<GroupTenantDto> groupTenant = _mapper.Map<List<GroupTenantDto>>(_dbcontext.GroupTenantRoles.Include(x => x.Tenant).Include(y => y.Role).Where(x => userGroups.Contains(x.GroupName)).ToList());
+                List<UserTenantDto> userTenant = _mapper.Map<List<UserTenantDto>>(_dbcontext.UserTenantRoles.Include(x => x.Tenant).ThenInclude(x=>x.TenantDevices).ThenInclude(x=>x.Device).Include(y => y.Role).Where(x => x.UserName == userName).ToList());
+                List<GroupTenantDto> groupTenant = _mapper.Map<List<GroupTenantDto>>(_dbcontext.GroupTenantRoles.Include(x => x.Tenant).ThenInclude(x => x.TenantDevices).ThenInclude(x => x.Device).Include(y => y.Role).Where(x => userGroups.Contains(x.GroupName)).ToList());
+                 
                 //-----------------------------------------------
 
                 foreach (var t in userTenant.Select(x => x.TenantName).Distinct().ToList())
@@ -294,17 +296,22 @@ namespace Tenor.Services.AuthServives
                     userAccess.tenantName = t;
                     userAccess.RoleList.AddRange(userTenant.Where(x => x.userName == userName && x.TenantName == t).Select(x => x.RoleName).ToList());
                     tenantAccList.Add(userAccess);
-                }
+             
 
-                foreach (var g in groupTenant.Select(x => new { x.groupName, x.TenantName }).Distinct().ToList())
+            }
+
+            foreach (var g in groupTenant.Select(x => new { x.groupName, x.TenantName }).Distinct().ToList())
                 {
                     TenantAccess groupAccess = new TenantAccess();
                     groupAccess.tenantName = g.TenantName;
                     groupAccess.RoleList.AddRange(groupTenant.Where(x => x.groupName == g.groupName).Select(x => x.RoleName).ToList());
                     tenantAccList.Add(groupAccess);
+                
                 }
+
                 tenantDto.userName = userName;
                 tenantDto.tenantAccesses = tenantAccList;
+                tenantDto.deviceAccesses = TenantDeviceList(tenantAccList);
                 return tenantDto;
             
             
@@ -356,6 +363,22 @@ namespace Tenor.Services.AuthServives
 
             return true;
         }
-    }
+
+        private List<DeviceAccess> TenantDeviceList(List<TenantAccess> tenantAccList)
+        {
+            List<DeviceAccess> result = new List<DeviceAccess>();
+            foreach (var t in tenantAccList)
+            {
+                var data = _dbcontext.Tenants.Where(x=>x.Name==t.tenantName).Include(x => x.TenantDevices).ThenInclude(x => x.Device).ToList();
+                foreach(var d in data)
+                {
+                    List<DeviceAccess> da = new List<DeviceAccess>();
+                    da = d.TenantDevices.Select(x => new DeviceAccess() { DeviceId = x.DeviceId, DeviceName = x.Device.Name }).ToList();
+                    result.AddRange(da);
+                }
+            }
+            return result.DistinctBy(x => x.DeviceName).ToList(); ;
+        }
+    } 
 }
 

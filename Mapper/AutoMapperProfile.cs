@@ -18,6 +18,7 @@ namespace Tenor.Mapper
                 .ForMember(dest => dest.userName, opt => opt.MapFrom(src => src.UserName))
                 .ForMember(dest => dest.TenantName, opt => opt.MapFrom(src => src.Tenant.Name))
                 .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.Role.Name))
+
                 .ReverseMap();
 
             CreateMap<GroupTenantRole, GroupTenantDto>()
@@ -25,6 +26,9 @@ namespace Tenor.Mapper
                 .ForMember(dest => dest.TenantName, opt => opt.MapFrom(src => src.Tenant.Name))
                 .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.Role.Name))
                 .ReverseMap();
+
+
+
 
             //-----------------------------KPI--------------------------------------
             CreateMap<Operation, OperationDto>()

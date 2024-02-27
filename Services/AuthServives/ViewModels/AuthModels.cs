@@ -29,6 +29,7 @@ namespace Tenor.Services.AuthServives.ViewModels
         public class TenantDto
         {
             public string userName { get; set; }
+            public List<DeviceAccess> deviceAccesses { get; set; }
             public List<TenantAccess> tenantAccesses { get; set; }
         }
 
@@ -59,6 +60,7 @@ namespace Tenor.Services.AuthServives.ViewModels
             public string userName { get; set; }
             public string TenantName { get; set; }
             public string RoleName { get; set; }
+
         }
 
         public class RevokeTokenDto
@@ -69,6 +71,12 @@ namespace Tenor.Services.AuthServives.ViewModels
         public class RefreshTokenDto
         {
             public string? RefreshToken { get; set; }
+        }
+
+        public class DeviceAccess
+        {
+            public int DeviceId { get; set; }
+            public string DeviceName { get; set; }
         }
     }
 }
