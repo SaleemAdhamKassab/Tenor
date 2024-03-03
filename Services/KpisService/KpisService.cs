@@ -69,6 +69,7 @@ namespace Tenor.Services.KpisService
             _db = tenorDbContext;
             _mapper = mapper;
         }
+        //Not Used
         public ResultWithMessage GetListAsync(object kpiFilterM)
         {
             try
@@ -185,7 +186,7 @@ namespace Tenor.Services.KpisService
             {
                 try
                 {
-                    Kpi oldKpi = _db.Kpis.AsNoTracking().FirstOrDefault(x => x.Id == Kpi.Id);
+                    Kpi oldKpi = _db.Kpis.AsNoTracking().FirstOrDefault(x => (x.Id == Kpi.Id && x.CreatedBy==Kpi.ModifyBy) || x.IsPublic);
                     if (oldKpi == null)
                     {
                         return new ResultWithMessage(null, "This Id is invalid");
@@ -305,7 +306,7 @@ namespace Tenor.Services.KpisService
             try
             {
                 //------------------------------Data source------------------------------------------------
-                IQueryable<Kpi> query = _db.Kpis.Include(x => x.KpiFieldValues).ThenInclude(x => x.KpiField).
+                IQueryable<Kpi> query = _db.Kpis.Where(x=>x.CreatedBy==filter.UserName || x.IsPublic).Include(x => x.KpiFieldValues).ThenInclude(x => x.KpiField).
                   ThenInclude(x => x.ExtraField).AsQueryable();
                 //------------------------------Data filter-----------------------------------------------------------
 
@@ -345,6 +346,9 @@ namespace Tenor.Services.KpisService
                     Name = x.Name,
                     DeviceId = x.DeviceId,
                     DeviceName = x.Device.Name,
+                    CreatedBy=x.CreatedBy,
+                    CreationDate=x.CreationDate,
+                    IsPublic=x.IsPublic,
                     ExtraFields = _mapper.Map<List<KpiFieldValueViewModel>>(x.KpiFieldValues)
                 });
                 //Sort and paginition

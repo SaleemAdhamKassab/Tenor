@@ -14,7 +14,13 @@ namespace Tenor.Services.KpisService.ViewModels
             [Required]
             public string Name { get; set; }
             public int? DeviceId { get; set; }
-
+            public string CreatedBy { get; set; }
+            public DateTime CreationDate { get; set; }=DateTime.Now;
+            public bool IsPublic { get; set; }
+            public string? ModifyBy { get; set; }
+            public DateTime? ModifyDate { get; set; } = null;
+            public string? DeletedBy { get; set; }
+            public DateTime? DeletedDate { get; set; } = null;
             public List<ExtraFieldValue>? KpiFields { get; set; }
             public OperationBinding Operation { get; set; }
 
@@ -71,7 +77,13 @@ namespace Tenor.Services.KpisService.ViewModels
             public string Name { get; set; }
             public int? DeviceId { get; set; }
             public string? DeviceName { get; set; }
-
+            public string CreatedBy { get; set; }
+            public DateTime CreationDate { get; set; }
+            public bool IsPublic { get; set; }
+            public string? ModifyBy { get; set; }
+            public DateTime? ModifyDate { get; set; }
+            public string? DeletedBy { get; set; }
+            public DateTime? DeletedDate { get; set; }
             public List<KpiFieldValueViewModel> ? ExtraFields { get; set; }
             public OperationDto Operations { get; set; }
 
@@ -80,6 +92,7 @@ namespace Tenor.Services.KpisService.ViewModels
         {
             public int ? DeviceId { get; set; }
             public IDictionary<string, object>? ExtraFields { get; set; }
+            public string? UserName { get; set; }
 
         }
         public class Filter
@@ -108,6 +121,13 @@ namespace Tenor.Services.KpisService.ViewModels
             public string Name { get; set; }
             public int? DeviceId { get; set; }
             public string? DeviceName { get; set; }
+            public string CreatedBy { get; set; }
+            public DateTime CreationDate { get; set; }
+            public bool IsPublic { get; set; }
+            public string? ModifyBy { get; set; }
+            public DateTime? ModifyDate { get; set; }
+            public string? DeletedBy { get; set; }
+            public DateTime? DeletedDate { get; set; }
             public List<KpiFieldValueViewModel> ? ExtraFields { get; set; }
 
         }

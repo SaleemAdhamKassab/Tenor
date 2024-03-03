@@ -17,6 +17,10 @@ namespace Tenor.Models
         public string CreatedBy { get; set; }
         public DateTime CreationDate { get; set; } = DateTime.Now;
         public bool IsPublic { get; set; }
+        public string? ModifyBy { get; set; }
+        public DateTime ? ModifyDate { get; set; } =null;
+        public string? DeletedBy { get; set; }
+        public DateTime? DeletedDate { get; set; } = null;
         public virtual Operation Operation { get; set; }
         public virtual Device? Device { get; set; }
         public virtual ICollection<KpiFieldValue> KpiFieldValues { get; set; }
