@@ -14,7 +14,9 @@ namespace Tenor.Models
         public int OperationId { get; set; }
         [ForeignKey("Device")]
         public int? DeviceId { get; set; }
-
+        public string CreatedBy { get; set; }
+        public DateTime CreationDate { get; set; } = DateTime.Now;
+        public bool IsPublic { get; set; }
         public virtual Operation Operation { get; set; }
         public virtual Device? Device { get; set; }
         public virtual ICollection<KpiFieldValue> KpiFieldValues { get; set; }
