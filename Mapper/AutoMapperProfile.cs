@@ -65,6 +65,10 @@ namespace Tenor.Mapper
                 .ForMember(dest => dest.ExtraFields, opt => opt.MapFrom(src => src.KpiFieldValues))
                 .ForMember(dest => dest.Operations, opt => opt.MapFrom(src => src.Operation))
                 .ForMember(dest => dest.DeviceName, opt => opt.MapFrom(src => src.Device.Name))
+                .ForMember(dest => dest.CreationDate, opt => opt.MapFrom(src => src.CreationDate))
+                .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src => src.CreatedBy))
+                .ForMember(dest => dest.ModifyBy, opt => opt.MapFrom(src => src.ModifyBy))
+                .ForMember(dest => dest.ModifyDate, opt => opt.MapFrom(src => src.ModifyDate))
                 .ReverseMap();
 
 

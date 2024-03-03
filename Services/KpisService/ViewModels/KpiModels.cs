@@ -2,6 +2,9 @@
 using System.ComponentModel.DataAnnotations;
 using Tenor.Dtos;
 using System.Dynamic;
+using Microsoft.AspNetCore.Mvc;
+using System.Runtime.Serialization;
+using Newtonsoft.Json;
 
 namespace Tenor.Services.KpisService.ViewModels
 {
@@ -14,7 +17,7 @@ namespace Tenor.Services.KpisService.ViewModels
             [Required]
             public string Name { get; set; }
             public int? DeviceId { get; set; }
-            public string CreatedBy { get; set; }
+            public string ? CreatedBy { get; set; }
             public DateTime CreationDate { get; set; }=DateTime.Now;
             public bool IsPublic { get; set; }
             public string? ModifyBy { get; set; }
@@ -88,7 +91,7 @@ namespace Tenor.Services.KpisService.ViewModels
             public OperationDto Operations { get; set; }
 
         }
-        public  class  KpiFilterModel: GeneralFilterModel
+        public class  KpiFilterModel: GeneralFilterModel
         {
             public int ? DeviceId { get; set; }
             public IDictionary<string, object>? ExtraFields { get; set; }

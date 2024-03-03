@@ -69,7 +69,7 @@ namespace Tenor.ActionFilters
 
                     }
 
-                context.Result = new BadRequestObjectResult("Denied access");
+                context.Result = new BadRequestObjectResult("Access Denied");
                 return;
 
 

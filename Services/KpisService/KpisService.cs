@@ -191,6 +191,8 @@ namespace Tenor.Services.KpisService
                     {
                         return new ResultWithMessage(null, "This Id is invalid");
                     }
+                    Kpi.CreatedBy = oldKpi.CreatedBy;
+                    Kpi.CreationDate = oldKpi.CreationDate;
                     Kpi updatedKpi = _mapper.Map<Kpi>(Kpi);
                     _db.Update(updatedKpi);
                     _db.SaveChanges();
@@ -349,6 +351,8 @@ namespace Tenor.Services.KpisService
                     CreatedBy=x.CreatedBy,
                     CreationDate=x.CreationDate,
                     IsPublic=x.IsPublic,
+                    ModifyBy=x.ModifyBy,
+                    ModifyDate=x.ModifyDate,
                     ExtraFields = _mapper.Map<List<KpiFieldValueViewModel>>(x.KpiFieldValues)
                 });
                 //Sort and paginition
@@ -1161,7 +1165,7 @@ namespace Tenor.Services.KpisService
                     }
                 }
 
-                if(input.Childs.Count()>0)
+                if(input.Childs!=null && input.Childs.Count()>0)
                 {
                     foreach(var c in input.Childs)
                     {

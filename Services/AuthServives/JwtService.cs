@@ -310,7 +310,10 @@ namespace Tenor.Services.AuthServives
                 }
 
                 tenantDto.userName = userName;
-                tenantDto.tenantAccesses = tenantAccList;
+                tenantDto.profileUrl = _config["ProfileImg"].Replace("VarXXX", userName.Substring(userName.IndexOf("\\") + 1));
+                tenantDto.thumbnailUrl = _config["ThumbImg"].Replace("VarXXX", userName.Substring(userName.IndexOf("\\") + 1));
+
+            tenantDto.tenantAccesses = tenantAccList;
                 tenantDto.deviceAccesses = TenantDeviceList(tenantAccList);
                 return tenantDto;
             
