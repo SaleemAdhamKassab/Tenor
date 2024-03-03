@@ -140,7 +140,10 @@ namespace Tenor.Services.KpisService.ViewModels
             public string Inside { get; set; }
             public string RightSide { get; set; }
         }
-
-
+        public class QueryWithJoinExpress
+        {
+            public string basicQuery { get; set; }
+            public List<string> tables { get; set; }
+        }
     }
 }

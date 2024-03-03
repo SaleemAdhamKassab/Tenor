@@ -8,7 +8,8 @@ using Tenor.Services.KpisService;
 
 namespace Tenor.Helper
 {
-    public   class ConvertKpiForm
+
+    public class ConvertKpiForm
     {
         private  readonly TenorDbContext _db;
         private   readonly IMapper _mapper;
@@ -335,9 +336,8 @@ namespace Tenor.Helper
                 }
               
             }
-
+       
             return query;
-
         }
     }
 }

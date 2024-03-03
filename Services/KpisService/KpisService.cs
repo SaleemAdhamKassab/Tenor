@@ -55,6 +55,7 @@ namespace Tenor.Services.KpisService
         ResultWithMessage ValidateKpi(int? deviceid, string kpiname);
         ResultWithMessage CheckValidFormat(CreateKpi input);
 
+
     }
 
     public class KpisService : IKpisService
@@ -62,8 +63,10 @@ namespace Tenor.Services.KpisService
         private readonly TenorDbContext _db;
         private readonly IMapper _mapper;
         private string query = "";
+        private string joinExpression = "";
         private bool checkResult = true;
         private int voidIdx = 0;
+
         public KpisService(TenorDbContext tenorDbContext, IMapper mapper)
         {
             _db = tenorDbContext;
@@ -368,6 +371,7 @@ namespace Tenor.Services.KpisService
         public async Task<ResultWithMessage> GetKpiQuery(int kpiid)
         {
             var response = GetKpiForm(kpiid);
+            var tabNames = GetTablesNameRegExp(response.Result.Data.ToString()).ToList();
             return new ResultWithMessage(response.Result.Data, null);
 
         }
@@ -593,7 +597,6 @@ namespace Tenor.Services.KpisService
             }
             if (opt.Type == "counter")
             {
-
                 qe.LeftSide = "";
                 qe.Inside = opt.Aggregation == "na" ? opt.TableName+"."+opt.ColumnName : opt.Aggregation + "(" + opt.TableName + "." + opt.ColumnName + ")";
                 qe.RightSide = "";
@@ -784,6 +787,7 @@ namespace Tenor.Services.KpisService
             return new ResultWithMessage(false, "KPI format is invalid");
 
         }
+
 
         private bool DeleteSelfRelation(int? parentid, List<int> childid)
         {
@@ -1225,7 +1229,23 @@ namespace Tenor.Services.KpisService
             input.Childs=data;
             return input;
         }
-      
+
+        private IEnumerable<string> GetTablesNameRegExp(string query)
+        {
+            List<string> tablesName = new List<string>();
+            string pattern = @"\b[tech4_]\w+";
+            Regex rg = new Regex(pattern,RegexOptions.IgnoreCase);
+            MatchCollection matchedTables = rg.Matches(query);
+            for (int i = 0; i < matchedTables.Count; i++)
+            {
+                if ((matchedTables[i].Value.ToLower().Contains("tech")))
+                {
+                    tablesName.Add(matchedTables[i].Value);
+
+                }
+            }
+            return tablesName.Distinct();
+        }
     }
 }
     
