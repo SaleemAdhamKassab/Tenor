@@ -34,6 +34,7 @@ using System.Net.Quic;
 using System;
 using System.Runtime.InteropServices;
 using static Tenor.Helper.Constant;
+using static Tenor.Services.AuthServives.ViewModels.AuthModels;
 
 namespace Tenor.Services.KpisService
 {
@@ -48,7 +49,7 @@ namespace Tenor.Services.KpisService
         ResultWithMessage GetOperators();
         ResultWithMessage GetFunctions();
         FileBytesModel exportKpiByFilter(object kpiFilterM);
-        ResultWithMessage getByFilter(KpiFilterModel filter);
+        ResultWithMessage getByFilter(KpiFilterModel filter, TenantDto authUser);
         Task<ResultWithMessage> GetKpiQuery(int kpiid);
         FileBytesModel exportKpiByFilter2(KpiFilterModel filter);
         string GetQeuryExpress(OperationDto opt, string? tag,int? voidChildCount);
@@ -306,13 +307,16 @@ namespace Tenor.Services.KpisService
             excelfile.ContentType = contentType;
             return excelfile;
         }
-        public ResultWithMessage getByFilter(KpiFilterModel filter)
+        public ResultWithMessage getByFilter(KpiFilterModel filter, TenantDto authUser)
         {
             try
             {
                 //------------------------------Data source------------------------------------------------
-                IQueryable<Kpi> query = _db.Kpis.Where(x=>x.CreatedBy==filter.UserName || x.IsPublic).Include(x => x.KpiFieldValues).ThenInclude(x => x.KpiField).
-                  ThenInclude(x => x.ExtraField).AsQueryable();
+
+                IQueryable<Kpi>  query = _db.Kpis.Where(x => x.CreatedBy == authUser.userName || x.IsPublic || authUser.deviceAccesses.Select(x=>x.DeviceId).ToList().Contains((int)x.DeviceId))
+                    .Include(x => x.KpiFieldValues).ThenInclude(x => x.KpiField)
+                    .ThenInclude(x => x.ExtraField).AsQueryable();
+                              
                 //------------------------------Data filter-----------------------------------------------------------
 
                 if (!string.IsNullOrEmpty(filter.SearchQuery))
@@ -372,7 +376,9 @@ namespace Tenor.Services.KpisService
         {
             var response = GetKpiForm(kpiid);
             var tabNames = GetTablesNameRegExp(response.Result.Data.ToString()).ToList();
-            return new ResultWithMessage(response.Result.Data, null);
+            string fullQuery = GetOracleQuery(response.Result.Data.ToString(), tabNames);
+
+            return new ResultWithMessage(fullQuery, null);
 
         }
         public FileBytesModel exportKpiByFilter2(KpiFilterModel filter)
@@ -1229,7 +1235,6 @@ namespace Tenor.Services.KpisService
             input.Childs=data;
             return input;
         }
-
         private IEnumerable<string> GetTablesNameRegExp(string query)
         {
             List<string> tablesName = new List<string>();
@@ -1245,6 +1250,39 @@ namespace Tenor.Services.KpisService
                 }
             }
             return tablesName.Distinct();
+        }
+        private string GetOracleQuery(string query,List<string> tablesName)
+        {
+            query = "select " + query;
+            string formExp = "";
+            string joinExp = "";
+            string whereExp = "";
+
+            string lastDate = DateTime.Now.Year.ToString() +
+                              DateTime.Now.ToString("MM") +
+                           Convert.ToInt32(Convert.ToString(Convert.ToInt32(DateTime.Now.ToString("dd"))-1)).ToString("00");
+
+            formExp += " from " + tablesName[0] + " " + tablesName[0];
+
+            if(tablesName.Count()>1)
+            {
+                foreach (var item in tablesName.Select((value, i) => new { i, value }))
+                {
+                    if (item.i > 0)
+                    {
+                        joinExp += " join " + item.value + " " + item.value + " on " + item.value + ".Cell_Id=" +
+                            item.value[item.i - 1] + ".Cell_Id";
+                    }
+                }
+            }
+            
+            whereExp += " where " + tablesName[0] + ".c_date between " + lastDate+"00" + " and " + lastDate+"23";
+            query +=  formExp + joinExp + whereExp;
+            return query;
+
+
+
+
         }
     }
 }

@@ -8,6 +8,7 @@ using Tenor.Dtos;
 using Tenor.Helper;
 using Tenor.Models;
 using Tenor.Services.AuthServives;
+using Tenor.Services.AuthServives.ViewModels;
 using Tenor.Services.DevicesService.ViewModels;
 using Tenor.Services.KpisService;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
@@ -33,12 +34,11 @@ namespace Tenor.Controllers
 
         [HttpPost("getByFilter")]
         [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
-
         public IActionResult getSubsetsByFilter(KpiFilterModel filter)
         {
           
-            filter.UserName = GetUserName();
-            return  _returnResult(_kpiservice.getByFilter(filter));
+            var authData= AuthUser();
+            return  _returnResult(_kpiservice.getByFilter(filter, authData));
 
         }
 
@@ -57,7 +57,7 @@ namespace Tenor.Controllers
 
         public async Task<IActionResult> Post(CreateKpi kpi)
         {
-            kpi.CreatedBy = GetUserName();
+            kpi.CreatedBy = AuthUser().userName;
             return _returnResult(await _kpiservice.Add(kpi));
          
         }
@@ -67,7 +67,7 @@ namespace Tenor.Controllers
 
         public async Task<IActionResult> Put(int id, CreateKpi kpi)
         {
-            kpi.ModifyBy = GetUserName();
+            kpi.ModifyBy = AuthUser().userName;
             kpi.ModifyDate = DateTime.Now;
             return _returnResult(await _kpiservice.Update(id,kpi));
             
@@ -138,7 +138,7 @@ namespace Tenor.Controllers
 
         }
 
-        private string GetUserName()
+        private AuthModels.TenantDto AuthUser()
         {
             string Header = _contextAccessor.HttpContext.Request.Headers["Authorization"];
             var token = Header.Split(' ').Last();
@@ -147,7 +147,7 @@ namespace Tenor.Controllers
             {
                 return null;
             }
-            return result.userName;
+            return result;
         }
     }
 }

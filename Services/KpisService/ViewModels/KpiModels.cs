@@ -95,7 +95,6 @@ namespace Tenor.Services.KpisService.ViewModels
         {
             public int ? DeviceId { get; set; }
             public IDictionary<string, object>? ExtraFields { get; set; }
-            public string? UserName { get; set; }
 
         }
         public class Filter

@@ -1,5 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Tenor.ActionFilters;
 using Tenor.Dtos;
+using Tenor.Services.AuthServives;
+using Tenor.Services.AuthServives.ViewModels;
 using Tenor.Services.DevicesService;
 using Tenor.Services.DevicesService.ViewModels;
 
@@ -10,36 +13,63 @@ namespace Tenor.Controllers
     public class DevicesController : BaseController
     {
         private readonly IDevicesService _deviceService;
-        public DevicesController(IDevicesService deviceService) => _deviceService = deviceService;
+        private readonly IHttpContextAccessor _contextAccessor;
+        private readonly IJwtService _jwtService;
+        public DevicesController(IDevicesService deviceService, IHttpContextAccessor contextAccessor, IJwtService jwtService)
+
+        {
+            _deviceService = deviceService;
+            _contextAccessor = contextAccessor;
+            _jwtService = jwtService;
+        }
 
         [HttpGet("getById")]
         public IActionResult getById(int id) => _returnResult(_deviceService.getById(id));
 
 
         [HttpPost("getByFilter")]
-        public IActionResult getByFilter([FromBody] DeviceFilterModel filter) => _returnResult(_deviceService.getByFilter(filter));
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+        public  IActionResult getByFilter([FromBody] DeviceFilterModel filter)
+        {
+            var authData = AuthUser();
+            return _returnResult( _deviceService.getByFilter(filter, authData));
 
+        }
+
+        
 
         [HttpGet("getSubsets")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+
         public IActionResult getSubsets() => _returnResult(_deviceService.getSubsets());
 
 
         [HttpPost("add")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+
         public IActionResult add(DeviceBindingModel model) => _returnResult(_deviceService.add(model));
 
 
         [HttpPut("edit")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+
         public IActionResult edit(int id, DeviceBindingModel model) => _returnResult(_deviceService.edit(id, model));
 
 
         [HttpDelete("delete")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+
         public IActionResult delete(int id) => _returnResult(_deviceService.delete(id));
 
 
         [HttpPost("exportDevicesByFilter")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+
         public IActionResult exportDevicesByFilter(DeviceFilterModel filter)
         {
-            var fileResult = _deviceService.exportDevicesByFilter(filter);
+            var authData = AuthUser();
+
+            var fileResult = _deviceService.exportDevicesByFilter(filter, authData);
 
             if (fileResult.Bytes == null || fileResult.Bytes.Count() == 0)
                 return BadRequest(new { message = "No Data To Export." });
@@ -49,5 +79,17 @@ namespace Tenor.Controllers
 
         [HttpGet("validateDevice")]
         public IActionResult validateDevice(int deviceId, string name) => _returnResult(_deviceService.validateDevice(deviceId, name));
+        private AuthModels.TenantDto AuthUser()
+        {
+            string Header = _contextAccessor.HttpContext.Request.Headers["Authorization"];
+            var token = Header.Split(' ').Last();
+            var result = _jwtService.TokenConverter(token);
+            if (result == null)
+            {
+                return null;
+            }
+            return result;
+        }
+
     }
 }

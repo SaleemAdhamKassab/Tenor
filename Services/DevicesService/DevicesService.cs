@@ -6,19 +6,20 @@ using Tenor.Helper;
 using Tenor.Models;
 using Tenor.Services.DevicesService.ViewModels;
 using static Tenor.Helper.Constant;
+using static Tenor.Services.AuthServives.ViewModels.AuthModels;
 
 namespace Tenor.Services.DevicesService
 {
     public interface IDevicesService
     {
         ResultWithMessage getById(int id);
-        ResultWithMessage getByFilter(DeviceFilterModel filter);
+        ResultWithMessage getByFilter(DeviceFilterModel filter, TenantDto authUser);
         ResultWithMessage getSubsets();
         bool isDeviceExists(int id);
         ResultWithMessage add(DeviceBindingModel model);
         ResultWithMessage edit(int id, DeviceBindingModel subsetDto);
         ResultWithMessage delete(int id);
-        FileBytesModel exportDevicesByFilter(DeviceFilterModel filter);
+        FileBytesModel exportDevicesByFilter(DeviceFilterModel filter, TenantDto authUser);
         ResultWithMessage validateDevice(int deviceId, string name);
     }
 
@@ -48,9 +49,9 @@ namespace Tenor.Services.DevicesService
             return result.ToList();
         }
 
-        private IQueryable<Device> getDevicesData(DeviceFilterModel filter)
+        private IQueryable<Device> getDevicesData(DeviceFilterModel filter, TenantDto authUser)
         {
-            IQueryable<Device> qeury = _db.Devices.Include(e => e.Parent).Where(e => true);
+            IQueryable<Device> qeury = _db.Devices.Include(e => e.Parent).Where(e=> authUser.deviceAccesses.Select(x=>x.DeviceId).ToList().Contains(e.Id));
 
             if (!string.IsNullOrEmpty(filter.SearchQuery))
                 qeury = qeury.Where
@@ -119,10 +120,10 @@ namespace Tenor.Services.DevicesService
             return new ResultWithMessage(deviceViewModel, "");
         }
 
-        public ResultWithMessage getByFilter(DeviceFilterModel filter)
+        public ResultWithMessage getByFilter(DeviceFilterModel filter, TenantDto authUser)
         {
             //1- Apply Filters just search query
-            var query = getDevicesData(filter);
+            var query = getDevicesData(filter, authUser);
 
             //2- Generate List View Model
             var queryViewModel = convertDevicesToListViewModel(query);
@@ -268,9 +269,9 @@ namespace Tenor.Services.DevicesService
 
 
         //Export Data With Excel
-        public FileBytesModel exportDevicesByFilter(DeviceFilterModel filter)
+        public FileBytesModel exportDevicesByFilter(DeviceFilterModel filter, TenantDto authUser)
         {
-            var list = getDevicesData(filter);
+            var list = getDevicesData(filter, authUser);
             var result = convertDevicesToListViewModel(list);
 
             if (result == null || result.Count() == 0)

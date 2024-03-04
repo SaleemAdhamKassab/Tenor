@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tenor.Data;
+using Tenor.Services.KpisService;
 
 namespace Tenor.Controllers
 {
@@ -10,16 +11,20 @@ namespace Tenor.Controllers
     public class OracleController : ControllerBase
     {
         private readonly DataContext _db;
+        private readonly IKpisService _kpiservice;
 
-        public OracleController(DataContext dataContext)
+        public OracleController(DataContext dataContext, IKpisService kpiservice)
         {
             _db = dataContext;
+            _kpiservice = kpiservice;
         }
 
-        [HttpGet]
-        public IActionResult getTest()
+        [HttpGet("GetKpiValue")]
+        public async Task<IActionResult> GetKpiValue(int kpiid)
         {
-            return Ok(_db.Database.ExecuteSql($"select sysdate from dual"));
+            var response = await _kpiservice.GetKpiQuery(kpiid);
+
+            return Ok(_db.Database.ExecuteSql($"{response.Data.ToString()}"));
         }
     }
 }
