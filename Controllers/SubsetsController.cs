@@ -1,4 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Tenor.ActionFilters;
+using Tenor.Services.AuthServives;
+using Tenor.Services.AuthServives.ViewModels;
 using Tenor.Services.SubsetsService;
 using Tenor.Services.SubsetsService.ViewModels;
 
@@ -9,7 +12,14 @@ namespace Tenor.Controllers
     public class SubsetsController : BaseController
     {
         private readonly ISubsetsService _subsetservice;
-        public SubsetsController(ISubsetsService Subsetservice) => _subsetservice = Subsetservice;
+        private readonly IHttpContextAccessor _contextAccessor;
+        private readonly IJwtService _jwtService;
+        public SubsetsController(ISubsetsService Subsetservice , IHttpContextAccessor contextAccessor, IJwtService jwtService)
+        {
+            _subsetservice = Subsetservice;
+            _contextAccessor = contextAccessor;
+            _jwtService = jwtService;
+        }
 
 
         [HttpGet("getById")]
@@ -50,5 +60,27 @@ namespace Tenor.Controllers
         [HttpGet("validateSubset")]
         public IActionResult validateSubset(int deviceId, string name) => _returnResult(_subsetservice.validateSubset(deviceId, name));
 
+        [HttpGet("GetSubsetByDevice")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+
+        public IActionResult GetSubsetByDevice(int deviceid, string? searchQuery)
+        {
+            var authData = AuthUser();
+
+            return _returnResult(_subsetservice.GetSubsetByDeviceId(deviceid, searchQuery, authData));
+        }
+
+
+        private AuthModels.TenantDto AuthUser()
+        {
+            string Header = _contextAccessor.HttpContext.Request.Headers["Authorization"];
+            var token = Header.Split(' ').Last();
+            var result = _jwtService.TokenConverter(token);
+            if (result == null)
+            {
+                return null;
+            }
+            return result;
+        }
     }
 }

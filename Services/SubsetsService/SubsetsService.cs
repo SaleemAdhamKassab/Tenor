@@ -14,6 +14,7 @@ using Tenor.Services.CountersService.ViewModels;
 using Tenor.Services.DevicesService;
 using Tenor.Services.DevicesService.ViewModels;
 using Tenor.Services.SubsetsService.ViewModels;
+using static Tenor.Services.AuthServives.ViewModels.AuthModels;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
 namespace Tenor.Services.SubsetsService
@@ -30,6 +31,9 @@ namespace Tenor.Services.SubsetsService
         FileBytesModel exportSubsetByFilter(object FilterM);
         ResultWithMessage getByFilter(SubsetFilterModel filter);
         ResultWithMessage validateSubset(int deviceId, string name);
+
+        ResultWithMessage GetSubsetByDeviceId(int deviceid, string searchQuery, TenantDto authUser);
+
     }
 
     public class SubsetsService : ISubsetsService
@@ -799,6 +803,26 @@ namespace Tenor.Services.SubsetsService
                 return new ResultWithMessage(null, $"The subset with Id: {subset.Id} and name: '{subset.Name}' is already exists");
 
             return new ResultWithMessage(true, string.Empty);
+        }
+
+        public ResultWithMessage GetSubsetByDeviceId(int deviceid, string searchQuery, TenantDto authUser)
+        {
+            IQueryable<Subset> query = _db.Subsets.Where(e => e.DeviceId == deviceid && authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains(e.DeviceId));
+
+            if (query == null || query.Count() == 0)
+            {
+                return new ResultWithMessage(new DataWithSize(0, null), "Access denied to this Device or Device is invalid");
+
+            }
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower())
+                        || x.Counters.Any(z=>z.Id.ToString()==searchQuery || z.Name.ToLower().Contains(searchQuery.ToLower()) || z.Code.ToLower()==searchQuery.ToLower())
+                      );
+
+            }
+            var queryViewModel = convertSubsetsToListViewModel(query);
+            return new ResultWithMessage(new DataWithSize(queryViewModel.Count(), queryViewModel.ToList()), null);
         }
     }
 }
