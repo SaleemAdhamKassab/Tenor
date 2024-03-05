@@ -30,8 +30,6 @@ namespace Tenor.Services.DevicesService
         public DevicesService(TenorDbContext tenorDbContext) => _db = tenorDbContext;
 
         private readonly TenorDbContext _db;
-
-
         private IEnumerable<object> _recSetChilds(List<Device> devices)
         {
             if (devices.Count() == 0)
@@ -50,7 +48,6 @@ namespace Tenor.Services.DevicesService
             });
             return result.ToList();
         }
-
         private IQueryable<Device> getDevicesData(DeviceFilterModel filter, TenantDto authUser)
         {
             IQueryable<Device> qeury = _db.Devices.Include(e => e.Parent).Where(e=> authUser.deviceAccesses.Select(x=>x.DeviceId).ToList().Contains(e.Id));
@@ -66,7 +63,6 @@ namespace Tenor.Services.DevicesService
 
             return qeury;
         }
-
         private IQueryable<DeviceListViewModel> convertDevicesToListViewModel(IQueryable<Device> model) =>
           model.Select(e => new DeviceListViewModel
           {
@@ -78,7 +74,6 @@ namespace Tenor.Services.DevicesService
               ParentId = e.ParentId,
               ParentName = e.Parent.Name
           });
-
         private string getValidatingModelErrorMessage(DeviceBindingModel model, bool isUpdateMode = false)
         {
             if (model is null)
@@ -92,10 +87,6 @@ namespace Tenor.Services.DevicesService
 
             return string.Empty;
         }
-
-
-
-
 
 
         public ResultWithMessage getById(int id)
@@ -121,7 +112,6 @@ namespace Tenor.Services.DevicesService
 
             return new ResultWithMessage(deviceViewModel, "");
         }
-
         public ResultWithMessage getByFilter(DeviceFilterModel filter, TenantDto authUser)
         {
             //1- Apply Filters just search query
@@ -146,15 +136,12 @@ namespace Tenor.Services.DevicesService
             //5- return 
             return new ResultWithMessage(new DataWithSize(resultSize, resultData), "");
         }
-
         public ResultWithMessage getSubsets()
         {
             var devicesWithChilds = _recSetChilds(_db.Devices.Include(x => x.Subsets).Where(x => x.ParentId == null).ToList());
             return new ResultWithMessage(devicesWithChilds, "");
         }
-
         public bool isDeviceExists(int id) => _db.Devices.Any(e => e.Id == id);
-
         public ResultWithMessage add(DeviceBindingModel model)
         {
             string validatingModelErrorMessage = getValidatingModelErrorMessage(model);
@@ -196,7 +183,6 @@ namespace Tenor.Services.DevicesService
                 return new ResultWithMessage(model, e.Message);
             }
         }
-
         public ResultWithMessage edit(int id, DeviceBindingModel model)
         {
             model.Id = id;
@@ -247,7 +233,6 @@ namespace Tenor.Services.DevicesService
                 return new ResultWithMessage(model, e.Message);
             }
         }
-
         public ResultWithMessage delete(int id)
         {
             Device device = _db.Devices.Find(id);
@@ -268,8 +253,6 @@ namespace Tenor.Services.DevicesService
                 return new ResultWithMessage(null, e.Message);
             }
         }
-
-
         //Export Data With Excel
         public FileBytesModel exportDevicesByFilter(DeviceFilterModel filter, TenantDto authUser)
         {
@@ -308,7 +291,6 @@ namespace Tenor.Services.DevicesService
             excelfile.ContentType = contentType;
             return excelfile;
         }
-
         public ResultWithMessage validateDevice(int deviceId, string name)
         {
 
@@ -319,7 +301,6 @@ namespace Tenor.Services.DevicesService
 
             return new ResultWithMessage(true,string.Empty);
         }
-
         public ResultWithMessage GetDeviceByParentId(int parentid, string searchQuery, TenantDto authUser)
         {
 

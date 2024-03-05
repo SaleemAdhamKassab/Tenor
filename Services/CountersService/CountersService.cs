@@ -15,6 +15,7 @@ using Tenor.Services.CountersService.ViewModels;
 using Tenor.Services.DevicesService.ViewModels;
 using Tenor.Services.SubsetsService;
 using Tenor.Services.SubsetsService.ViewModels;
+using static Tenor.Services.AuthServives.ViewModels.AuthModels;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
 namespace Tenor.Services.CountersService
@@ -30,6 +31,8 @@ namespace Tenor.Services.CountersService
         FileBytesModel exportCounterByFilter(CounterFilterModel filter);
         ResultWithMessage getByFilter(CounterFilterModel filter);
         ResultWithMessage validateCounter(int subsetId, string name);
+        ResultWithMessage GetCounterBySubsetId(int subsetid, string searchQuery, TenantDto authUser);
+
     }
 
     public class CountersService : ICountersService
@@ -176,26 +179,7 @@ namespace Tenor.Services.CountersService
 
         private bool isCounterExists(int counterId) => _db.Counters.Find(counterId) is not null;
 
-        //private List<CounterExtraFieldValueViewModel> getExtraFields(int counterId)
-        //{
-        //    List<CounterExtraFieldValueViewModel> extraFields =
-        //        _db.CounterFieldValues
-        //        .Where(e => e.CounterId == counterId)
-        //        .Include(e => e.CounterField)
-        //        .ThenInclude(e => e.ExtraField)
-        //        .Select(e => new CounterExtraFieldValueViewModel()
-        //        {
-        //            Id = e.Id,
-        //            FieldId = e.CounterField.Id,
-        //            Type = e.CounterField.ExtraField.Type.ToString(),
-        //            FieldName = e.CounterField.ExtraField.Name,
-        //            Value = e.FieldValue.Contains(',') ? Util.convertStringToList(e.FieldValue) : e.FieldValue
-        //        })
-        //        .ToList();
-
-        //    return extraFields;
-        //}
-
+       
         private bool isCounterExtraFieldIdExistsAndActive(int id) => _db.CounterFields.Where(e => e.Id == id && e.IsActive).FirstOrDefault() is not null;
 
         private string getValidaitingModelErrorMessage(CounterBindingModel model)
@@ -767,6 +751,25 @@ namespace Tenor.Services.CountersService
                 return new ResultWithMessage(null, $"The Counter with Subset Id: {counter.SubsetId} and name: '{counter.Name}' is already exists");
 
             return new ResultWithMessage(true, string.Empty);
+        }
+
+        public ResultWithMessage GetCounterBySubsetId(int subsetid, string searchQuery, TenantDto authUser)
+        {
+            IQueryable<Counter> query = _db.Counters.Where(e => e.SubsetId == subsetid && authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains(e.Subset.DeviceId));
+
+            if (query == null || query.Count() == 0)
+            {
+                return new ResultWithMessage(new DataWithSize(0, null), "Access denied to this subset or subset is invalid");
+
+            }
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower())
+                       ||x.Code.ToLower() == searchQuery.ToLower());
+
+            }
+            var queryViewModel = convertCountersToListViewModel(query);
+            return new ResultWithMessage(new DataWithSize(queryViewModel.Count(), queryViewModel.ToList()), null);
         }
     }
 }
