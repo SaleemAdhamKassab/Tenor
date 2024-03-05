@@ -28,7 +28,7 @@ namespace Tenor.Services.AuthServives
         bool CheckExpiredToken(string token);
         ResultWithMessage RefreshToken(ClaimsPrincipal principal,string reftoken);
         ResultWithMessage RevokeToken(string token);
-        bool IsGrantAccess(string token, string tenant,List<string> roles);
+        bool IsGrantAccess(string token,List<string> roles);
     }
     public class JwtService: IJwtService
     {
@@ -210,13 +210,13 @@ namespace Tenor.Services.AuthServives
             }
             return new ResultWithMessage(false, "token is invalid");
         }
-        public bool IsGrantAccess(string token, string tenant, List<string> roles)
+        public bool IsGrantAccess(string token, List<string> roles)
         {
             var userName = TokenConverter(token).userName;
             TenantDto tenantDto = TokenConverter(token);
             if(tenantDto!=null)
             {
-                var userData = tenantDto.tenantAccesses.FirstOrDefault(x => x.tenantName == tenant);
+                var userData = tenantDto.tenantAccesses.FirstOrDefault(x => tenantDto.tenantAccesses.Select(x=>x.tenantName).ToList().Contains(x.tenantName));
                 if (userData != null)
                 {
                     var userRoles = roles.Intersect(userData.RoleList).ToList();

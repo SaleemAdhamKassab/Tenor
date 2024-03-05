@@ -11,20 +11,20 @@ namespace Tenor.Helper
         {
 
            
-                if (operation.Parameters == null)
-                    operation.Parameters = new List<OpenApiParameter>();
+                //if (operation.Parameters == null)
+                //    operation.Parameters = new List<OpenApiParameter>();
 
-                operation.Parameters.Add(new OpenApiParameter
-                {
-                    Name = "Tenant",
-                    In = ParameterLocation.Header,
-                    Description = "Tenant Name",
-                    Required = false,
-                    Schema = new OpenApiSchema
-                    {
-                        Type = "string"
-                    }
-                });
+                //operation.Parameters.Add(new OpenApiParameter
+                //{
+                //    Name = "Tenant",
+                //    In = ParameterLocation.Header,
+                //    Description = "Tenant Name",
+                //    Required = false,
+                //    Schema = new OpenApiSchema
+                //    {
+                //        Type = "string"
+                //    }
+                //});
             
         }
     }
