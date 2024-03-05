@@ -79,6 +79,18 @@ namespace Tenor.Controllers
 
         [HttpGet("validateDevice")]
         public IActionResult validateDevice(int deviceId, string name) => _returnResult(_deviceService.validateDevice(deviceId, name));
+
+        [HttpGet("GetDeviceByParent")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+
+        public IActionResult GetDeviceByParent(int parentid, string ? searchQuery)
+        {
+            var authData = AuthUser();
+
+            return _returnResult(_deviceService.GetDeviceByParentId(parentid, searchQuery, authData));
+        }
+
+
         private AuthModels.TenantDto AuthUser()
         {
             string Header = _contextAccessor.HttpContext.Request.Headers["Authorization"];

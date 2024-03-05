@@ -5,6 +5,7 @@ using Tenor.Dtos;
 using Tenor.Helper;
 using Tenor.Models;
 using Tenor.Services.DevicesService.ViewModels;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static Tenor.Helper.Constant;
 using static Tenor.Services.AuthServives.ViewModels.AuthModels;
 
@@ -21,6 +22,7 @@ namespace Tenor.Services.DevicesService
         ResultWithMessage delete(int id);
         FileBytesModel exportDevicesByFilter(DeviceFilterModel filter, TenantDto authUser);
         ResultWithMessage validateDevice(int deviceId, string name);
+        ResultWithMessage GetDeviceByParentId(int parentid,string searchQuery, TenantDto authUser);
     }
 
     public class DevicesService : IDevicesService
@@ -316,6 +318,28 @@ namespace Tenor.Services.DevicesService
                 return new ResultWithMessage(null, $"The Device with Id: {device.Id} and name: '{device.Name}' is already exists");
 
             return new ResultWithMessage(true,string.Empty);
+        }
+
+        public ResultWithMessage GetDeviceByParentId(int parentid, string searchQuery, TenantDto authUser)
+        {
+
+            IQueryable<Device> query = _db.Devices.Include(e => e.Parent).Where(e => e.ParentId== parentid && authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains(e.Id));
+
+            if(query==null || query.Count()==0)
+            {
+                return new ResultWithMessage(new DataWithSize(0, null), "Access denied to this device or device is invalid");
+
+            }
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower())
+                      || x.Subsets.Any(y => y.Id.ToString() == searchQuery || y.Name.ToLower().Contains(searchQuery.ToLower()))
+                      || x.Subsets.Any(z => z.Counters.Any(e => e.Id.ToString() == searchQuery || e.Name.ToLower().Contains(searchQuery.ToLower()) || e.Code.ToLower() == searchQuery.ToLower()))
+                      );
+            }
+            var queryViewModel = convertDevicesToListViewModel(query);
+            return new ResultWithMessage(new DataWithSize(queryViewModel.Count(), queryViewModel.ToList()),null);
+
         }
     }
 }
