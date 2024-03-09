@@ -127,14 +127,15 @@ namespace Tenor.Controllers
         [HttpGet("ValidateKpi")]
         public  IActionResult ValidateKpi(int? deviceid, string kpiname)
         {
-            return _returnResult( _kpiservice.ValidateKpi(deviceid, kpiname));
+            var result = _kpiservice.ValidateKpi(deviceid, kpiname);
+            return Ok(result.Data);
 
         }
 
         [HttpPost("CheckFormatValidation")]
         public IActionResult CheckFormatValidation(CreateKpi input)
         {
-            return _returnResult(_kpiservice.CheckValidFormat(input));
+            return _returnResultWithMessage(_kpiservice.CheckValidFormat(input));
 
         }
 

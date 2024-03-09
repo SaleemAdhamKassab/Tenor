@@ -743,7 +743,7 @@ namespace Tenor.Services.KpisService
         {
             if(IsKpiExist(0, deviceid, kpiname))
             {
-                return new ResultWithMessage(null, "This KPI name is already exsist on this device.");
+                return new ResultWithMessage(false, "This KPI name is already exsist on this device.");
             }
             return new ResultWithMessage(true,null);
         }
@@ -776,6 +776,10 @@ namespace Tenor.Services.KpisService
             {
                 return new ResultWithMessage(false, "KPI format is invalid");
 
+            }
+            if(input.Operation.Childs.Count == 0)
+            {
+                return new ResultWithMessage(false, "Please assign KPI formula");
             }
             if (input.Operation.Childs[0].Type.GetDisplayName()== "opt")
             {

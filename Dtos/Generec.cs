@@ -23,4 +23,13 @@
         public Object? Data { get; set; }
         public string? Message { get; set; }
     }
+
+    public class TreeNodeViewModel
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+        public string? Type { get; set; }
+        public bool HasChild { get; set; }
+        public string? Aggregation { get; set; }
+    }
 }

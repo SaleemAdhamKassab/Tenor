@@ -807,7 +807,7 @@ namespace Tenor.Services.SubsetsService
 
         public ResultWithMessage GetSubsetByDeviceId(int deviceid, string searchQuery, TenantDto authUser)
         {
-            IQueryable<Subset> query = _db.Subsets.Where(e => e.DeviceId == deviceid && authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains(e.DeviceId));
+            IQueryable<Subset> query = _db.Subsets.Where(e => e.DeviceId == deviceid && authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains(e.Device.ParentId ?? 0));
 
             if (query == null || query.Count() == 0)
             {
@@ -818,11 +818,20 @@ namespace Tenor.Services.SubsetsService
             {
                 query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower())
                         || x.Counters.Any(z=>z.Id.ToString()==searchQuery || z.Name.ToLower().Contains(searchQuery.ToLower()) || z.Code.ToLower()==searchQuery.ToLower())
+                        || x.Device.Name.ToLower().Contains(searchQuery.ToLower())
                       );
 
             }
-            var queryViewModel = convertSubsetsToListViewModel(query);
-            return new ResultWithMessage(new DataWithSize(queryViewModel.Count(), queryViewModel.ToList()), null);
+            //var queryViewModel = convertSubsetsToListViewModel(query);
+            //return new ResultWithMessage(new DataWithSize(queryViewModel.Count(), queryViewModel.ToList()), null);
+            var result = query.Select(x => new TreeNodeViewModel
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Type = "subset",
+                HasChild = x.Counters.Count() > 0
+            }).ToList();
+            return new ResultWithMessage(result, "");
         }
     }
 }

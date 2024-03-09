@@ -755,7 +755,7 @@ namespace Tenor.Services.CountersService
 
         public ResultWithMessage GetCounterBySubsetId(int subsetid, string searchQuery, TenantDto authUser)
         {
-            IQueryable<Counter> query = _db.Counters.Where(e => e.SubsetId == subsetid && authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains(e.Subset.DeviceId));
+            IQueryable<Counter> query = _db.Counters.Where(e => e.SubsetId == subsetid && authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains(e.Subset.Device.ParentId ?? 0));
 
             if (query == null || query.Count() == 0)
             {
@@ -765,11 +765,22 @@ namespace Tenor.Services.CountersService
             if (!string.IsNullOrEmpty(searchQuery))
             {
                 query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower())
-                       ||x.Code.ToLower() == searchQuery.ToLower());
+                       ||x.Code.ToLower().Contains(searchQuery.ToLower())
+                       ||x.Subset.Name.ToLower().Contains(searchQuery.ToLower())
+                       ||x.Subset.Device.Name.ToLower().Contains(searchQuery.ToLower()));
 
             }
-            var queryViewModel = convertCountersToListViewModel(query);
-            return new ResultWithMessage(new DataWithSize(queryViewModel.Count(), queryViewModel.ToList()), null);
+            //var queryViewModel = convertCountersToListViewModel(query);
+            //return new ResultWithMessage(new DataWithSize(queryViewModel.Count(), queryViewModel.ToList()), null);
+            var result = query.Select(x => new TreeNodeViewModel
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Type = "counter",
+                HasChild = false,
+                Aggregation = x.Aggregation
+            }).ToList();
+            return new ResultWithMessage(result, "");
         }
     }
 }
