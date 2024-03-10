@@ -214,6 +214,10 @@ namespace Tenor.Services.AuthServives
         {
             var userName = TokenConverter(token).userName;
             TenantDto tenantDto = TokenConverter(token);
+            if(CheckSuperAdminPermission(userName, roles))
+            {
+                return true;
+            }
             if(tenantDto!=null)
             {
                 var userData = tenantDto.tenantAccesses.FirstOrDefault(x => tenantDto.tenantAccesses.Select(x=>x.tenantName).ToList().Contains(x.tenantName));
@@ -366,7 +370,6 @@ namespace Tenor.Services.AuthServives
 
             return true;
         }
-
         private List<DeviceAccess> TenantDeviceList(List<TenantAccess> tenantAccList)
         {
             List<DeviceAccess> result = new List<DeviceAccess>();
@@ -381,6 +384,19 @@ namespace Tenor.Services.AuthServives
                 }
             }
             return result.DistinctBy(x => x.DeviceName).ToList(); ;
+        }
+
+        private bool CheckSuperAdminPermission(string userName, List<string> roles)
+        {
+            if (roles.Contains("SuperAdmin"))
+            {
+                var permission = _dbcontext.UserTenantRoles.FirstOrDefault(x => x.UserName.ToLower() == userName.ToLower() && x.RoleId == 3);
+                if (permission != null)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     } 
 }

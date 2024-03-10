@@ -62,6 +62,7 @@ namespace Tenor.ActionFilters
                 // check token and refresh token
                 if (_jwtService.CheckExpiredToken(token))
                 {
+                    
                     if (_jwtService.IsGrantAccess(token, userRoleNames))
                     {
                         return;

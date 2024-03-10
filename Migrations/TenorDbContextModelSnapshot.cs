@@ -338,7 +338,8 @@ namespace Tenor.Migrations
                     b.Property<int>("RoleId")
                         .HasColumnType("int");
 
-                    b.Property<int>("TenantId")
+                    b.Property<int?>("TenantId")
+                        .IsRequired()
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -880,7 +881,8 @@ namespace Tenor.Migrations
                     b.Property<int>("RoleId")
                         .HasColumnType("int");
 
-                    b.Property<int>("TenantId")
+                    b.Property<int?>("TenantId")
+                        .IsRequired()
                         .HasColumnType("int");
 
                     b.Property<string>("UserName")

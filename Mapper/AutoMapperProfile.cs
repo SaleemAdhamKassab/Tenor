@@ -104,7 +104,8 @@ namespace Tenor.Mapper
                  .ForMember(dest => dest.Value, opt => opt.MapFrom(src => ConvertContentType(src.SubsetField.ExtraField.Type.GetDisplayName(), src.FieldValue)))
                  .ReverseMap();
 
-
+            //--------------------------------Extra Field-----------------------------------------------
+            CreateMap<CreateExtraFieldViewModel, ExtraField>().ReverseMap();
            
 
         }

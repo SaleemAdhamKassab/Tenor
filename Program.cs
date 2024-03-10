@@ -75,6 +75,8 @@ builder.Services.AddScoped<ICountersService, CountersService>();
 builder.Services.AddScoped<IKpisService, KpisService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IWindowsAuthService, WindowsAuthService>();
+builder.Services.AddScoped<IExtraPropService, ExtraPropService>();
+
 //-------------
 builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
