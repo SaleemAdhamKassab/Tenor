@@ -5,6 +5,7 @@ using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using System;
 using Tenor.Services.KpisService;
+using static Tenor.Helper.Constant;
 
 namespace Tenor.Helper
 {
@@ -73,7 +74,7 @@ namespace Tenor.Helper
                 {"func0","Case When" },{"func1","Then" },{"func2","else" }
             };
 
-            if (opt.Type == "voidFunction")
+            if (opt.Type == enOPerationTypes.voidFunction)
             {
                 if (!string.IsNullOrEmpty(tag) || query.Contains(pointerTag))
                 {
@@ -119,7 +120,7 @@ namespace Tenor.Helper
                 }
 
             }
-            if (opt.Type == "number")
+            if (opt.Type == enOPerationTypes.number)
             {
 
                 qe.LeftSide = ""; qe.Inside = opt.Value; qe.RightSide = "";
@@ -146,7 +147,7 @@ namespace Tenor.Helper
 
                
             }
-            if (opt.Type == "opt")
+            if (opt.Type == enOPerationTypes.opt)
             {
 
                 qe.LeftSide = ""; qe.Inside = opt.OperatorName; qe.RightSide = "";
@@ -173,11 +174,11 @@ namespace Tenor.Helper
                 }
 
             }
-            if (opt.Type == "kpi")
+            if (opt.Type == enOPerationTypes.kpi)
             {
                 string kpiNewFormat = kpiFormat.GetKpiForm((int)opt.KpiId).Result.Data.ToString();
                 qe.LeftSide = "(";
-                qe.Inside = opt.Aggregation == "na" ? kpiNewFormat : opt.Aggregation + "(" + kpiNewFormat + ")";
+                qe.Inside = opt.Aggregation == enAggregation.na ? kpiNewFormat : opt.Aggregation + "(" + kpiNewFormat + ")";
                 qe.RightSide = ")";
                 string kpiState = qe.LeftSide + qe.Inside + qe.RightSide;
                 if (!query.Contains(pointerTag))
@@ -204,11 +205,11 @@ namespace Tenor.Helper
                 }
                 
             }
-            if (opt.Type == "counter")
+            if (opt.Type == enOPerationTypes.counter)
             {
 
                 qe.LeftSide = "";
-                qe.Inside = opt.Aggregation == "na" ? opt.TableName + "." + opt.ColumnName : opt.Aggregation + "(" + opt.TableName + "." + opt.ColumnName + ")";
+                qe.Inside = opt.Aggregation == enAggregation.na ? opt.TableName + "." + opt.ColumnName : opt.Aggregation + "(" + opt.TableName + "." + opt.ColumnName + ")";
                 qe.RightSide = "";
                 string chageStr = qe.LeftSide + qe.Inside + qe.RightSide;
                 if (!query.Contains(pointerTag))
@@ -235,7 +236,7 @@ namespace Tenor.Helper
                 }
                
             }
-            if (opt.Type == "function")
+            if (opt.Type == enOPerationTypes.function)
             {
 
                 var func = _db.Functions.FirstOrDefault(f => f.Id == opt.FunctionId);
@@ -283,7 +284,7 @@ namespace Tenor.Helper
                 {
                     for (int i = 0; i <= func.ArgumentsCount - 1; i++)
                     {
-                        if (opt.Aggregation == "na")
+                        if (opt.Aggregation == enAggregation.na)
                         {
                             qe.Inside += i < func.ArgumentsCount - 1 ? funcTag + i + "," : funcTag + i;
 

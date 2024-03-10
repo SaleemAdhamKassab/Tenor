@@ -33,8 +33,8 @@ namespace Tenor.Services.KpisService.ViewModels
             public int Id { get; set; }
             public int Order { get; set; }
             public string? Value { get; set; }
-            public string Type { get; set; }
-            public string Aggregation { get; set; }
+            public enOPerationTypes Type { get; set; }
+            public enAggregation Aggregation { get; set; }
             public int? CounterId { get; set; }
             public string? CounterName { get; set; }
             public int? KpiId { get; set; }
