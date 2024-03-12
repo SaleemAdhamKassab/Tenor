@@ -59,6 +59,7 @@ namespace Tenor.Services.KpisService.ViewModels
             public string Type { get; set; }
             public dynamic Content { get; set; }
             public string? Url { get; set; }
+            public bool IsMandatory { get; set; }
         }
         public class ExtraFieldValue
         {

@@ -14,7 +14,7 @@ namespace Tenor.Models
         public string? Content { get; set; }
         public string? Url { get; set; }
 
-
+        public bool IsMandatory { get; set; }
         public virtual ICollection<KpiField> KpiFields { get; set; }
         public virtual ICollection<CounterField> CounterFields { get; set; }
         public virtual ICollection<ReportField> ReportFields { get; set; }

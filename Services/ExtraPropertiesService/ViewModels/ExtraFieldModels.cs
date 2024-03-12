@@ -15,6 +15,7 @@ public class CreateExtraFieldViewModel
     public bool  IsForKpi { get; set; }
     public bool IsForReport { get; set; }
     public bool IsForDashboard { get; set; }
+    public bool IsMandatory { get; set; }
 
 }
 
@@ -32,12 +33,13 @@ public class ExtraFieldViewModel
     public bool IsForKpi { get; set; }
     public bool IsForReport { get; set; }
     public bool IsForDashboard { get; set; }
+    public bool IsMandatory { get; set; }
 
 }
 
 public class ExtraFieldFilter: GeneralFilterModel
 {
-    public bool IsKpi { get; set; }
-    public bool IsReport { get; set; }
-    public bool IsDashboard { get; set; }
+    public bool? IsKpi { get; set; }
+    public bool? IsReport { get; set; }
+    public bool? IsDashboard { get; set; }
 }

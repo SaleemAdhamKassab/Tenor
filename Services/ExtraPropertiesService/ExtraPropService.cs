@@ -61,8 +61,8 @@ public class ExtraPropService : IExtraPropService
             Content = extraField.Content,
             IsForKpi = input.IsForKpi,
             IsForReport = input.IsForReport,
-            IsForDashboard = input.IsForDashboard
-
+            IsForDashboard = input.IsForDashboard,
+            IsMandatory = input.IsMandatory,
         };
         return new ResultWithMessage(result, null);
     }
@@ -99,6 +99,7 @@ public class ExtraPropService : IExtraPropService
         extField.Content = input.Content;
         extField.Url = input.Url;
         extField.Type = input.Type;
+        extField.IsMandatory = input.IsMandatory;
 
         if ((extField.KpiFields!=null  && extField.KpiFields.Count != 0) && !input.IsForKpi)
         {
@@ -140,7 +141,8 @@ public class ExtraPropService : IExtraPropService
             Content = extField.Content,
             IsForKpi = input.IsForKpi,
             IsForReport = input.IsForReport,
-            IsForDashboard = input.IsForDashboard
+            IsForDashboard = input.IsForDashboard,
+            IsMandatory = input.IsMandatory
 
         };
         return new ResultWithMessage(result, null);
@@ -161,19 +163,20 @@ public class ExtraPropService : IExtraPropService
 
             }
 
-            if (input.IsKpi)
+            if (input.IsKpi != null)
             {
-                query = query.Where(x => x.KpiFields.Any(y => extraIds.Contains(y.FieldId)));
+                
+                query = query.Where(x => x.KpiFields.Any(y => extraIds.Contains(y.FieldId)) == input.IsKpi);
             }
 
-            if (input.IsReport)
+            if (input.IsReport != null)
             {
-                query = query.Where(x => x.ReportFields.Any(y => extraIds.Contains(y.FieldId)));
+                query = query.Where(x => x.ReportFields.Any(y => extraIds.Contains(y.FieldId)) == input.IsReport);
             }
 
-            if (input.IsDashboard)
+            if (input.IsDashboard != null)
             {
-                query = query.Where(x => x.DashboardFields.Any(y => extraIds.Contains(y.FieldId)));
+                query = query.Where(x => x.DashboardFields.Any(y => extraIds.Contains(y.FieldId)) == input.IsDashboard);
             }
 
             //mapping wit DTO querable
@@ -188,6 +191,7 @@ public class ExtraPropService : IExtraPropService
                 IsForKpi = x.KpiFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
                 IsForReport = x.ReportFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
                 IsForDashboard = x.DashboardFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
+                IsMandatory = x.IsMandatory
 
             });
             //Sort and paginition
@@ -221,6 +225,7 @@ public class ExtraPropService : IExtraPropService
             IsForKpi = x.KpiFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
             IsForReport = x.ReportFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
             IsForDashboard = x.DashboardFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
+            IsMandatory = x.IsMandatory
 
         }).FirstOrDefault();
 
