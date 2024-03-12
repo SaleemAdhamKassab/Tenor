@@ -1,15 +1,22 @@
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Extensions;
+using System.Linq;
 using Tenor.Data;
 using Tenor.Dtos;
+using Tenor.Helper;
 using Tenor.Models;
+using Tenor.Services.CountersService.ViewModels;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
 public interface IExtraPropService
 {
     ResultWithMessage add(CreateExtraFieldViewModel input);
     ResultWithMessage edit(int id, CreateExtraFieldViewModel input);
     ResultWithMessage delete(int id);
-    ResultWithMessage GetAll();
+    ResultWithMessage GetAll(ExtraFieldFilter input);
+    ResultWithMessage GetById(int id);
 
 
 }
@@ -28,9 +35,36 @@ public class ExtraPropService : IExtraPropService
 
     public ResultWithMessage add(CreateExtraFieldViewModel input)
     {
-        _db.ExtraFields.Add(_mapper.Map<ExtraField>(input));
+        ExtraField extraField = new ExtraField(input);
+        if(input.IsForKpi)
+        {
+            extraField.addKpiField(extraField);
+        }
+        if (input.IsForReport)
+        {
+            extraField.addReportField(extraField);
+        }
+        if (input.IsForDashboard)
+        {
+            extraField.addDashboardField(extraField);
+        }
+        _db.ExtraFields.Add(extraField);
         _db.SaveChanges();
-        return new ResultWithMessage(input,null);
+        //----------------------------------------
+        var result = new ExtraFieldViewModel()
+        {
+            Id = extraField.Id,
+            Name = extraField.Name,
+            Type = extraField.Type,
+            TypeName = extraField.Type.GetDisplayName(),
+            Url = extraField.Url,
+            Content = extraField.Content,
+            IsForKpi = input.IsForKpi,
+            IsForReport = input.IsForReport,
+            IsForDashboard = input.IsForDashboard
+
+        };
+        return new ResultWithMessage(result, null);
     }
 
     public ResultWithMessage delete(int id)
@@ -52,21 +86,176 @@ public class ExtraPropService : IExtraPropService
         {
             return new ResultWithMessage(null, "ID Mismatch");
         }
-        ExtraField extField = _db.ExtraFields.AsNoTracking().FirstOrDefault(x=>x.Id==id);
-        if(extField is null)
+        ExtraField extField = _db.ExtraFields.Include(x=>x.KpiFields).Include(x=>x.ReportFields)
+        .Include(x=>x.DashboardFields).AsNoTracking().FirstOrDefault(x => x.Id == id);
+
+        if (extField is null)
         {
             return new ResultWithMessage(null, "Extra field is invalid");
 
         }
+        //-----------------------------------------------
+        extField.Name = input.Name;
+        extField.Content = input.Content;
+        extField.Url = input.Url;
+        extField.Type = input.Type;
 
-        _db.ExtraFields.Update(_mapper.Map<ExtraField>(input));
+        if ((extField.KpiFields!=null  && extField.KpiFields.Count != 0) && !input.IsForKpi)
+        {
+            _db.KpiFields.Entry(extField.KpiFields.SingleOrDefault()).State = EntityState.Deleted;
+        }
+        if ((extField.ReportFields != null && extField.ReportFields.Count!=0) && !input.IsForReport)
+        {
+            _db.ReportFields.Entry(extField.ReportFields.SingleOrDefault()).State = EntityState.Deleted;
+
+        }
+        if ((extField.DashboardFields != null && extField.DashboardFields.Count != 0) && !input.IsForDashboard)
+        {
+            _db.DashboardFields.Entry(extField.DashboardFields.SingleOrDefault()).State = EntityState.Deleted;
+
+        }
+        //--------------------------------------------------------------------
+        if ((extField.KpiFields is null || extField.KpiFields.Count==0) && input.IsForKpi)
+        {
+            extField.addKpiField(extField);
+        }
+        if ((extField.ReportFields is null || extField.ReportFields.Count==0) && input.IsForReport)
+        {
+            extField.addReportField(extField);
+        }
+        if ((extField.DashboardFields is null || extField.DashboardFields.Count==0) && input.IsForDashboard)
+        {
+            extField.addDashboardField(extField);
+        }
+        _db.ExtraFields.Update(extField);
         _db.SaveChanges();
-        return new ResultWithMessage(input,null);
+        //-------------------------------------
+        var result = new ExtraFieldViewModel()
+        {
+            Id = extField.Id,
+            Name = extField.Name,
+            Type = extField.Type,
+            TypeName = extField.Type.GetDisplayName(),
+            Url = extField.Url,
+            Content = extField.Content,
+            IsForKpi = input.IsForKpi,
+            IsForReport = input.IsForReport,
+            IsForDashboard = input.IsForDashboard
+
+        };
+        return new ResultWithMessage(result, null);
     }
 
-    public ResultWithMessage GetAll()
+    public ResultWithMessage GetAll(ExtraFieldFilter input)
     {
-        var extFields = _db.ExtraFields.ToList();
-        return new ResultWithMessage(_mapper.Map<List<CreateExtraFieldViewModel>>(extFields),null);
+        try
+        {
+            //------------------------------Data source------------------------------------------------
+            IQueryable<ExtraField> query = _db.ExtraFields.AsQueryable();
+            var extraIds = query.Select(x => x.Id).AsQueryable();
+            //------------------------------Data filter-----------------------------------------------------------
+
+            if (!string.IsNullOrEmpty(input.SearchQuery))
+            {
+                query = query.Where(x => x.Name.ToLower().Contains(input.SearchQuery.ToLower()));
+
+            }
+
+            if (input.IsKpi)
+            {
+                query = query.Where(x => x.KpiFields.Any(y => extraIds.Contains(y.FieldId)));
+            }
+
+            if (input.IsReport)
+            {
+                query = query.Where(x => x.ReportFields.Any(y => extraIds.Contains(y.FieldId)));
+            }
+
+            if (input.IsDashboard)
+            {
+                query = query.Where(x => x.DashboardFields.Any(y => extraIds.Contains(y.FieldId)));
+            }
+
+            //mapping wit DTO querable
+            var queryViewModel = query.Select(x => new ExtraFieldViewModel()
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Type = x.Type,
+                TypeName = x.Type.GetDisplayName(),
+                Url = x.Url,
+                Content = x.Content,
+                IsForKpi = x.KpiFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
+                IsForReport = x.ReportFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
+                IsForDashboard = x.DashboardFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
+
+            });
+            //Sort and paginition
+            return sortAndPagination(input, queryViewModel);
+
+        }
+        catch (Exception ex)
+        {
+            return new ResultWithMessage(new DataWithSize(0, null), ex.Message);
+
+        }
+    
+    }
+
+    public ResultWithMessage GetById(int id)
+    {
+        IQueryable<ExtraField> query = _db.ExtraFields.Where(x=>x.Id==id).AsQueryable();
+        var extraIds = query.Select(x => x.Id).AsQueryable();
+        if(query.Count()==0 || query is null)
+        {
+            return new ResultWithMessage(null,"This ID is invalid"); 
+        }
+        var queryViewModel = query.Select(x => new ExtraFieldViewModel()
+        {
+            Id = x.Id,
+            Name = x.Name,
+            Type = x.Type,
+            TypeName = x.Type.GetDisplayName(),
+            Url = x.Url,
+            Content = x.Content,
+            IsForKpi = x.KpiFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
+            IsForReport = x.ReportFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
+            IsForDashboard = x.DashboardFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
+
+        }).FirstOrDefault();
+
+        return new ResultWithMessage(queryViewModel,null);
+    }
+
+    private ResultWithMessage sortAndPagination(ExtraFieldFilter extraFilterModel, IQueryable<ExtraFieldViewModel> queryViewModel)
+    {
+        if (!string.IsNullOrEmpty(extraFilterModel.SortActive))
+        {
+
+            var sortProperty = typeof(ExtraFieldViewModel).GetProperty(char.ToUpper(extraFilterModel.SortActive[0]) + extraFilterModel.SortActive.Substring(1));
+            if (sortProperty != null && extraFilterModel.SortDirection == "asc")
+                queryViewModel = queryViewModel.OrderBy2(extraFilterModel.SortActive);
+
+            else if (sortProperty != null && extraFilterModel.SortDirection == "desc")
+                queryViewModel = queryViewModel.OrderByDescending2(extraFilterModel.SortActive);
+
+            int Count = queryViewModel.Count();
+
+            var result = queryViewModel.Skip((extraFilterModel.PageIndex) * extraFilterModel.PageSize)
+            .Take(extraFilterModel.PageSize).ToList();
+
+
+            return new ResultWithMessage(new DataWithSize(Count, result), "");
+        }
+
+        else
+        {
+            int Count = queryViewModel.Count();
+            var result = queryViewModel.Skip((extraFilterModel.PageIndex) * extraFilterModel.PageSize)
+            .Take(extraFilterModel.PageSize).ToList();
+
+            return new ResultWithMessage(new DataWithSize(Count, result), "");
+        }
+
     }
 }

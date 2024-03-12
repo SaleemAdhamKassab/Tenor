@@ -14,5 +14,11 @@ namespace Tenor.Models
         public virtual ExtraField ExtraField { get; set; }
         public virtual ICollection<ReportFieldValue> ReportFieldValues { get; set; }
 
+        public ReportField() { }
+        public ReportField(int fieldId)
+        {
+            FieldId = fieldId;
+            IsActive = true;
+        }
     }
 }

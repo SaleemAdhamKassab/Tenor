@@ -13,5 +13,12 @@ namespace Tenor.Models
 
         public virtual ExtraField ExtraField { get; set; }
         public virtual ICollection<KpiFieldValue> KpiFieldValues { get; set; }
+
+        public KpiField() {}
+        public KpiField(int fieldId)
+        {
+            FieldId=fieldId;
+            IsActive = true;
+        }
     }
 }

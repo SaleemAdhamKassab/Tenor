@@ -14,5 +14,11 @@ namespace Tenor.Models
         public virtual ExtraField ExtraField { get; set; }
         public virtual ICollection<DashboardFieldValue> DashboardFieldValues { get; set; }
 
+        public DashboardField() { }
+        public DashboardField(int fieldId)
+        {
+            FieldId = fieldId;
+            IsActive = true;
+        }
     }
 }

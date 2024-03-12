@@ -39,13 +39,20 @@ public class ExtraFieldController:BaseController
         return _returnResult(_extraPropService.delete(id));
     }
 
-    [HttpGet("GetAll")]
+    [HttpPost("GetAll")]
     [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "SuperAdmin" })]
 
-    public IActionResult GetAll()
+    public IActionResult GetAll(ExtraFieldFilter input)
     {
-        return _returnResult(_extraPropService.GetAll());
+        return _returnResult(_extraPropService.GetAll(input));
     }
 
+    [HttpGet("GetById")]
+    [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "SuperAdmin" })]
+
+    public IActionResult GetById(int id)
+    {
+        return _returnResult(_extraPropService.GetById(id));
+    }
 
 }
