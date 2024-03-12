@@ -78,7 +78,7 @@ namespace Tenor.Controllers
 
         public async Task<IActionResult> Delete(int id)
         {
-            return Ok(null);
+            return _returnResult(await _kpiservice.Delete(id));
         }
 
         [HttpGet("GetExtraFields")]
