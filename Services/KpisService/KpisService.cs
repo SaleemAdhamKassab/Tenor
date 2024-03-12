@@ -201,7 +201,7 @@ namespace Tenor.Services.KpisService
                     _db.Update(updatedKpi);
                     _db.SaveChanges();
                     //Remove old childs relation
-                    DeleteSelfRelation(oldKpi.OperationId, null);
+                    deleteOperation(oldKpi.OperationId);
                     //Update Kpi field values
                     if (Kpi.KpiFields != null)
                     {
@@ -222,7 +222,20 @@ namespace Tenor.Services.KpisService
         }
         public async Task<ResultWithMessage> Delete(int id)
         {
-            return new ResultWithMessage(null, "");
+            var currentKpi = _db.Kpis.FirstOrDefault(x => x.Id == id);
+            if(currentKpi == null)
+            {
+                return new ResultWithMessage(null, "Cannot find KPI");
+            }
+            var hasLinkedOperation = _db.Operations.Any(x => x.KpiId == id);
+            if(hasLinkedOperation)
+            {
+                return new ResultWithMessage(false, "This KPI is linked to other operations and cannot be deleted");
+            }
+            deleteOperation(currentKpi.OperationId);
+            _db.Kpis.Remove(currentKpi);
+            _db.SaveChanges();
+            return new ResultWithMessage(true, "");
         }
         public async Task<ResultWithMessage> GetExtraFields()
         {
@@ -797,37 +810,6 @@ namespace Tenor.Services.KpisService
             return new ResultWithMessage(false, "KPI format is invalid");
 
         }
-
-
-        private bool DeleteSelfRelation(int? parentid, List<int> childid)
-        {
-            List<Operation> childOpt = new List<Operation>();
-            //remove main parent
-            if (parentid != null)
-            {
-                var OldRelation = _db.Operations.FirstOrDefault(x => x.Id == parentid);
-                _db.Operations.Remove(OldRelation);
-                childOpt = _db.Operations.Where(x => x.ParentId == parentid).ToList();
-            }
-            else
-            {
-                childOpt = _db.Operations.Where(x => childid.Contains((int)x.ParentId)).ToList();
-            }
-
-            //-------------------remove cascade
-            if (childOpt.Count == 0)
-            {
-                _db.SaveChanges();
-                return true;
-            }
-            foreach (var s in childOpt)
-            {
-                _db.Operations.Remove(s);
-            }
-            _db.SaveChanges();
-            DeleteSelfRelation(null, childOpt.Select(x => x.Id).ToList());
-            return true;
-        }
         private bool AddExtraFields(int kpiId, List<ExtraFieldValue> extFields)
         {
             foreach (var s in extFields)
@@ -1287,6 +1269,15 @@ namespace Tenor.Services.KpisService
 
 
 
+        }
+        private void deleteOperation(int id)
+        {
+            var operation = _db.Operations.Include(x => x.Childs).FirstOrDefault(x => x.Id == id);
+            foreach (var childOp in operation.Childs)
+            {
+                deleteOperation(childOp.Id);
+            }
+            _db.Remove(operation);
         }
     }
 }
