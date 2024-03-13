@@ -35,6 +35,7 @@ using System;
 using System.Runtime.InteropServices;
 using static Tenor.Helper.Constant;
 using static Tenor.Services.AuthServives.ViewModels.AuthModels;
+using Tenor.Services.AuthServives;
 
 namespace Tenor.Services.KpisService
 {
@@ -42,9 +43,9 @@ namespace Tenor.Services.KpisService
     {
         ResultWithMessage GetListAsync(object kpiFilterM);
         Task<ResultWithMessage> GetByIdAsync(int id);
-        Task<ResultWithMessage> Add(CreateKpi kpiModel);
-        Task<ResultWithMessage> Update(int id, CreateKpi Kpi);
-        Task<ResultWithMessage> Delete(int id);
+        Task<ResultWithMessage> Add(CreateKpi kpiModel, TenantDto authUser);
+        Task<ResultWithMessage> Update(int id, CreateKpi Kpi, TenantDto authUser);
+        Task<ResultWithMessage> Delete(int id , TenantDto authUser);
         Task<ResultWithMessage> GetExtraFields();
         ResultWithMessage GetOperators();
         ResultWithMessage GetFunctions();
@@ -67,11 +68,13 @@ namespace Tenor.Services.KpisService
         private string joinExpression = "";
         private bool checkResult = true;
         private int voidIdx = 0;
+        private readonly IJwtService _jwtService;
 
-        public KpisService(TenorDbContext tenorDbContext, IMapper mapper)
+        public KpisService(TenorDbContext tenorDbContext, IMapper mapper , IJwtService jwtService)
         {
             _db = tenorDbContext;
             _mapper = mapper;
+            _jwtService = jwtService;
         }
         //Not Used
         public ResultWithMessage GetListAsync(object kpiFilterM)
@@ -132,15 +135,18 @@ namespace Tenor.Services.KpisService
             var kpiMap = _mapper.Map<KpiViewModel>(kpi);
             return new ResultWithMessage(kpiMap, null);
         }
-        public async Task<ResultWithMessage> Add(CreateKpi kpi)
+        public async Task<ResultWithMessage> Add(CreateKpi kpi, TenantDto authUser)
         {
-           
+            string accessResult = _jwtService.checkUserTenantPermission(authUser,(int)kpi.DeviceId);
+            if(accessResult== enAccessType.denied.GetDisplayName())
+            {
+                return new ResultWithMessage(null,"Access Denied");
+            }          
             if (IsKpiExist(0, kpi.DeviceId, kpi.Name))
             {
                 return new ResultWithMessage(null, "This Kpi name alraedy exsit on the same device");
 
             }
-
             if(Convert.ToBoolean(CheckValidFormat(kpi).Data)==false)
             {
                 return new ResultWithMessage(null, CheckValidFormat(kpi).Message);
@@ -169,8 +175,13 @@ namespace Tenor.Services.KpisService
                 }
             }
         }
-        public async Task<ResultWithMessage> Update(int id, CreateKpi Kpi)
+        public async Task<ResultWithMessage> Update(int id, CreateKpi Kpi, TenantDto authUser)
         {
+            string accessResult = _jwtService.checkUserTenantPermission(authUser, (int)Kpi.DeviceId);
+            if (accessResult == enAccessType.denied.GetDisplayName() || accessResult == enAccessType.viewOnlyMe.GetDisplayName())
+            {
+                return new ResultWithMessage(null, "Access Denied");
+            }
 
             if (id != Kpi.Id)
             {
@@ -190,10 +201,20 @@ namespace Tenor.Services.KpisService
             {
                 try
                 {
-                    Kpi oldKpi = _db.Kpis.AsNoTracking().FirstOrDefault(x => (x.Id == Kpi.Id && x.CreatedBy==Kpi.ModifyBy) || x.IsPublic);
+                    Kpi oldKpi = null;
+                    if (accessResult==enAccessType.allOnlyMe.GetDisplayName())
+                    {
+                         oldKpi = _db.Kpis.AsNoTracking().FirstOrDefault(x => (x.Id == Kpi.Id && x.CreatedBy == Kpi.ModifyBy));
+
+                    }
+                    else
+                    {
+                         oldKpi = _db.Kpis.AsNoTracking().FirstOrDefault(x => x.Id == Kpi.Id);
+
+                    }
                     if (oldKpi == null)
                     {
-                        return new ResultWithMessage(null, "This Id is invalid");
+                        return new ResultWithMessage(null, "This Id is invalid or Access denied");
                     }
                     Kpi.CreatedBy = oldKpi.CreatedBy;
                     Kpi.CreationDate = oldKpi.CreationDate;
@@ -220,13 +241,25 @@ namespace Tenor.Services.KpisService
                 }
             }
         }
-        public async Task<ResultWithMessage> Delete(int id)
+        public async Task<ResultWithMessage> Delete(int id , TenantDto authUser)
         {
             var currentKpi = _db.Kpis.FirstOrDefault(x => x.Id == id);
-            if(currentKpi == null)
+            if (currentKpi == null)
             {
                 return new ResultWithMessage(null, "Cannot find KPI");
             }
+            string accessResult = _jwtService.checkUserTenantPermission(authUser, (int)currentKpi.DeviceId);
+            if (accessResult == enAccessType.denied.GetDisplayName())
+            {
+                return new ResultWithMessage(null, "Access Denied");
+            }
+            
+            if(accessResult== enAccessType.allOnlyMe.GetDisplayName() && currentKpi.CreatedBy!= authUser.userName)
+            {
+                return new ResultWithMessage(null, "Access Denied");
+
+            }
+
             var hasLinkedOperation = _db.Operations.Any(x => x.KpiId == id);
             if(hasLinkedOperation)
             {
@@ -324,12 +357,19 @@ namespace Tenor.Services.KpisService
         {
             try
             {
+                 IQueryable<Kpi> query = null;
                 //------------------------------Data source------------------------------------------------
-
-                IQueryable<Kpi>  query = _db.Kpis.Where(x => x.CreatedBy == authUser.userName || x.IsPublic || authUser.deviceAccesses.Select(x=>x.DeviceId).ToList().Contains((int)x.DeviceId))
-                    .Include(x => x.KpiFieldValues).ThenInclude(x => x.KpiField)
-                    .ThenInclude(x => x.ExtraField).AsQueryable();
-                              
+                   if(authUser.tenantAccesses.Any(x=>x.RoleList.Contains("SuperAdmin")))
+                   {
+                    query = _db.Kpis.Include(x => x.KpiFieldValues).ThenInclude(x => x.KpiField).ThenInclude(x => x.ExtraField).AsQueryable();
+                   }
+                   else
+                   {
+                    query = _db.Kpis.Where(x => x.CreatedBy == authUser.userName || x.IsPublic || authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains((int)x.DeviceId))
+                   .Include(x => x.KpiFieldValues).ThenInclude(x => x.KpiField)
+                   .ThenInclude(x => x.ExtraField).AsQueryable();
+                   }
+                                                          
                 //------------------------------Data filter-----------------------------------------------------------
 
                 if (!string.IsNullOrEmpty(filter.SearchQuery))
@@ -388,6 +428,11 @@ namespace Tenor.Services.KpisService
         public async Task<ResultWithMessage> GetKpiQuery(int kpiid)
         {
             var response = GetKpiForm(kpiid);
+            if(response.Result.Data is null)
+            {
+                return new ResultWithMessage(null, response.Result.Message);
+
+            }
             var tabNames = GetTablesNameRegExp(response.Result.Data.ToString()).ToList();
             string fullQuery = GetOracleQuery(response.Result.Data.ToString(), tabNames);
 
@@ -476,7 +521,7 @@ namespace Tenor.Services.KpisService
         }
         public string GetQeuryExpress(OperationDto opt, string? tag,int? voidChildCount)
         {
-            ConvertKpiForm kpiFormat = new ConvertKpiForm(_db, _mapper);
+            ConvertKpiForm kpiFormat = new ConvertKpiForm(_db, _mapper, _jwtService);
             string pointerTag = "tag";
             string funcTag = "func";
             QueryExpress qe = new QueryExpress();
@@ -684,7 +729,7 @@ namespace Tenor.Services.KpisService
 
                         foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
                         {
-                            kpiFormat = new ConvertKpiForm(_db, _mapper);
+                            kpiFormat = new ConvertKpiForm(_db, _mapper, _jwtService);
                             string repFunc = kpiFormat.GetQeuryExpress(c.value, null, voidIdx);
                             query = query.Replace(funcTag + c.i, repFunc);
                         }
@@ -739,7 +784,7 @@ namespace Tenor.Services.KpisService
 
                         foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
                         {
-                            kpiFormat = new ConvertKpiForm(_db, _mapper);
+                            kpiFormat = new ConvertKpiForm(_db, _mapper, _jwtService);
                             string repFunc = kpiFormat.GetQeuryExpress(c.value, null, voidIdx);
                             query = query.Replace(funcTag + c.i, repFunc);
                         }

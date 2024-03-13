@@ -28,7 +28,7 @@ namespace Tenor.Controllers
 
 
         [HttpPost("getByFilter")]
-        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
         public  IActionResult getByFilter([FromBody] DeviceFilterModel filter)
         {
             var authData = AuthUser();
@@ -39,31 +39,31 @@ namespace Tenor.Controllers
         
 
         [HttpGet("getSubsets")]
-        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
 
         public IActionResult getSubsets() => _returnResult(_deviceService.getSubsets());
 
 
         [HttpPost("add")]
-        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,Editor,SuperAdmin" })]
 
         public IActionResult add(DeviceBindingModel model) => _returnResult(_deviceService.add(model));
 
 
         [HttpPut("edit")]
-        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,Editor,SuperAdmin" })]
 
         public IActionResult edit(int id, DeviceBindingModel model) => _returnResult(_deviceService.edit(id, model));
 
 
         [HttpDelete("delete")]
-        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,Editor,SuperAdmin" })]
 
         public IActionResult delete(int id) => _returnResult(_deviceService.delete(id));
 
 
         [HttpPost("exportDevicesByFilter")]
-        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
 
         public IActionResult exportDevicesByFilter(DeviceFilterModel filter)
         {
@@ -81,7 +81,7 @@ namespace Tenor.Controllers
         public IActionResult validateDevice(int deviceId, string name) => _returnResult(_deviceService.validateDevice(deviceId, name));
 
         [HttpGet("GetDeviceByParent")]
-        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
 
         public IActionResult GetDeviceByParent(int parentid, string ? searchQuery)
         {

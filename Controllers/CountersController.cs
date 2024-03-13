@@ -61,7 +61,7 @@ namespace Tenor.Controllers
         public IActionResult validateCounter(int subsetId, string name) => _returnResult(_countersService.validateCounter(subsetId, name));
 
         [HttpGet("GetCounterBySubset")]
-        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
 
         public IActionResult GetCounterBySubset(int subsetid, string? searchQuery)
         {

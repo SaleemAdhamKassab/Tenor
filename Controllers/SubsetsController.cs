@@ -61,7 +61,7 @@ namespace Tenor.Controllers
         public IActionResult validateSubset(int deviceId, string name) => _returnResult(_subsetservice.validateSubset(deviceId, name));
 
         [HttpGet("GetSubsetByDevice")]
-        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
 
         public IActionResult GetSubsetByDevice(int deviceid, string? searchQuery)
         {

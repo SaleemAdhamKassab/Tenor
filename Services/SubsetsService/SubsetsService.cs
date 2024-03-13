@@ -807,7 +807,17 @@ namespace Tenor.Services.SubsetsService
 
         public ResultWithMessage GetSubsetByDeviceId(int deviceid, string searchQuery, TenantDto authUser)
         {
-            IQueryable<Subset> query = _db.Subsets.Where(e => e.DeviceId == deviceid && authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains(e.Device.ParentId ?? 0));
+            IQueryable<Subset> query = null;
+            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
+            {
+                query = _db.Subsets.Where(e => e.DeviceId == deviceid);
+
+            }
+            else
+            {
+               query = _db.Subsets.Where(e => e.DeviceId == deviceid && authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains(e.Device.ParentId ?? 0));
+
+            }
 
             if (query == null || query.Count() == 0)
             {

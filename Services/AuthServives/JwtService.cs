@@ -3,6 +3,7 @@ using Azure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Extensions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OfficeOpenXml.FormulaParsing.LexicalAnalysis;
@@ -16,6 +17,7 @@ using System.Text;
 using Tenor.Data;
 using Tenor.Dtos;
 using Tenor.Models;
+using static Tenor.Helper.Constant;
 using static Tenor.Services.AuthServives.ViewModels.AuthModels;
 
 namespace Tenor.Services.AuthServives
@@ -29,6 +31,7 @@ namespace Tenor.Services.AuthServives
         ResultWithMessage RefreshToken(ClaimsPrincipal principal,string reftoken);
         ResultWithMessage RevokeToken(string token);
         bool IsGrantAccess(string token,List<string> roles);
+        string checkUserTenantPermission(TenantDto userData,int deviceid );
     }
     public class JwtService: IJwtService
     {
@@ -220,18 +223,57 @@ namespace Tenor.Services.AuthServives
             }
             if(tenantDto!=null)
             {
-                var userData = tenantDto.tenantAccesses.FirstOrDefault(x => tenantDto.tenantAccesses.Select(x=>x.tenantName).ToList().Contains(x.tenantName));
+                var userData = tenantDto.tenantAccesses.Where(x => tenantDto.tenantAccesses.Select(x=>x.tenantName).ToList().Contains(x.tenantName)).ToList();
                 if (userData != null)
                 {
-                    var userRoles = roles.Intersect(userData.RoleList).ToList();
-                    if (userRoles.Count()>0)
+                    foreach(TenantAccess s in userData)
                     {
-                        return true;
+                        var userRoles = roles.Intersect(s.RoleList).ToList();
+                        if (userRoles.Count() > 0)
+                        {
+                            return true;
+                        }
                     }
+                    
                 }
             }
                      
             return false;
+        }
+        public string checkUserTenantPermission(TenantDto userData,int deviceid)
+        {
+            if (userData.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
+            {
+               return enAccessType.all.GetDisplayName();
+            }
+            var tenants = _dbcontext.Tenants.Where(x => x.TenantDevices.Any(x => x.DeviceId == deviceid)).AsQueryable();
+            var tenatRoles = userData.tenantAccesses.Where(x => tenants.Any(y => y.Name.Contains(x.tenantName))).SingleOrDefault();
+            
+            if(tenatRoles is null)
+            {
+                return enAccessType.denied.GetDisplayName();
+            }
+
+            foreach(string s in tenatRoles.RoleList)
+            {
+               if(s== "Admin")
+                {
+                    return enAccessType.all.GetDisplayName();
+                }
+                if (s == "Editor")
+                {
+                    return enAccessType.allOnlyMe.GetDisplayName();
+
+                }
+                if (s == "User")
+                {
+                    return enAccessType.viewOnlyMe.GetDisplayName();
+
+                }
+
+
+            }
+            return enAccessType.all.GetDisplayName();
         }
 
         private RefreshToken GenerateRefreshToken()
@@ -317,7 +359,7 @@ namespace Tenor.Services.AuthServives
                 tenantDto.profileUrl = _config["ProfileImg"].Replace("VarXXX", userName.Substring(userName.IndexOf("\\") + 1));
                 tenantDto.thumbnailUrl = _config["ThumbImg"].Replace("VarXXX", userName.Substring(userName.IndexOf("\\") + 1));
 
-            tenantDto.tenantAccesses = tenantAccList;
+                tenantDto.tenantAccesses = tenantAccList;
                 tenantDto.deviceAccesses = TenantDeviceList(tenantAccList);
                 return tenantDto;
             
@@ -385,7 +427,6 @@ namespace Tenor.Services.AuthServives
             }
             return result.DistinctBy(x => x.DeviceName).ToList(); ;
         }
-
         private bool CheckSuperAdminPermission(string userName, List<string> roles)
         {
             if (roles.Contains("SuperAdmin"))

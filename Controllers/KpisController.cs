@@ -33,8 +33,8 @@ namespace Tenor.Controllers
         }
 
         [HttpPost("getByFilter")]
-        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
-        public IActionResult getSubsetsByFilter(KpiFilterModel filter)
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
+        public IActionResult getKpiByFilter(KpiFilterModel filter)
         {
           
             var authData= AuthUser();
@@ -44,8 +44,7 @@ namespace Tenor.Controllers
 
 
         [HttpGet("getById")]
-        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
-
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
         public async Task<IActionResult> GetById(int id)
         {
              return _returnResult(await _kpiservice.GetByIdAsync(id));
@@ -53,32 +52,35 @@ namespace Tenor.Controllers
         }
 
         [HttpPost("add")]
-        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,Editor,SuperAdmin" })]
 
         public async Task<IActionResult> Post(CreateKpi kpi)
         {
             kpi.CreatedBy = AuthUser().userName;
-            return _returnResult(await _kpiservice.Add(kpi));
+            var authData = AuthUser();
+            return _returnResult(await _kpiservice.Add(kpi, authData));
          
         }
 
         [HttpPut("edit")]
-        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,Editor,SuperAdmin" })]
 
         public async Task<IActionResult> Put(int id, CreateKpi kpi)
         {
+            var authData = AuthUser();
             kpi.ModifyBy = AuthUser().userName;
             kpi.ModifyDate = DateTime.Now;
-            return _returnResult(await _kpiservice.Update(id,kpi));
+            return _returnResult(await _kpiservice.Update(id,kpi, authData));
             
         }
 
         [HttpDelete("delete")]
-        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,Editor,SuperAdmin" })]
 
         public async Task<IActionResult> Delete(int id)
         {
-            return _returnResult(await _kpiservice.Delete(id));
+            var authData = AuthUser();
+            return _returnResult(await _kpiservice.Delete(id, authData));
         }
 
         [HttpGet("GetExtraFields")]
@@ -105,7 +107,7 @@ namespace Tenor.Controllers
         }
 
         [HttpPost("exportKpiByFilter")]
-        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
 
         public IActionResult exportKpiByFilter(KpiFilterModel filter)
         {
@@ -150,5 +152,6 @@ namespace Tenor.Controllers
             }
             return result;
         }
+
     }
 }

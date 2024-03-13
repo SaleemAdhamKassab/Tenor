@@ -31,8 +31,9 @@ namespace Tenor.Services.AuthServives.ViewModels
             public string userName { get; set; }
             public string profileUrl { get; set; }
             public string thumbnailUrl { get; set; }
-            public List<DeviceAccess> deviceAccesses { get; set; }
             public List<TenantAccess> tenantAccesses { get; set; }
+            public List<DeviceAccess> deviceAccesses { get; set; }
+
         }
 
         public class TenantAccess

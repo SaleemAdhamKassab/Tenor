@@ -755,13 +755,19 @@ namespace Tenor.Services.CountersService
 
         public ResultWithMessage GetCounterBySubsetId(int subsetid, string searchQuery, TenantDto authUser)
         {
-            IQueryable<Counter> query = _db.Counters.Where(e => e.SubsetId == subsetid && authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains(e.Subset.Device.ParentId ?? 0));
-
-            if (query == null || query.Count() == 0)
+            IQueryable<Counter> query = null;
+            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
             {
-                return new ResultWithMessage(new DataWithSize(0, null), "Access denied to this subset or subset is invalid");
+                query = _db.Counters.Where(e => e.SubsetId == subsetid);
 
             }
+            else
+            {
+                 query = _db.Counters.Where(e => e.SubsetId == subsetid && authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains(e.Subset.Device.ParentId ?? 0));
+
+            }
+
+           
             if (!string.IsNullOrEmpty(searchQuery))
             {
                 query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower())
@@ -770,8 +776,6 @@ namespace Tenor.Services.CountersService
                        ||x.Subset.Device.Name.ToLower().Contains(searchQuery.ToLower()));
 
             }
-            //var queryViewModel = convertCountersToListViewModel(query);
-            //return new ResultWithMessage(new DataWithSize(queryViewModel.Count(), queryViewModel.ToList()), null);
             var result = query.Select(x => new TreeNodeViewModel
             {
                 Id = x.Id,

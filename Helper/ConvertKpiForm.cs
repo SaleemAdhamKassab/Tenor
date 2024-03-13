@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using Tenor.Services.KpisService;
 using static Tenor.Helper.Constant;
+using Tenor.Services.AuthServives;
 
 namespace Tenor.Helper
 {
@@ -16,11 +17,13 @@ namespace Tenor.Helper
         private   readonly IMapper _mapper;
         private   string query = "";
         private int voidIdx = 0;
+        private readonly IJwtService _jwtService;
 
-        public ConvertKpiForm( TenorDbContext tenorDbContext, IMapper mapper)
+        public ConvertKpiForm( TenorDbContext tenorDbContext, IMapper mapper, IJwtService jwtService)
         {
             _db = tenorDbContext;
             _mapper = mapper;
+            _jwtService = jwtService;
             
         }
 
@@ -68,7 +71,7 @@ namespace Tenor.Helper
             string pointerTag = "tag";
             string funcTag = "func";
             QueryExpress qe = new QueryExpress();
-            KpisService kpiFormat = new KpisService(_db, _mapper);
+            KpisService kpiFormat = new KpisService(_db, _mapper, _jwtService);
             IDictionary<string, string> funcDic = new Dictionary<string, string>()
             {
                 {"func0","Case When" },{"func1","Then" },{"func2","else" }
@@ -273,7 +276,7 @@ namespace Tenor.Helper
 
                         foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
                         {
-                            kpiFormat = new KpisService(_db, _mapper);
+                            kpiFormat = new KpisService(_db, _mapper, _jwtService);
                             string funcParam = funcTag + c.i;
                             string repFuncParam = kpiFormat.GetQeuryExpress(c.value, null, voidIdx);
                             query = query.Replace(funcParam, repFuncParam);
@@ -328,7 +331,7 @@ namespace Tenor.Helper
 
                         foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
                         {
-                            kpiFormat = new KpisService(_db, _mapper);
+                            kpiFormat = new KpisService(_db, _mapper, _jwtService);
                             string funcParam = funcTag + c.i;
                             string repFuncParam = kpiFormat.GetQeuryExpress(c.value, null, voidIdx);
                             query = query.Replace(funcParam, repFuncParam);

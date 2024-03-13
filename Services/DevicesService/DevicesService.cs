@@ -50,7 +50,18 @@ namespace Tenor.Services.DevicesService
         }
         private IQueryable<Device> getDevicesData(DeviceFilterModel filter, TenantDto authUser)
         {
-            IQueryable<Device> qeury = _db.Devices.Include(e => e.Parent).Where(e=> authUser.deviceAccesses.Select(x=>x.DeviceId).ToList().Contains(e.Id));
+            IQueryable<Device> qeury = null;
+            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
+            {
+                qeury = _db.Devices.Include(e => e.Parent).Where(e => true);
+
+            }
+            else
+            {
+                qeury = _db.Devices.Include(e => e.Parent).Where(e => authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains(e.Id));
+
+            }
+
 
             if (!string.IsNullOrEmpty(filter.SearchQuery))
                 qeury = qeury.Where
@@ -303,14 +314,19 @@ namespace Tenor.Services.DevicesService
         }
         public ResultWithMessage GetDeviceByParentId(int parentid, string searchQuery, TenantDto authUser)
         {
-
-            IQueryable<Device> query = _db.Devices.Include(e => e.Parent).Where(e => e.ParentId == parentid && authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains(parentid));
-
-            if(query==null || query.Count()==0)
+            IQueryable<Device> query = null;
+            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
             {
-                return new ResultWithMessage(new DataWithSize(0, null), "Access denied to this device or device is invalid");
+                query = _db.Devices.Include(e => e.Parent).Where(e => e.ParentId == parentid);
 
             }
+            else
+            {
+                query = _db.Devices.Include(e => e.Parent).Where(e => e.ParentId == parentid && authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains(parentid));
+
+            }
+
+            
             if (!string.IsNullOrEmpty(searchQuery))
             {
                 query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower())
@@ -318,8 +334,6 @@ namespace Tenor.Services.DevicesService
                       || x.Subsets.Any(z => z.Counters.Any(e => e.Id.ToString() == searchQuery || e.Name.ToLower().Contains(searchQuery.ToLower()) || e.Code.ToLower() == searchQuery.ToLower()))
                       );
             }
-            //var queryViewModel = convertDevicesToListViewModel(query);
-            //return new ResultWithMessage(new DataWithSize(queryViewModel.Count(), queryViewModel.ToList()),null);
             var result = query.Select(x => new TreeNodeViewModel
             {
                 Id = x.Id,
