@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography.Pkcs;
 using Tenor.Data;
 using Tenor.Services.KpisService;
 
@@ -23,8 +24,17 @@ namespace Tenor.Controllers
         public async Task<IActionResult> GetKpiValue(int kpiid)
         {
             var response = await _kpiservice.GetKpiQuery(kpiid);
-
-            return Ok(_db.Database.ExecuteSql($"{response.Data.ToString()}"));
+            try
+            {
+                var result = _db.Database.SqlQuery<string>($"{response.Data.ToString()}");
+                return Ok(new { data = result });
+            }
+            catch(Exception ex)
+            {
+                return Ok(new { query = ex.Message });
+            }
+            
+            //return Ok(_db.Database.ExecuteSql($"{response.Data.ToString()}"));
         }
     }
 }

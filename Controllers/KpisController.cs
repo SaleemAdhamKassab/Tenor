@@ -122,7 +122,8 @@ namespace Tenor.Controllers
         [HttpGet("GetKpiQuery")]
         public async Task<IActionResult> GetKpiQuery(int kpiid)
         {
-            return _returnResult(await _kpiservice.GetKpiQuery(kpiid));
+            var result = await _kpiservice.GetKpiQuery(kpiid);
+            return Ok(new { query= result.Data });
 
         }
 
