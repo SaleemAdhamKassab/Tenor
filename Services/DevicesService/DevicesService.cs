@@ -53,12 +53,12 @@ namespace Tenor.Services.DevicesService
             IQueryable<Device> qeury = null;
             if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
             {
-                qeury = _db.Devices.Include(e => e.Parent).Where(e => true);
+                qeury = _db.Devices.Include(e => e.Parent).Where(e => e.Parent==null);
 
             }
             else
             {
-                qeury = _db.Devices.Include(e => e.Parent).Where(e => authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains(e.Id));
+                qeury = _db.Devices.Include(e => e.Parent).Where(e => e.Parent==null &&  authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains(e.Id));
 
             }
 
@@ -142,7 +142,7 @@ namespace Tenor.Services.DevicesService
 
             //4- pagination
             int resultSize = queryViewModel.Count();
-            var resultData = queryViewModel.Skip(filter.PageSize * filter.PageIndex).Take(filter.PageSize).ToList();
+            var resultData = queryViewModel.Skip(filter.PageSize * filter.PageIndex).Take(filter.PageSize).OrderBy(e=>e.Name).ToList();
 
             //5- return 
             return new ResultWithMessage(new DataWithSize(resultSize, resultData), "");

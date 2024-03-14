@@ -331,8 +331,8 @@ namespace Tenor.Services.AuthServives
                 new System.Security.Principal.SecurityIdentifier(x.Value).Translate(
                 typeof(System.Security.Principal.NTAccount)).ToString().ToLower()
                 ).ToList();
-                List<UserTenantDto> userTenant = _mapper.Map<List<UserTenantDto>>(_dbcontext.UserTenantRoles.Include(x => x.Tenant).ThenInclude(x=>x.TenantDevices).ThenInclude(x=>x.Device).Include(y => y.Role).Where(x => x.UserName == userName).ToList());
-                List<GroupTenantDto> groupTenant = _mapper.Map<List<GroupTenantDto>>(_dbcontext.GroupTenantRoles.Include(x => x.Tenant).ThenInclude(x => x.TenantDevices).ThenInclude(x => x.Device).Include(y => y.Role).Where(x => userGroups.Contains(x.GroupName)).ToList());
+                List<UserTenantDto> userTenant = _mapper.Map<List<UserTenantDto>>(_dbcontext.UserTenantRoles.Include(x => x.Tenant).ThenInclude(x=>x.TenantDevices).ThenInclude(x=>x.Device).Include(y => y.Role).Where(x => x.UserName.ToLower() == userName.ToLower()).ToList());
+                List<GroupTenantDto> groupTenant = _mapper.Map<List<GroupTenantDto>>(_dbcontext.GroupTenantRoles.Include(x => x.Tenant).ThenInclude(x => x.TenantDevices).ThenInclude(x => x.Device).Include(y => y.Role).Where(x => userGroups.Contains(x.GroupName.ToLower())).ToList());
                  
                 //-----------------------------------------------
 

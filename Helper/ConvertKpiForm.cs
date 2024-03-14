@@ -153,7 +153,7 @@ namespace Tenor.Helper
             if (opt.Type == enOPerationTypes.opt)
             {
 
-                qe.LeftSide = ""; qe.Inside = opt.OperatorName; qe.RightSide = "";
+                qe.LeftSide = " "; qe.Inside = opt.OperatorName; qe.RightSide = " ";
                 string changeStr = qe.LeftSide + qe.Inside + qe.RightSide;
                 if (query.Contains(pointerTag))
                 {

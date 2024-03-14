@@ -604,7 +604,7 @@ namespace Tenor.Services.KpisService
             if (opt.Type == enOPerationTypes.opt)
             {
 
-                qe.LeftSide = ""; qe.Inside = opt.OperatorName; qe.RightSide = "";
+                qe.LeftSide = " "; qe.Inside = opt.OperatorName; qe.RightSide = " ";
                 string changeStr = qe.LeftSide + qe.Inside + qe.RightSide;
                 if (query.Contains(pointerTag))
                 {
@@ -860,7 +860,7 @@ namespace Tenor.Services.KpisService
             foreach (var s in extFields)
             {
 
-                var extField = _db.KpiFields.Include(x => x.ExtraField).FirstOrDefault(x => x.Id == s.FieldId && x.IsActive);
+                var extField = _db.KpiFields.AsNoTracking().Include(x => x.ExtraField).FirstOrDefault(x => x.Id == s.FieldId && x.IsActive);
                 if (extField != null)
                 {
                     if (extField.ExtraField.Type.GetDisplayName() == "List" || extField.ExtraField.Type.GetDisplayName() == "MultiSelectList")
@@ -1297,12 +1297,12 @@ namespace Tenor.Services.KpisService
 
             if(tablesName.Count()>1)
             {
-                foreach (var item in tablesName.Select((value, i) => new { i, value }))
+                for (int i=0;i<= tablesName.Count()-1;i++)
                 {
-                    if (item.i > 0)
+                    if (i > 0)
                     {
-                        joinExp += " join " + item.value + " " + item.value + " on " + item.value + ".Cell_Id=" +
-                            item.value[item.i - 1] + ".Cell_Id";
+                        joinExp += " join " + tablesName[i] + " " + tablesName[i] + " on " + tablesName[i] + ".Cell_Id=" +
+                            tablesName[i-1] + ".Cell_Id";
                     }
                 }
             }
