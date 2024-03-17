@@ -1325,7 +1325,7 @@ namespace Tenor.Services.KpisService
         }
         private string GetOracleQuery(string query,List<string> tablesName)
         {
-            query = "select TO_CHAR(" + query + ") KpiValue";
+            query = "select TO_CHAR(" + query + ") ";
             string formExp = "";
             string joinExp = "";
             string whereExp = "";

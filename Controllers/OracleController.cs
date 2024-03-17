@@ -26,13 +26,14 @@ namespace Tenor.Controllers
 			//var response = new ResultWithMessage("select sum(c1) + sum(c2) from TECH4_123", string.Empty);
 			try
 			{
-				//var result = _db.Database.SqlQuery<string>($"{response.Data.ToString()}");
-				var result = _db.KPIResult.FromSqlRaw(response.Data.ToString()).ToList();
-				return Ok(new { data = result });
+				// var result = _db.Database.SqlQuery<string>($"{response.Data.ToString()}");
+				// var result = _db.KPIResult.FromSqlRaw(response.Data.ToString()).ToList();
+				var result = _db.Database.SqlQueryRaw<string>($"{response.Data.ToString()}").ToList();
+				return Ok(new { data = result.FirstOrDefault() });
 			}
 			catch (Exception ex)
 			{
-				return Ok(new { query = ex.Message });
+				return Ok(new { data = ex.Message });
 			}
 
 			//return Ok(_db.Database.ExecuteSql($"{response.Data.ToString()}"));
