@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tenor.Data;
+using Tenor.Dtos;
 using Tenor.Services.KpisService;
 
 namespace Tenor.Controllers
@@ -22,7 +23,7 @@ namespace Tenor.Controllers
 		public async Task<IActionResult> GetKpiValue(int kpiid)
 		{
 			var response = await _kpiservice.GetKpiQuery(kpiid);
-			//var response = new ResultWithMessage("select 15.12 from dual", string.Empty);
+			//var response = new ResultWithMessage("select sum(c1) + sum(c2) from TECH4_123", string.Empty);
 			try
 			{
 				//var result = _db.Database.SqlQuery<string>($"{response.Data.ToString()}");
