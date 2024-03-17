@@ -22,12 +22,9 @@ namespace Tenor.Controllers
 		[HttpGet("GetKpiValue")]
 		public async Task<IActionResult> GetKpiValue(int kpiid)
 		{
-			var response = await _kpiservice.GetKpiQuery(kpiid);
-			//var response = new ResultWithMessage("select sum(c1) + sum(c2) from TECH4_123", string.Empty);
+			var response = await _kpiservice.GetKpiQueryByAmro(kpiid);
 			try
 			{
-				// var result = _db.Database.SqlQuery<string>($"{response.Data.ToString()}");
-				// var result = _db.KPIResult.FromSqlRaw(response.Data.ToString()).ToList();
 				var result = _db.Database.SqlQueryRaw<string>($"{response.Data.ToString()}").ToList();
 				return Ok(new { data = result.FirstOrDefault() });
 			}
@@ -36,7 +33,6 @@ namespace Tenor.Controllers
 				return Ok(new { data = ex.Message });
 			}
 
-			//return Ok(_db.Database.ExecuteSql($"{response.Data.ToString()}"));
 		}
 	}
 }

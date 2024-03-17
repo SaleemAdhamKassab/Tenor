@@ -114,12 +114,12 @@ namespace Tenor.Mapper
 
         private dynamic ConvertContentType(string contenttype, string content)
         {
-            if ((contenttype == "List" && !string.IsNullOrEmpty(content)? !content.Contains(","):true ) && contenttype != "MultiSelectList")
+            if ((contenttype == "List" && !string.IsNullOrEmpty(content) ? !content.Contains(","):true ) && contenttype != "MultiSelectList")
             {
                 return content;
             }
 
-            return content.Split(',').ToList();
+            return !string.IsNullOrEmpty(content) ? content.Split(',').ToList() : null;
 
         }
     }

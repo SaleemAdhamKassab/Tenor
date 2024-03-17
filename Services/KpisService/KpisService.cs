@@ -69,6 +69,8 @@ namespace Tenor.Services.KpisService
         private string joinExpression = "";
         private bool checkResult = true;
         private int voidIdx = 0;
+        private Operation prev = null;
+        private Operation current = null;
         private readonly IJwtService _jwtService;
         public KpisService(TenorDbContext tenorDbContext, IMapper mapper , IJwtService jwtService)
         {
@@ -162,7 +164,11 @@ namespace Tenor.Services.KpisService
 
                     if (kpi.KpiFields != null)
                     {
-                        AddExtraFields(newKpi.Id, kpi.KpiFields);
+                       bool isCorrectSave= AddExtraFields(newKpi.Id, kpi.KpiFields);
+                        if(!isCorrectSave)
+                        {
+                            return new ResultWithMessage(null, "Mandatory Field error");
+                        }
                     }
                     transaction.Complete();
                     return new ResultWithMessage(_mapper.Map<KpiViewModel>(newKpi), null);
@@ -229,7 +235,12 @@ namespace Tenor.Services.KpisService
                         var KpiFieldValues = _db.KpiFieldValues.Where(x => x.KpiId == Kpi.Id).ToList();
                         _db.KpiFieldValues.RemoveRange(KpiFieldValues);
                         _db.SaveChanges();
-                        AddExtraFields(Kpi.Id, Kpi.KpiFields);
+                        bool isCorrectSave = AddExtraFields(Kpi.Id, Kpi.KpiFields);
+                        if (!isCorrectSave)
+                        {
+                            return new ResultWithMessage(null, "Mandatory Field error");
+                        }
+                        
                     }
                     transaction.Complete();
                     return new ResultWithMessage(_mapper.Map<KpiViewModel>(updatedKpi), null);
@@ -439,7 +450,6 @@ namespace Tenor.Services.KpisService
             return new ResultWithMessage(fullQuery, null);
 
         }
-
         public async Task<ResultWithMessage> GetKpiQueryByAmro(int kpiid)
         {
             var response = GetKpiFormByAmro(kpiid);
@@ -453,7 +463,6 @@ namespace Tenor.Services.KpisService
 
             return new ResultWithMessage(fullQuery, null);
         }
-
         public FileBytesModel exportKpiByFilter2(KpiFilterModel filter)
         {
             //------------------------------Data source------------------------------------------------
@@ -882,13 +891,19 @@ namespace Tenor.Services.KpisService
             return new ResultWithMessage(false, "KPI format is invalid");
 
         }
-
         public async Task<ResultWithMessage> GetKpiFormByAmro(int kpiId)
         {
+            
             var kpi = _db.Kpis.Include(x => x.Device).Include(x => x.Operation).Include(x => x.KpiFieldValues)
                .ThenInclude(x => x.KpiField).ThenInclude(x => x.ExtraField)
                .FirstOrDefault(x => x.Id == kpiId);
 
+            if (kpi == null)
+            {
+                return new ResultWithMessage(null, "This KPI Is invalid");
+
+            }
+           
             var data = sqlBuild(kpi.OperationId);
 
             return  new ResultWithMessage(data,null);
@@ -904,10 +919,14 @@ namespace Tenor.Services.KpisService
                 var extField = _db.KpiFields.AsNoTracking().Include(x => x.ExtraField).FirstOrDefault(x => x.Id == s.FieldId && x.IsActive);
                 if (extField != null)
                 {
+                    if(extField.ExtraField.IsMandatory && string.IsNullOrEmpty(Convert.ToString(s.Value)))
+                    {
+                        return false;
+                    }
                     if (extField.ExtraField.Type.GetDisplayName() == "List" || extField.ExtraField.Type.GetDisplayName() == "MultiSelectList")
                     {
-                        string fileds = Convert.ToString(string.Join(",", s.Value));
-                        string convertFields = fileds.Replace("\",\"", ",").Replace("[\"", "").Replace("\"]", "");
+                        string fileds = !string.IsNullOrEmpty(Convert.ToString(s.Value)) ? Convert.ToString(string.Join(",", s.Value)) :null;
+                        string convertFields = fileds!=null ? fileds.Replace("\",\"", ",").Replace("[\"", "").Replace("\"]", ""):null;
                         var ListValue = new KpiFieldValue(kpiId, s.FieldId, convertFields);
                         _db.KpiFieldValues.Add(ListValue);
                         _db.SaveChanges();
@@ -1329,7 +1348,7 @@ namespace Tenor.Services.KpisService
             string formExp = "";
             string joinExp = "";
             string whereExp = "";
-
+            string joinKey = getJoinKey(tablesName[0]);
             string lastDate = DateTime.Now.Year.ToString() +
                               DateTime.Now.ToString("MM") +
                            Convert.ToInt32(Convert.ToString(Convert.ToInt32(DateTime.Now.ToString("dd"))-1)).ToString("00");
@@ -1342,13 +1361,21 @@ namespace Tenor.Services.KpisService
                 {
                     if (i > 0)
                     {
-                        joinExp += " join " + tablesName[i] + " " + tablesName[i] + " on " + tablesName[i] + ".Cell_Id=" +
-                            tablesName[i-1] + ".Cell_Id";
+                        joinExp += " join " + tablesName[i] + " " + tablesName[i] + " on " + tablesName[i] + "." + joinKey +"="+
+                            tablesName[i-1] +"."+ joinKey  + " and " + tablesName[i] + ".c_date = " + tablesName[i - 1] + ".c_date";
                     }
                 }
             }
-            
-            whereExp += " where " + tablesName[0] + ".c_date between " + lastDate+"00" + " and " + lastDate+"01";
+            if(tablesName[0].ToLower().Contains("_details"))
+            {
+                whereExp += " where " + tablesName[0] + ".c_date between " + lastDate + "0000" + " and " + lastDate + "0159";
+
+            }
+            else
+            {
+                whereExp += " where " + tablesName[0] + ".c_date between " + lastDate + "00" + " and " + lastDate + "01";
+
+            }
             query +=  formExp + joinExp + whereExp;
             return query;
 
@@ -1367,6 +1394,7 @@ namespace Tenor.Services.KpisService
         }
         private string sqlBuild(int operationId)
         {
+           
             var sql = "";
             var operations = _db.Operations
                 .Include(x => x.Childs)
@@ -1378,10 +1406,13 @@ namespace Tenor.Services.KpisService
                 .Where(x => x.Id == operationId);
             foreach (var op in operations)
             {
+                prev = current;
+                current = op;
                 switch (op.Type)
                 {
+                    
                     case enOPerationTypes.opt:
-                        sql += op.Operator.Name;
+                            sql += op.Operator.Name;
                         break;
                     case enOPerationTypes.number:
                         sql += op.Value;
@@ -1393,6 +1424,9 @@ namespace Tenor.Services.KpisService
                         sql += $"({sqlBuild(op.Kpi.OperationId)})";
                         break;
                     case enOPerationTypes.voidFunction:
+                        if((prev!=null && prev.Operator!=null) ? prev.Operator.Name=="/" : false)
+                            sql += $"NoZero({string.Join(" ", op.Childs.Select(x => sqlBuild(x.Id)).ToArray())})";
+                        else
                         sql += $"({string.Join(" ", op.Childs.Select(x => sqlBuild(x.Id)).ToArray())})";
                         break;
                     case enOPerationTypes.function:
@@ -1415,6 +1449,15 @@ namespace Tenor.Services.KpisService
             }
             return sql;
 
+        }
+        private string getJoinKey(string tableName)
+        {
+            var subset = _db.Subsets.FirstOrDefault(x=>x.TableName.ToLower()==tableName.ToLower());
+            if(subset is null)
+            {
+                return null;
+            }
+            return subset.FactDimensionReference;
         }
     }
 }

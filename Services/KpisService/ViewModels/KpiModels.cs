@@ -65,7 +65,7 @@ namespace Tenor.Services.KpisService.ViewModels
         {
             public int Id { get; set; }
             public int FieldId { get; set; }
-            public dynamic Value { get; set; }
+            public dynamic? Value { get; set; }
         }
         public class KpiFieldValueViewModel
         {
@@ -80,6 +80,8 @@ namespace Tenor.Services.KpisService.ViewModels
             public int Id { get; set; }
             public string Name { get; set; }
             public int? DeviceId { get; set; }
+            public int OperationId { get; set; }
+
             public string? DeviceName { get; set; }
             public string CreatedBy { get; set; }
             public DateTime CreationDate { get; set; }
