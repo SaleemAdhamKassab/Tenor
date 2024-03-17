@@ -340,7 +340,7 @@ namespace Tenor.Services.AuthServives
                 {
                     TenantAccess userAccess = new TenantAccess();
                     userAccess.tenantName = t;
-                    userAccess.RoleList.AddRange(userTenant.Where(x => x.userName.ToLower() == userName.ToLower() && x.TenantName.ToLower() == t.ToLower()).Select(x => x.RoleName).ToList());
+                    userAccess.RoleList.AddRange(userTenant.Where(x => x.userName.ToLower() == userName.ToLower() && x.TenantName == t).Select(x => x.RoleName).ToList());
                     tenantAccList.Add(userAccess);
              
 
@@ -350,7 +350,7 @@ namespace Tenor.Services.AuthServives
                 {
                     TenantAccess groupAccess = new TenantAccess();
                     groupAccess.tenantName = g.TenantName;
-                    groupAccess.RoleList.AddRange(groupTenant.Where(x => x.groupName.ToLower() == g.groupName.ToLower()  && x.TenantName.ToLower() == g.TenantName.ToLower()).Select(x => x.RoleName).ToList());
+                    groupAccess.RoleList.AddRange(groupTenant.Where(x => x.groupName.ToLower() == g.groupName.ToLower()  && x.TenantName == g.TenantName).Select(x => x.RoleName).ToList());
                     tenantAccList.Add(groupAccess);
                 
                 }

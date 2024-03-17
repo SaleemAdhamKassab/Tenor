@@ -127,6 +127,14 @@ namespace Tenor.Controllers
 
         }
 
+        [HttpGet("GetKpiQueryByAmro")]
+        public async Task<IActionResult> GetKpiQueryByAmro(int kpiid)
+        {
+            var result = await _kpiservice.GetKpiQueryByAmro(kpiid);
+            return Ok(new { query = result.Data });
+
+        }
+
         [HttpGet("ValidateKpi")]
         public  IActionResult ValidateKpi(int? deviceid, string kpiname)
         {

@@ -56,7 +56,8 @@ namespace Tenor.Services.KpisService
         string GetQeuryExpress(OperationDto opt, string? tag,int? voidChildCount);
         ResultWithMessage ValidateKpi(int? deviceid, string kpiname);
         ResultWithMessage CheckValidFormat(CreateKpi input);
-
+        Task<ResultWithMessage> GetKpiFormByAmro(int kpiId);
+        Task<ResultWithMessage> GetKpiQueryByAmro(int kpiid);
 
     }
 
@@ -69,7 +70,6 @@ namespace Tenor.Services.KpisService
         private bool checkResult = true;
         private int voidIdx = 0;
         private readonly IJwtService _jwtService;
-
         public KpisService(TenorDbContext tenorDbContext, IMapper mapper , IJwtService jwtService)
         {
             _db = tenorDbContext;
@@ -439,6 +439,21 @@ namespace Tenor.Services.KpisService
             return new ResultWithMessage(fullQuery, null);
 
         }
+
+        public async Task<ResultWithMessage> GetKpiQueryByAmro(int kpiid)
+        {
+            var response = GetKpiFormByAmro(kpiid);
+            if (response.Result.Data is null)
+            {
+                return new ResultWithMessage(null, response.Result.Message);
+
+            }
+            var tabNames = GetTablesNameRegExp(response.Result.Data.ToString()).ToList();
+            string fullQuery = GetOracleQuery(response.Result.Data.ToString(), tabNames);
+
+            return new ResultWithMessage(fullQuery, null);
+        }
+
         public FileBytesModel exportKpiByFilter2(KpiFilterModel filter)
         {
             //------------------------------Data source------------------------------------------------
@@ -560,9 +575,20 @@ namespace Tenor.Services.KpisService
                 }
                 else
                 {
-
                     qe.LeftSide = "("; qe.Inside = pointerTag; qe.RightSide = ")";
-                    query += qe.LeftSide + qe.Inside + qe.RightSide;
+
+                    if (query.Length==0)
+                    {
+                        query += qe.LeftSide + qe.Inside + qe.RightSide;
+
+                    }
+                    else
+                    {
+                        voidIdx = opt.Childs.Count();
+
+                        query = query.Insert(query.Length - 2, qe.LeftSide + qe.Inside);
+
+                    }
                     if (opt.Childs.Count != 0)
                     {
                         foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
@@ -619,6 +645,7 @@ namespace Tenor.Services.KpisService
                         query = query.Insert(query.Length - 2, changeStr);
 
                     }
+                    
                     else
                     {
                         query = query.Insert(query.Length - 1, changeStr);
@@ -855,6 +882,20 @@ namespace Tenor.Services.KpisService
             return new ResultWithMessage(false, "KPI format is invalid");
 
         }
+
+        public async Task<ResultWithMessage> GetKpiFormByAmro(int kpiId)
+        {
+            var kpi = _db.Kpis.Include(x => x.Device).Include(x => x.Operation).Include(x => x.KpiFieldValues)
+               .ThenInclude(x => x.KpiField).ThenInclude(x => x.ExtraField)
+               .FirstOrDefault(x => x.Id == kpiId);
+
+            var data = sqlBuild(kpi.OperationId);
+
+            return  new ResultWithMessage(data,null);
+
+        }
+
+
         private bool AddExtraFields(int kpiId, List<ExtraFieldValue> extFields)
         {
             foreach (var s in extFields)
@@ -1307,7 +1348,7 @@ namespace Tenor.Services.KpisService
                 }
             }
             
-            whereExp += " where " + tablesName[0] + ".c_date between " + lastDate+"00" + " and " + lastDate+"23";
+            whereExp += " where " + tablesName[0] + ".c_date between " + lastDate+"00" + " and " + lastDate+"01";
             query +=  formExp + joinExp + whereExp;
             return query;
 
@@ -1323,6 +1364,57 @@ namespace Tenor.Services.KpisService
                 deleteOperation(childOp.Id);
             }
             _db.Remove(operation);
+        }
+        private string sqlBuild(int operationId)
+        {
+            var sql = "";
+            var operations = _db.Operations
+                .Include(x => x.Childs)
+                .Include(x => x.Counter)
+                .ThenInclude(x => x.Subset)
+                .Include(x => x.Kpi)
+                .Include(x => x.Operator)
+                .Include(x => x.Function)
+                .Where(x => x.Id == operationId);
+            foreach (var op in operations)
+            {
+                switch (op.Type)
+                {
+                    case enOPerationTypes.opt:
+                        sql += op.Operator.Name;
+                        break;
+                    case enOPerationTypes.number:
+                        sql += op.Value;
+                        break;
+                    case enOPerationTypes.counter:
+                        sql += $"{op.Aggregation}({op.Counter.Subset.TableName}.{op.Counter.ColumnName})";
+                        break;
+                    case enOPerationTypes.kpi:
+                        sql += $"({sqlBuild(op.Kpi.OperationId)})";
+                        break;
+                    case enOPerationTypes.voidFunction:
+                        sql += $"({string.Join(" ", op.Childs.Select(x => sqlBuild(x.Id)).ToArray())})";
+                        break;
+                    case enOPerationTypes.function:
+                        {
+                            if (op.Function.Name.ToLower() == "if")
+                            {
+                                sql += $"(CASE WHEN ({sqlBuild(op.Childs.ToArray()[0].Id)}) THEN ({sqlBuild(op.Childs.ToArray()[1].Id)}) ELSE ({sqlBuild(op.Childs.ToArray()[2].Id)}) END)";
+                            }
+                            else
+                            {
+                                sql += $"{op.Function.Name}({string.Join(", ", op.Childs.Select(x => sqlBuild(x.Id)).ToArray())})";
+                            }
+                            break;
+                        }
+                    default:
+                        sql += " ";
+                        break;
+                }
+                sql += " ";
+            }
+            return sql;
+
         }
     }
 }
