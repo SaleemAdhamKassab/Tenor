@@ -242,38 +242,46 @@ namespace Tenor.Services.AuthServives
         }
         public string checkUserTenantPermission(TenantDto userData,int deviceid)
         {
-            if (userData.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
+            try
             {
-               return enAccessType.all.GetDisplayName();
-            }
-            var tenants = _dbcontext.Tenants.Where(x => x.TenantDevices.Any(x => x.DeviceId == deviceid)).AsQueryable();
-            var tenatRoles = userData.tenantAccesses.Where(x => tenants.Any(y => y.Name.Contains(x.tenantName))).SingleOrDefault();
-            
-            if(tenatRoles is null)
-            {
-                return enAccessType.denied.GetDisplayName();
-            }
-
-            foreach(string s in tenatRoles.RoleList)
-            {
-               if(s== "Admin")
+                if (userData.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
                 {
                     return enAccessType.all.GetDisplayName();
                 }
-                if (s == "Editor")
-                {
-                    return enAccessType.allOnlyMe.GetDisplayName();
+                var tenants = _dbcontext.Tenants.Where(x => x.TenantDevices.Any(x => x.DeviceId == deviceid)).AsQueryable();
+                var tenatRoles = userData.tenantAccesses.Where(x => tenants.Any(y => y.Name.Contains(x.tenantName))).ToList();
 
-                }
-                if (s == "User")
+                if (tenatRoles is null)
                 {
-                    return enAccessType.viewOnlyMe.GetDisplayName();
-
+                    return enAccessType.denied.GetDisplayName();
                 }
 
+                foreach (List<string> s in tenatRoles.Select(x=>x.RoleList))
+                {
+                    if (s.Contains("Admin"))
+                    {
+                        return enAccessType.all.GetDisplayName();
+                    }
+                    if (s.Contains("Editor"))
+                    {
+                        return enAccessType.allOnlyMe.GetDisplayName();
 
+                    }
+                    if (s.Contains("User"))
+                    {
+                        return enAccessType.viewOnlyMe.GetDisplayName();
+
+                    }
+
+
+                }
+                return enAccessType.all.GetDisplayName();
             }
-            return enAccessType.all.GetDisplayName();
+            catch(Exception ex)
+            {
+                return ex.Message;
+            }
+           
         }
 
         private RefreshToken GenerateRefreshToken()
@@ -350,10 +358,21 @@ namespace Tenor.Services.AuthServives
                 {
                     TenantAccess groupAccess = new TenantAccess();
                     groupAccess.tenantName = g.TenantName;
-                    groupAccess.RoleList.AddRange(groupTenant.Where(x => x.groupName.ToLower() == g.groupName.ToLower()  && x.TenantName == g.TenantName).Select(x => x.RoleName).ToList());
+                   groupAccess.RoleList.AddRange(groupTenant.Where(x => x.groupName.ToLower() == g.groupName.ToLower() && x.TenantName == g.TenantName).Select(x => x.RoleName).ToList());
+
+                    if (tenantAccList.Any(x=>x.tenantName==g.TenantName))
+                    {
+                     tenantAccList.Where(x => x.tenantName == g.TenantName).FirstOrDefault().RoleList
+                       .AddRange(groupTenant.Where(x => x.groupName.ToLower() == g.groupName.ToLower() && x.TenantName == g.TenantName)
+                       .Select(x => x.RoleName).ToList());
+                    }
+                    else
+                    {
                     tenantAccList.Add(groupAccess);
-                
-                }
+
+                    }
+
+            }
 
                 tenantDto.userName = userName;
                 tenantDto.profileUrl = _config["ProfileImg"].Replace("VarXXX", userName.Substring(userName.IndexOf("\\") + 1));
