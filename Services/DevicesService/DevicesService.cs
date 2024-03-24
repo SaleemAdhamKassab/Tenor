@@ -142,7 +142,7 @@ namespace Tenor.Services.DevicesService
 
             //4- pagination
             int resultSize = queryViewModel.Count();
-            var resultData = queryViewModel.Skip(filter.PageSize * filter.PageIndex).Take(filter.PageSize).OrderBy(e=>e.Name).ToList();
+            var resultData = queryViewModel.Skip(filter.PageSize * filter.PageIndex).Take(filter.PageSize).ToList();
 
             //5- return 
             return new ResultWithMessage(new DataWithSize(resultSize, resultData), "");
