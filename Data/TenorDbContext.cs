@@ -37,8 +37,9 @@ namespace Tenor.Data
 		public DbSet<SubsetField> SubsetFields { get; set; }
 		public DbSet<SubsetFieldValue> SubsetFieldValues { get; set; }
 		public DbSet<Level> Levels { get; set; }
-		public DbSet<DeviceLevel> DeviceLevels { get; set; }
-		public DbSet<Tree> Trees { get; set; }
+		public DbSet<Dimension> Dimensions { get; set; }
+		public DbSet<DimensionJoiner> DimensionJoiners { get; set; }
+		public DbSet<DimensionLevel> DimensionLevels { get; set; }
 
 
 		//Entity Config

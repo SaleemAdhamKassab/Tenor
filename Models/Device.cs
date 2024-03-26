@@ -29,6 +29,6 @@ namespace Tenor.Models
         public virtual ICollection<Device> Childs { get; set; }
         public virtual ICollection<TenantDevice> TenantDevices { get; set; }
         public virtual ICollection<Kpi> Kpis { get; set; }
-        public virtual ICollection<DeviceLevel> DeviceLevels { get; set; }
+        public virtual ICollection<Dimension> Dimensions { get; set; }
     }
 }
