@@ -782,7 +782,8 @@ namespace Tenor.Services.CountersService
                 Name = x.Name,
                 Type = "counter",
                 HasChild = false,
-                Aggregation = x.Aggregation
+                Aggregation = x.Aggregation,
+                SupplierId = x.SupplierId
             }).ToList();
             return new ResultWithMessage(result, "");
         }

@@ -31,5 +31,6 @@
         public string? Type { get; set; }
         public bool HasChild { get; set; }
         public string? Aggregation { get; set; }
+        public string? SupplierId { get; set; }
     }
 }
