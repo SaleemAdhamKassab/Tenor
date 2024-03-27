@@ -9,9 +9,9 @@ namespace Tenor.Models
         public int Id { get; set; }
         public string PkName { get; set; }
         public string FkName { get;set; }
-        [ForeignKey("dimension")]
+        [ForeignKey("Dimension")]
         public int DimensionId { get; set; }
 
-        public virtual Dimension dimension { get; set; }
+        public virtual Dimension Dimension { get; set; }
     }
 }

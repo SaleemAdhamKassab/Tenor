@@ -12,12 +12,12 @@ namespace Tenor.Models
         public string Name { get; set; }
         public string TableName { get; set; }
         public string SchemaName { get; set; }
-        [ForeignKey("device")]
+        [ForeignKey("Device")]
         public int ? DeviceId { get; set; }
 
-        public virtual ICollection<DimensionJoiner> dimensionJoiners { get; set; } 
-        public virtual ICollection<DimensionLevel> dimensionLevels { get; set; }
-        public virtual Device device { get; set; }
+        public virtual ICollection<DimensionJoiner> DimensionJoiners { get; set; } 
+        public virtual ICollection<DimensionLevel> DimensionLevels { get; set; }
+        public virtual Device Device { get; set; }
 
     }
 }

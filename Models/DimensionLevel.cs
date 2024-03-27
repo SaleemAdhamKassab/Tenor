@@ -7,19 +7,19 @@ namespace Tenor.Models
     {
         [Key]
         public int Id { get; set; }
-        [ForeignKey("dimension")]
+        [ForeignKey("Dimension")]
         public int DimensionId {  get; set; }
-        [ForeignKey("level")]
+        [ForeignKey("Level")]
         public int LevelId { get; set; }
         public string ColumnName { get;set; }
         public string OrderBy { get; set;}
-        [ForeignKey("parent")]
+        [ForeignKey("Parent")]
         public int ? ParentId { get; set; } //self join
 
-        public virtual Dimension dimension { get; set; }
-        public virtual Level level { get; set; }
-        public virtual DimensionLevel  parent { get; set; }
-        public virtual ICollection<DimensionLevel> childs { get; set; }
+        public virtual Dimension Dimension { get; set; }
+        public virtual Level Level { get; set; }
+        public virtual DimensionLevel  Parent { get; set; }
+        public virtual ICollection<DimensionLevel> Childs { get; set; }
 
     }
 }
