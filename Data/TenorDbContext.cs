@@ -27,12 +27,16 @@ namespace Tenor.Data
 		public DbSet<KpiField> KpiFields { get; set; }
 		public DbSet<CounterField> CounterFields { get; set; }
 		public DbSet<ReportField> ReportFields { get; set; }
+		public DbSet<ReportFilter> ReportFilters { get; set; }
+		public DbSet<ReportMeasure> reportMeasures { get; set; }
+		public DbSet<MeasureHaving> MeasureHavings { get; set; }
 		public DbSet<DashboardField> DashboardFields { get; set; }
 		public DbSet<KpiFieldValue> KpiFieldValues { get; set; }
 		public DbSet<CounterFieldValue> CounterFieldValues { get; set; }
 		public DbSet<ReportFieldValue> ReportFieldValues { get; set; }
 		public DbSet<DashboardFieldValue> DashboardFieldValues { get; set; }
 		public DbSet<Report> Reports { get; set; }
+		public DbSet<ReportLevel> ReportLevels { get; set; }
 		public DbSet<Dashboard> Dashboards { get; set; }
 		public DbSet<SubsetField> SubsetFields { get; set; }
 		public DbSet<SubsetFieldValue> SubsetFieldValues { get; set; }
