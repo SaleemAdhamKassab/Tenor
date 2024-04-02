@@ -14,8 +14,8 @@ namespace Tenor.Migrations
                 name: "DeviceId",
                 table: "ExtraFields",
                 type: "int",
-                nullable: false,
-                defaultValue: 0);
+                nullable: true
+               );
 
             migrationBuilder.CreateIndex(
                 name: "IX_ExtraFields_DeviceId",
@@ -28,7 +28,7 @@ namespace Tenor.Migrations
                 column: "DeviceId",
                 principalTable: "Devices",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                onDelete: ReferentialAction.NoAction);
         }
 
         /// <inheritdoc />

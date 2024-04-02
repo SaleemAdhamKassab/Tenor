@@ -64,7 +64,7 @@ public class ExtraPropService : IExtraPropService
             IsForDashboard = input.IsForDashboard,
             IsMandatory = input.IsMandatory,
             DeviceId=extraField.DeviceId,
-            DeviceName= extraField.Device.Name
+            DeviceName= extraField.Device!=null? extraField.Device.Name : null,
         };
         return new ResultWithMessage(result, null);
     }
@@ -148,7 +148,7 @@ public class ExtraPropService : IExtraPropService
             IsForDashboard = input.IsForDashboard,
             IsMandatory = input.IsMandatory,
             DeviceId=input.DeviceId,
-            DeviceName = extField.Device.Name
+            DeviceName = extField.Device != null ? extField.Device.Name : null,
 
         };
         return new ResultWithMessage(result, null);
@@ -204,7 +204,7 @@ public class ExtraPropService : IExtraPropService
                 IsForDashboard = x.DashboardFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
                 IsMandatory = x.IsMandatory,
                 DeviceId=x.DeviceId,
-                DeviceName=x.Device.Name
+                DeviceName = x.Device != null ? x.Device.Name : null,
 
             });
             //Sort and paginition
@@ -240,7 +240,7 @@ public class ExtraPropService : IExtraPropService
             IsForDashboard = x.DashboardFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
             IsMandatory = x.IsMandatory,
             DeviceId=x.DeviceId,
-            DeviceName=x.Device.Name
+            DeviceName = x.Device != null ? x.Device.Name : null,
 
         }).FirstOrDefault();
 

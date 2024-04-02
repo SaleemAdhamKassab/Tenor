@@ -24,7 +24,7 @@ namespace Tenor.Models
         public virtual ICollection<ReportField> ReportFields { get; set; }
         public virtual ICollection<DashboardField> DashboardFields { get; set; }
         public virtual ICollection<SubsetField> SubsetFields { get; set; }
-        public virtual Device Device { get; set; }
+        public virtual Device ? Device { get; set; }
 
         public ExtraField() { }
         public ExtraField(CreateExtraFieldViewModel input)

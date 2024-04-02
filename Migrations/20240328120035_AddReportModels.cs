@@ -217,7 +217,7 @@ namespace Tenor.Migrations
                 column: "DeviceID",
                 principalTable: "Devices",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                onDelete: ReferentialAction.NoAction);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_Reports_Reports_ChildID",
