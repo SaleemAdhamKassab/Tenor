@@ -29,6 +29,7 @@ namespace Tenor.Models
 
 
         public virtual ICollection<Operation>? Childs { get; set; }
+        public virtual ICollection<ReportMeasure>? ReportMeasures { get; set; }
         public virtual Function? Function { get; set; }
         public virtual Counter? Counter { get; set; }
         public virtual Kpi? Kpi { get; set; }

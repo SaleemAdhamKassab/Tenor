@@ -5,8 +5,7 @@ namespace Tenor.Models
 	public class ReportMeasure
 	{
 		[Key]
-		public int ID { get; set; }
-
+		public int Id { get; set; }
 		public string DisplayName { get; set; }
 
 		public int ReportID { get; set; }

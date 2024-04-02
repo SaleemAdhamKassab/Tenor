@@ -6,10 +6,8 @@ namespace Tenor.Models
 	public class ReportFilter
 	{
 		[Key]
-		public int ID { get; set; }
-
+		public int Id { get; set; }
 		public enLogicalOperator LogicalOperator { get; set; }
-
 		public string? Value { get; set; }
 
 		public int ReportID { get; set; }
