@@ -63,6 +63,8 @@ public class ExtraPropService : IExtraPropService
             IsForReport = input.IsForReport,
             IsForDashboard = input.IsForDashboard,
             IsMandatory = input.IsMandatory,
+            DeviceId=extraField.DeviceId,
+            DeviceName= extraField.Device.Name
         };
         return new ResultWithMessage(result, null);
     }
@@ -86,7 +88,8 @@ public class ExtraPropService : IExtraPropService
         {
             return new ResultWithMessage(null, "ID Mismatch");
         }
-        ExtraField extField = _db.ExtraFields.Include(x=>x.KpiFields).Include(x=>x.ReportFields)
+        ExtraField extField = _db.ExtraFields.Include(x=>x.Device).Include(x=>x.KpiFields)
+        .Include(x=>x.ReportFields)
         .Include(x=>x.DashboardFields).AsNoTracking().FirstOrDefault(x => x.Id == id);
 
         if (extField is null)
@@ -100,6 +103,7 @@ public class ExtraPropService : IExtraPropService
         extField.Url = input.Url;
         extField.Type = input.Type;
         extField.IsMandatory = input.IsMandatory;
+        extField.DeviceId = input.DeviceId;
 
         if ((extField.KpiFields!=null  && extField.KpiFields.Count != 0) && !input.IsForKpi)
         {
@@ -142,7 +146,9 @@ public class ExtraPropService : IExtraPropService
             IsForKpi = input.IsForKpi,
             IsForReport = input.IsForReport,
             IsForDashboard = input.IsForDashboard,
-            IsMandatory = input.IsMandatory
+            IsMandatory = input.IsMandatory,
+            DeviceId=input.DeviceId,
+            DeviceName = extField.Device.Name
 
         };
         return new ResultWithMessage(result, null);
@@ -179,6 +185,11 @@ public class ExtraPropService : IExtraPropService
                 query = query.Where(x => x.DashboardFields.Any(y => extraIds.Contains(y.FieldId)) == input.IsDashboard);
             }
 
+            if (input.DeviceId != null && input.DeviceId!=0)
+            {
+                query = query.Where(x => x.DeviceId==input.DeviceId);
+            }
+
             //mapping wit DTO querable
             var queryViewModel = query.Select(x => new ExtraFieldViewModel()
             {
@@ -191,7 +202,9 @@ public class ExtraPropService : IExtraPropService
                 IsForKpi = x.KpiFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
                 IsForReport = x.ReportFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
                 IsForDashboard = x.DashboardFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
-                IsMandatory = x.IsMandatory
+                IsMandatory = x.IsMandatory,
+                DeviceId=x.DeviceId,
+                DeviceName=x.Device.Name
 
             });
             //Sort and paginition
@@ -225,7 +238,9 @@ public class ExtraPropService : IExtraPropService
             IsForKpi = x.KpiFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
             IsForReport = x.ReportFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
             IsForDashboard = x.DashboardFields.Any(y => query.Select(x => x.Id).Contains(y.FieldId)),
-            IsMandatory = x.IsMandatory
+            IsMandatory = x.IsMandatory,
+            DeviceId=x.DeviceId,
+            DeviceName=x.Device.Name
 
         }).FirstOrDefault();
 

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using static Tenor.Helper.Constant;
 
 namespace Tenor.Models
@@ -13,14 +14,17 @@ namespace Tenor.Models
         public fieldTypes Type { get; set; }
         public string? Content { get; set; }
         public string? Url { get; set; }
-
         public bool IsMandatory { get; set; }
+        [ForeignKey("Device")]
+        public int ? DeviceId  {get;set;}
+
+
         public virtual ICollection<KpiField> KpiFields { get; set; }
         public virtual ICollection<CounterField> CounterFields { get; set; }
         public virtual ICollection<ReportField> ReportFields { get; set; }
         public virtual ICollection<DashboardField> DashboardFields { get; set; }
         public virtual ICollection<SubsetField> SubsetFields { get; set; }
-
+        public virtual Device Device { get; set; }
 
         public ExtraField() { }
         public ExtraField(CreateExtraFieldViewModel input)
@@ -29,9 +33,9 @@ namespace Tenor.Models
             Name=input.Name;
             Type=input.Type;
             Content=input.Content;
-            Url=input.Url;        
+            Url=input.Url;  
+            DeviceId=input.DeviceId;
         }
-
         public void addKpiField(ExtraField input)
         {
             if (input.KpiFields is null)

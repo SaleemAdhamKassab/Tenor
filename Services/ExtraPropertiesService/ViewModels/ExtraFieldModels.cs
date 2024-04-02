@@ -16,6 +16,8 @@ public class CreateExtraFieldViewModel
     public bool IsForReport { get; set; }
     public bool IsForDashboard { get; set; }
     public bool IsMandatory { get; set; }
+    public int? DeviceId { get; set; }
+
 
 }
 
@@ -34,6 +36,8 @@ public class ExtraFieldViewModel
     public bool IsForReport { get; set; }
     public bool IsForDashboard { get; set; }
     public bool IsMandatory { get; set; }
+    public int? DeviceId { get; set; }
+    public string ? DeviceName { get; set; }
 
 }
 
@@ -42,4 +46,6 @@ public class ExtraFieldFilter: GeneralFilterModel
     public bool? IsKpi { get; set; }
     public bool? IsReport { get; set; }
     public bool? IsDashboard { get; set; }
+    public int? DeviceId { get; set; }
+
 }

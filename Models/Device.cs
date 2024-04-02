@@ -30,5 +30,6 @@ namespace Tenor.Models
         public virtual ICollection<TenantDevice> TenantDevices { get; set; }
         public virtual ICollection<Kpi> Kpis { get; set; }
         public virtual ICollection<Dimension> Dimensions { get; set; }
+        public virtual ICollection<ExtraField> ExtraFields { get; set; }
     }
 }
