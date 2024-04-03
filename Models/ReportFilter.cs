@@ -10,10 +10,10 @@ namespace Tenor.Models
 		public enLogicalOperator LogicalOperator { get; set; }
 		public string? Value { get; set; }
 
-		public int ReportID { get; set; }
+		public int ReportId { get; set; }
 		public Report Report { get; set; }
 
-		public int DimensionLevelID { get; set; }
+		public int DimensionLevelId { get; set; }
 		public DimensionLevel DimensionLevel { get; set; }
 	}
 }

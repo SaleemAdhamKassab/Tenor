@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using static Tenor.Helper.Constant;
 
 namespace Tenor.Models
@@ -6,13 +7,15 @@ namespace Tenor.Models
 	public class MeasureHaving
 	{
 		[Key]
-		public int ID { get; set; }
+		public int Id { get; set; }
 
-		public enLogicalOperator LogicalOperator { get; set; }
+		[ForeignKey("Operator")]
+		public int ? OperatorId { get; set; }
+		public int MeasureId { get; set; }
+		public enLogicalOperator LogicOpt { get; set; }
+		public string ? Value { get; set; }
 
-		public string Name { get; set; }
-
-		public int MeasureID { get; set; }
-		public ReportMeasure ReportMeasure { get; set; }
+        public virtual ReportMeasure ReportMeasure { get; set; }
+		public virtual Operator Operator { get; set; }	
 	}
 }

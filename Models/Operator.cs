@@ -11,5 +11,7 @@ namespace Tenor.Models
         public string Name { get; set; }
 
         public virtual ICollection<Operation> Operations { get; set; }
+
+        public virtual ICollection<MeasureHaving> MeasureHavings { get; set; }
     }
 }

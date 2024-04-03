@@ -24,10 +24,10 @@ namespace Tenor.Models
 		public bool IsPublic { get; set; }
 
 		[ForeignKey("Child")]
-		public int? ChildID { get; set; }
+		public int? ChildId { get; set; }
 		public virtual Report Child { get; set; }
 
-		public int DeviceID { get; set; }
+		public int DeviceId { get; set; }
 		public Device Device { get; set; }
 
 

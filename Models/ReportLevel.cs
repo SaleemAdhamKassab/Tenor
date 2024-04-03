@@ -10,10 +10,10 @@ namespace Tenor.Models
 		public int DisplayOrder { get; set; }
 		public enSortDirection SortDirection { get; set; }
 
-		public int ReportID { get; set; }
+		public int ReportId { get; set; }
 		public Report Report { get; set; }
 
-		public int DimensionLevelID { get; set; }
+		public int DimensionLevelId { get; set; }
 		public DimensionLevel DimensionLevel { get; set; }
 	}
 }
