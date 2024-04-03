@@ -11,6 +11,8 @@ using Tenor.Services.AuthServives;
 using Tenor.Services.CountersService;
 using Tenor.Services.DevicesService;
 using Tenor.Services.KpisService;
+using Tenor.Services.ReportService;
+using Tenor.Services.SharedService;
 using Tenor.Services.SubsetsService;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -76,6 +78,8 @@ builder.Services.AddScoped<IKpisService, KpisService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IWindowsAuthService, WindowsAuthService>();
 builder.Services.AddScoped<IExtraPropService, ExtraPropService>();
+builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<ISharedService, SharedService>();
 
 //-------------
 builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);

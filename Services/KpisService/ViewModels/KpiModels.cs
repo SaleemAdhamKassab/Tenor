@@ -5,6 +5,7 @@ using System.Dynamic;
 using Microsoft.AspNetCore.Mvc;
 using System.Runtime.Serialization;
 using Newtonsoft.Json;
+using static Tenor.Services.SharedService.ViewModels.SharedModels;
 
 namespace Tenor.Services.KpisService.ViewModels
 {
@@ -60,13 +61,7 @@ namespace Tenor.Services.KpisService.ViewModels
             public dynamic Content { get; set; }
             public string? Url { get; set; }
             public bool IsMandatory { get; set; }
-        }
-        public class ExtraFieldValue
-        {
-            public int Id { get; set; }
-            public int FieldId { get; set; }
-            public dynamic? Value { get; set; }
-        }
+        }    
         public class KpiFieldValueViewModel
         {
             public int Id { get; set; }
@@ -104,22 +99,7 @@ namespace Tenor.Services.KpisService.ViewModels
         {
             public string key { get; set; }
             public object values { get; set; }
-        }
-        public class OperationBinding
-        {
-            public int Id { get; set; }
-            public int Order { get; set; }
-            public string? Value { get; set; }
-            public enOPerationTypes Type { get; set; }
-            public enAggregation Aggregation { get; set; }
-            public int? CounterId { get; set; }
-            public int? KpiId { get; set; }
-            public int? FunctionId { get; set; }
-            public int? OperatorId { get; set; }
-            public int? ParentId { get; set; } //Self Join
-            public List<OperationBinding>? Childs { get; set; }
-
-        }
+        }      
         public class KpiListViewModel
         {
             public int Id { get; set; }

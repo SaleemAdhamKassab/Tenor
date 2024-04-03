@@ -7,6 +7,7 @@ using System;
 using Tenor.Services.KpisService;
 using static Tenor.Helper.Constant;
 using Tenor.Services.AuthServives;
+using Tenor.Services.SharedService;
 
 namespace Tenor.Helper
 {
@@ -18,13 +19,14 @@ namespace Tenor.Helper
         private   string query = "";
         private int voidIdx = 0;
         private readonly IJwtService _jwtService;
+        private readonly ISharedService _sharedService;
 
-        public ConvertKpiForm( TenorDbContext tenorDbContext, IMapper mapper, IJwtService jwtService)
+        public ConvertKpiForm( TenorDbContext tenorDbContext, IMapper mapper, IJwtService jwtService, ISharedService sharedService)
         {
             _db = tenorDbContext;
             _mapper = mapper;
             _jwtService = jwtService;
-            
+            _sharedService=sharedService;
         }
 
         public  string GetKpiFomat(int kpiid)
@@ -71,7 +73,7 @@ namespace Tenor.Helper
             string pointerTag = "tag";
             string funcTag = "func";
             QueryExpress qe = new QueryExpress();
-            KpisService kpiFormat = new KpisService(_db, _mapper, _jwtService);
+            KpisService kpiFormat = new KpisService(_db, _mapper, _jwtService,_sharedService);
             IDictionary<string, string> funcDic = new Dictionary<string, string>()
             {
                 {"func0","Case When" },{"func1","Then" },{"func2","else" }
@@ -276,7 +278,7 @@ namespace Tenor.Helper
 
                         foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
                         {
-                            kpiFormat = new KpisService(_db, _mapper, _jwtService);
+                            kpiFormat = new KpisService(_db, _mapper, _jwtService, _sharedService);
                             string funcParam = funcTag + c.i;
                             string repFuncParam = kpiFormat.GetQeuryExpress(c.value, null, voidIdx);
                             query = query.Replace(funcParam, repFuncParam);
@@ -331,7 +333,7 @@ namespace Tenor.Helper
 
                         foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
                         {
-                            kpiFormat = new KpisService(_db, _mapper, _jwtService);
+                            kpiFormat = new KpisService(_db, _mapper, _jwtService, _sharedService);
                             string funcParam = funcTag + c.i;
                             string repFuncParam = kpiFormat.GetQeuryExpress(c.value, null, voidIdx);
                             query = query.Replace(funcParam, repFuncParam);

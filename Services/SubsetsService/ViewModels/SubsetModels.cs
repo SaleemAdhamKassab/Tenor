@@ -2,6 +2,7 @@
 using Tenor.Dtos;
 using Tenor.Models;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
+using static Tenor.Services.SharedService.ViewModels.SharedModels;
 
 namespace Tenor.Services.SubsetsService.ViewModels
 {

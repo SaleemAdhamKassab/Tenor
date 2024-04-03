@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using static Tenor.Services.ReportService.ViewModels.ReportModels;
 
 namespace Tenor.Models
 {
@@ -14,26 +15,37 @@ namespace Tenor.Models
 		[Required, MaxLength(50)]
 		public string CreatedBy { get; set; }
 
-		[Required, MaxLength(50)]
-		public string ChangedBy { get; set; }
+		[MaxLength(50)]
+		public string ? ChangedBy { get; set; }
 
 		public DateTime CreatedDate { get; set; }
 
-		public DateTime ChangedDate { get; set; }
+		public DateTime ? ChangedDate { get; set; }
 
 		public bool IsPublic { get; set; }
 
 		[ForeignKey("Child")]
 		public int? ChildId { get; set; }
-		public virtual Report Child { get; set; }
-
 		public int DeviceId { get; set; }
-		public Device Device { get; set; }
 
 
 		public virtual ICollection<ReportFieldValue> ReportFieldValues { get; set; }
 		public virtual ICollection<ReportLevel> Levels { get; set; }
 		public virtual ICollection<ReportFilter> Filters { get; set; }
 		public virtual ICollection<ReportMeasure> Measures { get; set; }
-	}
+        public virtual Report Child { get; set; }
+        public Device Device { get; set; }
+
+        public Report() { }
+		public Report(CreateReport input)
+		{
+			Id = input.Id;
+			Name=input.Name;
+			IsPublic=input.IsPublic;
+			ChildId = input.ChildId;
+			DeviceId=input.DeviceId;
+			CreatedBy = input.CreatedBy;
+			CreatedDate = (DateTime) input.CreatedDate;
+		}
+    }
 }

@@ -4,6 +4,7 @@ using Tenor.Dtos;
 using Tenor.Models;
 using Tenor.Services.SubsetsService.ViewModels;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
+using static Tenor.Services.SharedService.ViewModels.SharedModels;
 
 namespace Tenor.Services.CountersService.ViewModels
 {

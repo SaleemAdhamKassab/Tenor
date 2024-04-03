@@ -36,6 +36,7 @@ using System.Runtime.InteropServices;
 using static Tenor.Helper.Constant;
 using static Tenor.Services.AuthServives.ViewModels.AuthModels;
 using Tenor.Services.AuthServives;
+using Tenor.Services.SharedService;
 
 namespace Tenor.Services.KpisService
 {
@@ -55,7 +56,6 @@ namespace Tenor.Services.KpisService
         FileBytesModel exportKpiByFilter2(KpiFilterModel filter);
         string GetQeuryExpress(OperationDto opt, string? tag,int? voidChildCount);
         ResultWithMessage ValidateKpi(int? deviceid, string kpiname);
-        ResultWithMessage CheckValidFormat(CreateKpi input);
         Task<ResultWithMessage> GetKpiFormByAmro(int kpiId);
         Task<ResultWithMessage> GetKpiQueryByAmro(int kpiid);
 
@@ -67,16 +67,17 @@ namespace Tenor.Services.KpisService
         private readonly IMapper _mapper;
         private string query = "";
         private string joinExpression = "";
-        private bool checkResult = true;
         private int voidIdx = 0;
         private Operation prev = null;
         private Operation current = null;
         private readonly IJwtService _jwtService;
-        public KpisService(TenorDbContext tenorDbContext, IMapper mapper , IJwtService jwtService)
+        private readonly ISharedService _sharedService;
+        public KpisService(TenorDbContext tenorDbContext, IMapper mapper , IJwtService jwtService, ISharedService sharedService)
         {
             _db = tenorDbContext;
             _mapper = mapper;
             _jwtService = jwtService;
+            _sharedService = sharedService;
         }
         //Not Used
         public ResultWithMessage GetListAsync(object kpiFilterM)
@@ -144,14 +145,14 @@ namespace Tenor.Services.KpisService
             {
                 return new ResultWithMessage(null,"Access Denied");
             }          
-            if (IsKpiExist(0, kpi.DeviceId, kpi.Name))
+            if (_sharedService.IsExist(0, kpi.DeviceId, kpi.Name,null,null))
             {
                 return new ResultWithMessage(null, "This Kpi name alraedy exsit on the same device");
 
             }
-            if(Convert.ToBoolean(CheckValidFormat(kpi).Data)==false)
+            if(Convert.ToBoolean(_sharedService.CheckValidFormat(kpi.Operation).Data)==false)
             {
-                return new ResultWithMessage(null, CheckValidFormat(kpi).Message);
+                return new ResultWithMessage(null, _sharedService.CheckValidFormat(kpi.Operation).Message);
 
             }
             using (TransactionScope transaction = new TransactionScope())
@@ -164,7 +165,7 @@ namespace Tenor.Services.KpisService
 
                     if (kpi.KpiFields != null)
                     {
-                       bool isCorrectSave= AddExtraFields(newKpi.Id, kpi.KpiFields);
+                       bool isCorrectSave= _sharedService.AddExtraFields(newKpi.Id,null, kpi.KpiFields);
                         if(!isCorrectSave)
                         {
                             return new ResultWithMessage(null, "Mandatory Field error");
@@ -193,14 +194,14 @@ namespace Tenor.Services.KpisService
             {
                 return new ResultWithMessage(null, "Invalid KPI Id");
             }
-            if (IsKpiExist(Kpi.Id, Kpi.DeviceId, Kpi.Name))
+            if (_sharedService.IsExist(Kpi.Id, Kpi.DeviceId, Kpi.Name,null,null))
             {
                 return new ResultWithMessage(null, "This Kpi name alraedy exsit on the same device");
 
             }
-            if (Convert.ToBoolean(CheckValidFormat(Kpi).Data) == false)
+            if (Convert.ToBoolean(_sharedService.CheckValidFormat(Kpi.Operation).Data) == false)
             {
-                return new ResultWithMessage(null, CheckValidFormat(Kpi).Message);
+                return new ResultWithMessage(null,_sharedService.CheckValidFormat(Kpi.Operation).Message);
 
             }
             using (TransactionScope transaction = new TransactionScope())
@@ -235,7 +236,7 @@ namespace Tenor.Services.KpisService
                         var KpiFieldValues = _db.KpiFieldValues.Where(x => x.KpiId == Kpi.Id).ToList();
                         _db.KpiFieldValues.RemoveRange(KpiFieldValues);
                         _db.SaveChanges();
-                        bool isCorrectSave = AddExtraFields(Kpi.Id, Kpi.KpiFields);
+                        bool isCorrectSave = _sharedService.AddExtraFields(Kpi.Id,null, Kpi.KpiFields);
                         if (!isCorrectSave)
                         {
                             return new ResultWithMessage(null, "Mandatory Field error");
@@ -545,7 +546,7 @@ namespace Tenor.Services.KpisService
         }
         public string GetQeuryExpress(OperationDto opt, string? tag,int? voidChildCount)
         {
-            ConvertKpiForm kpiFormat = new ConvertKpiForm(_db, _mapper, _jwtService);
+            ConvertKpiForm kpiFormat = new ConvertKpiForm(_db, _mapper, _jwtService,_sharedService);
             string pointerTag = "tag";
             string funcTag = "func";
             QueryExpress qe = new QueryExpress();
@@ -765,7 +766,7 @@ namespace Tenor.Services.KpisService
 
                         foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
                         {
-                            kpiFormat = new ConvertKpiForm(_db, _mapper, _jwtService);
+                            kpiFormat = new ConvertKpiForm(_db, _mapper, _jwtService, _sharedService);
                             string repFunc = kpiFormat.GetQeuryExpress(c.value, null, voidIdx);
                             query = query.Replace(funcTag + c.i, repFunc);
                         }
@@ -820,7 +821,7 @@ namespace Tenor.Services.KpisService
 
                         foreach (var c in opt.Childs.Select((value, i) => new { i, value }))
                         {
-                            kpiFormat = new ConvertKpiForm(_db, _mapper, _jwtService);
+                            kpiFormat = new ConvertKpiForm(_db, _mapper, _jwtService, _sharedService);
                             string repFunc = kpiFormat.GetQeuryExpress(c.value, null, voidIdx);
                             query = query.Replace(funcTag + c.i, repFunc);
                         }
@@ -835,7 +836,7 @@ namespace Tenor.Services.KpisService
         }
         public ResultWithMessage ValidateKpi(int? deviceid, string kpiname)
         {
-            if(IsKpiExist(0, deviceid, kpiname))
+            if(_sharedService.IsExist(0, deviceid, kpiname,null,null))
             {
                 return new ResultWithMessage(false, "This KPI name is already exsist on this device.");
             }
@@ -862,35 +863,6 @@ namespace Tenor.Services.KpisService
 
             return new ResultWithMessage(queryBuilder, null);
         }
-        public ResultWithMessage CheckValidFormat(CreateKpi input)
-        {
-            //var convertedKpiData = AddNoZeroToKpi(input.Operation);
-           // input.Operation = convertedKpiData;
-            if (input.Operation.Type.GetDisplayName()!= "voidFunction")
-            {
-                return new ResultWithMessage(false, "KPI format is invalid");
-
-            }
-            if(input.Operation.Childs.Count == 0)
-            {
-                return new ResultWithMessage(false, "Please assign KPI formula");
-            }
-            if (input.Operation.Childs[0].Type.GetDisplayName()== "opt")
-            {
-                return new ResultWithMessage(false, "KPI format is invalid");
-
-            }
-            else
-            {
-                if (IsFormatValid(input.Operation))
-                {
-                    return new ResultWithMessage(true, null);
-                }
-            }
-
-            return new ResultWithMessage(false, "KPI format is invalid");
-
-        }
         public async Task<ResultWithMessage> GetKpiFormByAmro(int kpiId)
         {
             
@@ -911,40 +883,7 @@ namespace Tenor.Services.KpisService
         }
 
 
-        private bool AddExtraFields(int kpiId, List<ExtraFieldValue> extFields)
-        {
-            foreach (var s in extFields)
-            {
-
-                var extField = _db.KpiFields.AsNoTracking().Include(x => x.ExtraField).FirstOrDefault(x => x.Id == s.FieldId && x.IsActive);
-                if (extField != null)
-                {
-                    if(extField.ExtraField.IsMandatory && string.IsNullOrEmpty(Convert.ToString(s.Value)))
-                    {
-                        return false;
-                    }
-                    if (extField.ExtraField.Type.GetDisplayName() == "List" || extField.ExtraField.Type.GetDisplayName() == "MultiSelectList")
-                    {
-                        string fileds = !string.IsNullOrEmpty(Convert.ToString(s.Value)) ? Convert.ToString(string.Join(",", s.Value)) :null;
-                        string convertFields = fileds!=null ? fileds.Replace("\",\"", ",").Replace("[\"", "").Replace("\"]", ""):null;
-                        var ListValue = new KpiFieldValue(kpiId, s.FieldId, convertFields);
-                        _db.KpiFieldValues.Add(ListValue);
-                        _db.SaveChanges();
-
-                    }
-                    else
-                    {
-                        var StringValue = new KpiFieldValue(kpiId, s.FieldId, Convert.ToString(s.Value));
-                        _db.KpiFieldValues.Add(StringValue);
-                        _db.SaveChanges();
-
-                    }
-
-                }
-
-            }
-            return true;
-        }
+       
         private List<OperationDto> GetSelfRelation(int optid)
         {
             List<OperationDto> result = new List<OperationDto>();
@@ -1208,83 +1147,7 @@ namespace Tenor.Services.KpisService
 
             return mergData;
         }
-        private bool IsKpiExist(int id, int? deviceid, string kpiname)
-        {
-            bool isExist = _db.Kpis.Any(x => x.DeviceId == deviceid && x.Name == kpiname && x.Id != id);
-            return isExist;
-        }
-        private bool IsFormatValid(OperationBinding input)
-        {
-           
-            try
-            {
-                if (input.Type.GetDisplayName() == "voidFunction")
-                {
-                    List<OperationBinding> data = input.Childs.ToList();
-                    var levelType = data.Select(x => new { x.Type, x.Order,x.OperatorId,x.FunctionId }).ToList();
-                    for (int i = 1; i < levelType.Count; i++)
-                    {
-                        //if (levelType[i].Type.GetDisplayName() == "opt" && levelType[i].OperatorId == 4)
-                        //{
-                        //    if (!(levelType[i+1].Type.GetDisplayName()== "function" && levelType[i+1].FunctionId==3))
-                        //    {
-                        //        checkResult = false;
-                        //        return checkResult;
-                        //    }
-                           
-                        //}
-
-                        if (levelType[i].Type == levelType[i - 1].Type)
-                        {
-                            checkResult = false;
-                            return checkResult;
-                        }
-
-                        if (levelType[i].Type.GetDisplayName()!= "opt" && levelType[i-1].Type.GetDisplayName()!= "opt")
-                        {
-                            checkResult = false;
-                            return checkResult;
-                        }
-
-                        if (levelType[levelType.Count()-1].Type.GetDisplayName()== "opt")
-                        {
-                            checkResult = false;
-                            return checkResult;
-                        }
-                    }
-
-                }
-
-                if (input.Type.GetDisplayName() == "function")
-                {
-                    Function func = _db.Functions.FirstOrDefault(x => x.Id == (int)input.FunctionId);
-                    if (func.ArgumentsCount != input.Childs.Count())
-                    {
-                        checkResult = false;
-                        return checkResult;
-
-                    }
-                }
-
-                if(input.Childs!=null && input.Childs.Count()>0)
-                {
-                    foreach(var c in input.Childs)
-                    {
-                        IsFormatValid(c);
-
-                    }
-                }
-                return checkResult;
-
-            }
-            catch (Exception ex)
-            {
-                checkResult = false;
-                return checkResult;
-
-            }
-
-        }    
+        
         private OperationDto AddNoZeroToKpi(OperationDto input)
         {
             List<OperationDto> data = input.Childs.ToList();

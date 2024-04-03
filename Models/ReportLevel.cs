@@ -9,11 +9,23 @@ namespace Tenor.Models
 		public int Id { get; set; }
 		public int DisplayOrder { get; set; }
 		public enSortDirection SortDirection { get; set; }
-
 		public int ReportId { get; set; }
-		public Report Report { get; set; }
-
 		public int DimensionLevelId { get; set; }
-		public DimensionLevel DimensionLevel { get; set; }
-	}
+
+
+		public virtual DimensionLevel DimensionLevel { get; set; }
+        public virtual Report Report { get; set; }
+
+		public ReportLevel() { }
+		public ReportLevel(int id, int displayOrder, enSortDirection sortDirection, int reportId, int dimensionLevelId)
+		{
+			Id = id;
+            DisplayOrder=displayOrder;
+			SortDirection=sortDirection;
+			ReportId = reportId;
+			DimensionLevelId = dimensionLevelId;
+
+        }
+
+    }
 }

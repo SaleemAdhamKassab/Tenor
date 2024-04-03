@@ -16,6 +16,7 @@ using Tenor.Services.DevicesService.ViewModels;
 using Tenor.Services.SubsetsService.ViewModels;
 using static Tenor.Services.AuthServives.ViewModels.AuthModels;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
+using static Tenor.Services.SharedService.ViewModels.SharedModels;
 
 namespace Tenor.Services.SubsetsService
 {

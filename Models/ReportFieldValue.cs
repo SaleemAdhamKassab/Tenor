@@ -15,5 +15,13 @@ namespace Tenor.Models
 
         public virtual Report Report { get; set; }
         public virtual ReportField ReportField { get; set; }
+
+        public ReportFieldValue() { }
+        public ReportFieldValue(int reportId, int reportFieldId, string? fieldValue)
+        {
+            ReportId = reportId;
+            ReportFieldId = reportFieldId;
+            FieldValue = fieldValue;
+        }
     }
 }

@@ -6,6 +6,8 @@ using Tenor.Services.DevicesService.ViewModels;
 using Tenor.Services.SubsetsService.ViewModels;
 using static Tenor.Services.AuthServives.ViewModels.AuthModels;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
+using static Tenor.Services.ReportService.ViewModels.ReportModels;
+using static Tenor.Services.SharedService.ViewModels.SharedModels;
 
 namespace Tenor.Mapper
 {
@@ -107,7 +109,13 @@ namespace Tenor.Mapper
 
             //--------------------------------Extra Field-----------------------------------------------
             CreateMap<CreateExtraFieldViewModel, ExtraField>().ReverseMap();
-           
+            //-----------------------------------Report Measures-----------------------------------------
+            CreateMap<ReportMeasure, ReportMeasureDto>().ReverseMap();
+            CreateMap<MeasureHaving, Having>().ReverseMap();
+            CreateMap<Report, CreateReport>().ReverseMap();
+            CreateMap<ReportMeasure, ReportMeasureDto>().ReverseMap();
+            CreateMap<ReportLevel, ReportLevelDto>().ReverseMap();
+            CreateMap<ReportFilter, ReportFilterDto>().ReverseMap();
 
         }
 

@@ -11,6 +11,7 @@ using Tenor.Services.AuthServives;
 using Tenor.Services.AuthServives.ViewModels;
 using Tenor.Services.DevicesService.ViewModels;
 using Tenor.Services.KpisService;
+using Tenor.Services.SharedService;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
 
@@ -23,13 +24,15 @@ namespace Tenor.Controllers
         private readonly IKpisService _kpiservice;
         private readonly IHttpContextAccessor _contextAccessor;
         private readonly IJwtService _jwtService;
+        private readonly ISharedService _sharedService;
 
-        public KpisController(IKpisService kpiservice, IHttpContextAccessor contextAccessor, IJwtService jwtService)
+        public KpisController(IKpisService kpiservice, IHttpContextAccessor contextAccessor,
+            IJwtService jwtService, ISharedService sharedService)
         {
             _kpiservice = kpiservice;
             _contextAccessor = contextAccessor;
             _jwtService = jwtService;
-
+            _sharedService=sharedService;
         }
 
         [HttpPost("getByFilter")]
@@ -146,7 +149,7 @@ namespace Tenor.Controllers
         [HttpPost("CheckFormatValidation")]
         public IActionResult CheckFormatValidation(CreateKpi input)
         {
-            return _returnResultWithMessage(_kpiservice.CheckValidFormat(input));
+            return _returnResultWithMessage(_sharedService.CheckValidFormat(input.Operation));
 
         }
 
