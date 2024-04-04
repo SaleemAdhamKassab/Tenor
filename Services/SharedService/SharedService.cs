@@ -1,8 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Extensions;
+using System.Text.RegularExpressions;
 using Tenor.Data;
 using Tenor.Dtos;
 using Tenor.Models;
+using static Tenor.Helper.Constant;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
 using static Tenor.Services.SharedService.ViewModels.SharedModels;
 
@@ -16,18 +19,27 @@ namespace Tenor.Services.SharedService
         bool IsFormatValid(OperationBinding input);
         bool AddExtraFields(int? kpiId, int? reportId, List<ExtraFieldValue> extFields);
         string ConvertListToString(string[]? input);
+        List<OperationDto> GetSelfRelation(int optid);
+        void deleteOperation(int id);
+        string sqlBuild(int operationId);
+        string getJoinKey(string tableName);
+        IEnumerable<string> GetTablesNameRegExp(string query);
+        string GetOracleQuery(string query, List<string> tablesName);
     }
 
     public class SharedService: ISharedService
     {
         private readonly TenorDbContext _db;
         private bool checkResult = true;
+        private readonly IMapper _mapper;
+        private Operation prev = null;
+        private Operation current = null;
 
-        public SharedService(TenorDbContext db)
+        public SharedService(TenorDbContext db, IMapper mapper)
         {
             _db = db;
+            _mapper = mapper;
         }
-
         public bool IsExist(int id, int? deviceId, string? kpiName, string? measureName, string? reportName)
         {
             bool isExist=false;
@@ -51,7 +63,6 @@ namespace Tenor.Services.SharedService
 
 
         }
-
         public ResultWithMessage CheckValidFormat(OperationBinding input)
         {
 
@@ -80,7 +91,6 @@ namespace Tenor.Services.SharedService
             return new ResultWithMessage(false, "KPI format is invalid");
 
         }
-
         public bool IsFormatValid(OperationBinding input)
         {
 
@@ -209,7 +219,6 @@ namespace Tenor.Services.SharedService
             }
             return true;
         }
-
         public string ConvertListToString(string[]? input)
         {
             string result = null;
@@ -221,5 +230,159 @@ namespace Tenor.Services.SharedService
             result = string.Join(",", input);
             return result;
         }
+        public List<OperationDto> GetSelfRelation(int optid)
+        {
+            List<OperationDto> result = new List<OperationDto>();
+            var opt = _db.Operations.Include(x => x.Function).Include(x => x.Counter).ThenInclude(x => x.Subset)
+                .Include(x => x.Kpi).Include(x => x.Operator)
+                .Include(x => x.Childs).FirstOrDefault(x => x.Id == optid);
+
+            result.Add(_mapper.Map<OperationDto>(opt));
+            if (opt.Childs.Count != 0)
+            {
+                foreach (var s in opt.Childs)
+                {
+                    GetSelfRelation(s.Id);
+                }
+
+            }
+
+            return result;
+        }
+        public void deleteOperation(int id)
+        {
+            var operation = _db.Operations.Include(x => x.Childs).FirstOrDefault(x => x.Id == id);
+            foreach (var childOp in operation.Childs)
+            {
+                deleteOperation(childOp.Id);
+            }
+            _db.Remove(operation);
+        }
+        public string sqlBuild(int operationId)
+        {
+
+            var sql = "";
+            var operations = _db.Operations
+                .Include(x => x.Childs)
+                .Include(x => x.Counter)
+                .ThenInclude(x => x.Subset)
+                .Include(x => x.Kpi)
+                .Include(x => x.Operator)
+                .Include(x => x.Function)
+                .Where(x => x.Id == operationId);
+            foreach (var op in operations)
+            {
+                prev = current;
+                current = op;
+                switch (op.Type)
+                {
+
+                    case enOPerationTypes.opt:
+                        sql += op.Operator.Name;
+                        break;
+                    case enOPerationTypes.number:
+                        sql += op.Value;
+                        break;
+                    case enOPerationTypes.counter:
+                        sql += $"{op.Aggregation}({op.Counter.Subset.TableName}.{op.Counter.ColumnName})";
+                        break;
+                    case enOPerationTypes.kpi:
+                        sql += $"({sqlBuild(op.Kpi.OperationId)})";
+                        break;
+                    case enOPerationTypes.voidFunction:
+                        if ((prev != null && prev.Operator != null) ? prev.Operator.Name == "/" : false)
+                            sql += $"NoZero({string.Join(" ", op.Childs.Select(x => sqlBuild(x.Id)).ToArray())})";
+                        else
+                            sql += $"({string.Join(" ", op.Childs.Select(x => sqlBuild(x.Id)).ToArray())})";
+                        break;
+                    case enOPerationTypes.function:
+                        {
+                            if (op.Function.Name.ToLower() == "if")
+                            {
+                                sql += $"(CASE WHEN ({sqlBuild(op.Childs.ToArray()[0].Id)}) THEN ({sqlBuild(op.Childs.ToArray()[1].Id)}) ELSE ({sqlBuild(op.Childs.ToArray()[2].Id)}) END)";
+                            }
+                            else
+                            {
+                                sql += $"{op.Function.Name}({string.Join(", ", op.Childs.Select(x => sqlBuild(x.Id)).ToArray())})";
+                            }
+                            break;
+                        }
+                    default:
+                        sql += " ";
+                        break;
+                }
+                sql += " ";
+            }
+            return sql;
+
+        }
+        public string getJoinKey(string tableName)
+        {
+            var subset = _db.Subsets.FirstOrDefault(x => x.TableName.ToLower() == tableName.ToLower());
+            if (subset is null)
+            {
+                return null;
+            }
+            return subset.FactDimensionReference;
+        }
+        public IEnumerable<string> GetTablesNameRegExp(string query)
+        {
+            List<string> tablesName = new List<string>();
+            string pattern = @"\b[tech4_]\w+";
+            Regex rg = new Regex(pattern, RegexOptions.IgnoreCase);
+            MatchCollection matchedTables = rg.Matches(query);
+            for (int i = 0; i < matchedTables.Count; i++)
+            {
+                if ((matchedTables[i].Value.ToLower().Contains("tech")))
+                {
+                    tablesName.Add(matchedTables[i].Value);
+
+                }
+            }
+            return tablesName.Distinct();
+        }
+        public string GetOracleQuery(string query, List<string> tablesName)
+        {
+            query = "select TO_CHAR(" + query + ") ";
+            string formExp = "";
+            string joinExp = "";
+            string whereExp = "";
+            string joinKey = getJoinKey(tablesName[0]);
+            string lastDate = DateTime.Now.Year.ToString() +
+                              DateTime.Now.ToString("MM") +
+                           Convert.ToInt32(Convert.ToString(Convert.ToInt32(DateTime.Now.ToString("dd")) - 1)).ToString("00");
+
+            formExp += " from " + tablesName[0] + " " + tablesName[0];
+
+            if (tablesName.Count() > 1)
+            {
+                for (int i = 0; i <= tablesName.Count() - 1; i++)
+                {
+                    if (i > 0)
+                    {
+                        joinExp += " join " + tablesName[i] + " " + tablesName[i] + " on " + tablesName[i] + "." + joinKey + "=" +
+                            tablesName[i - 1] + "." + joinKey + " and " + tablesName[i] + ".c_date = " + tablesName[i - 1] + ".c_date";
+                    }
+                }
+            }
+            if (tablesName[0].ToLower().Contains("_details"))
+            {
+                whereExp += " where " + tablesName[0] + ".c_date between " + lastDate + "0000" + " and " + lastDate + "0159";
+
+            }
+            else
+            {
+                whereExp += " where " + tablesName[0] + ".c_date between " + lastDate + "00" + " and " + lastDate + "01";
+
+            }
+            query += formExp + joinExp + whereExp;
+            return query;
+
+
+
+
+        }
+
+
     }
 }
