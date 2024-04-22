@@ -11,9 +11,10 @@ namespace Tenor.Models
 		public string? Value { get; set; }
 		public int ReportId { get; set; }
 		public int DimensionLevelId { get; set; }
+		public bool IsMandatory { get; set; }
 
 
-		public DimensionLevel DimensionLevel { get; set; }
+        public DimensionLevel DimensionLevel { get; set; }
         public Report Report { get; set; }
 
 		public ReportFilter() { }

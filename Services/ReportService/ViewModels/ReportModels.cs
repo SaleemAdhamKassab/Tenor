@@ -50,6 +50,8 @@ namespace Tenor.Services.ReportService.ViewModels
             public enLogicalOperator LogicalOperator { get; set; }
             public string[] ? Value { get; set; }
             public int DimensionLevelId { get; set; }
+            public bool IsMandatory { get; set; }
+
         }
     }
 }

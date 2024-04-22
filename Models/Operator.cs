@@ -9,6 +9,7 @@ namespace Tenor.Models
         [StringLength(50, MinimumLength = 2, ErrorMessage = "Name must be between 2 and 50 char")]
         [Required]
         public string Name { get; set; }
+        public bool IsLogic { get;set; }
 
         public virtual ICollection<Operation> Operations { get; set; }
 
