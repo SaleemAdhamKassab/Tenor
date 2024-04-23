@@ -195,7 +195,7 @@ namespace Tenor.Services.KpisService
             }
             if (_sharedService.IsExist(Kpi.Id, Kpi.DeviceId, Kpi.Name,null,null))
             {
-                return new ResultWithMessage(null, "This Kpi name alraedy exsit on the same device");
+                return new ResultWithMessage(null, "This Kpi name already exist on the same device");
 
             }
             if (Convert.ToBoolean(_sharedService.CheckValidFormat(Kpi.Operation).Data) == false)

@@ -14,7 +14,6 @@ namespace Tenor.Services.DevicesService
 {
 	public interface IDevicesService
 	{
-		ResultWithMessage getAllDevices();
 		ResultWithMessage getById(int id);
 		ResultWithMessage getByFilter(DeviceFilterModel filter, TenantDto authUser);
 		ResultWithMessage getSubsets();
@@ -25,6 +24,7 @@ namespace Tenor.Services.DevicesService
 		FileBytesModel exportDevicesByFilter(DeviceFilterModel filter, TenantDto authUser);
 		ResultWithMessage validateDevice(int deviceId, string name);
 		ResultWithMessage GetDeviceByParentId(int parentid, string searchQuery, TenantDto authUser);
+		ResultWithMessage getAllDevices(TenantDto authUser);
 	}
 
 	public class DevicesService : IDevicesService
@@ -362,9 +362,18 @@ namespace Tenor.Services.DevicesService
 
 		}
 
-		public ResultWithMessage getAllDevices()
+		public ResultWithMessage getAllDevices(TenantDto authUser)
 		{
-			List<Device> devices = _db.Devices.Where(e => !e.IsDeleted).ToList();
+			List<Device> devices = new();
+
+			if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
+				devices = _db.Devices.Where(e => !e.IsDeleted).ToList();
+			else
+			{
+				List<string> userDevices = authUser.deviceAccesses.Select(e => e.DeviceName).ToList();
+				devices = _db.Devices.Where(e=>userDevices.Contains(e.Name)).ToList();
+			}
+
 			List<Device> rootDevices = devices.Where(e => string.IsNullOrEmpty(e.ParentId.ToString())).ToList();
 			List<Device> subList = new();
 			List<Device> result = new();
@@ -381,6 +390,8 @@ namespace Tenor.Services.DevicesService
 					IsDeleted = x.IsDeleted,
 					Childs = getDeviceChilds(ref devices, x.Id)
 				}).ToList();
+
+
 
 				result.AddRange(subList);
 			}
