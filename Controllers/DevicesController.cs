@@ -103,6 +103,6 @@ namespace Tenor.Controllers
 		}
 
 		[HttpGet("getAllDevices")]
-		public IActionResult getAllDevices() => _returnResult(_deviceService.getAllDevices());
+		public IActionResult getAllDevices() => _returnResult(_deviceService.getAllDevices(AuthUser()));
 	}
 }
