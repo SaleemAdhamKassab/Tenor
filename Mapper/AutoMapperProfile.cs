@@ -5,6 +5,7 @@ using Tenor.Services.CountersService.ViewModels;
 using Tenor.Services.DevicesService.ViewModels;
 using Tenor.Services.SubsetsService.ViewModels;
 using static Tenor.Services.AuthServives.ViewModels.AuthModels;
+using static Tenor.Services.DimensionService.ViewModels.DimensionModels;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
 using static Tenor.Services.ReportService.ViewModels.ReportModels;
 using static Tenor.Services.SharedService.ViewModels.SharedModels;
@@ -116,6 +117,20 @@ namespace Tenor.Mapper
             CreateMap<ReportMeasure, ReportMeasureDto>().ReverseMap();
             CreateMap<ReportLevel, ReportLevelDto>().ReverseMap();
             CreateMap<ReportFilter, ReportFilterDto>().ReverseMap();
+
+            //---------------------------Dimensions------------------------------------------
+            CreateMap<DimensionLevel, DimLevelViewModel>()
+              .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+              .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.ColumnName))
+              .ForMember(dest => dest.LevelId, opt => opt.MapFrom(src => src.LevelId))
+              .ForMember(dest => dest.LevelName, opt => opt.MapFrom(src => src.Level.Name))
+              .ForMember(dest => dest.Order, opt => opt.MapFrom(src => src.OrderBy))
+              .ForMember(dest => dest.IsFilter, opt => opt.MapFrom(src => src.Level.IsFilter))
+              .ForMember(dest => dest.IsLevel, opt => opt.MapFrom(src => src.Level.IsLevel))
+              .ForMember(dest => dest.SubLevels, opt => opt.MapFrom(src => src.Childs))
+
+              .ReverseMap();
+
 
         }
 
