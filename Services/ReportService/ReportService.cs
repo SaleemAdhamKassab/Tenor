@@ -56,30 +56,30 @@ namespace Tenor.Services.ReportService
 
 			}
 
-			using (TransactionScope transaction = new TransactionScope())
-			{
-				try
-				{
-					//-----------------Create Report-----------------------
-					Report report = new Report(input);
-					report.ChildId = (report.ChildId == 0 || report.ChildId == null) ? null : report.ChildId;
-					report.Measures = new List<ReportMeasure>();
-					if (input.ReportFields != null)
-					{
-						bool isCorrectSave = _sharedService.AddExtraFields(null, (int)report.Id, input.ReportFields);
-						if (!isCorrectSave)
-						{
-							return new ResultWithMessage(null, "Mandatory Field error");
-						}
-					}
-					//-----------------Create Report Levels----------------
-					report.Levels = input.Levels.Select(x => new ReportLevel()
-					{
-						Id = x.Id,
-						DisplayOrder = x.DisplayOrder,
-						SortDirection = x.SortDirection,
-						ReportId = report.Id,
-						DimensionLevelId = x.DimensionLevelId
+            using (TransactionScope transaction = new TransactionScope())
+            {
+                try
+                {
+                    //-----------------Create Report-----------------------
+                    Report report = new Report(input);
+                    report.ChildId= (report.ChildId==0 || report.ChildId==null) ? null:report.ChildId;
+                    report.Measures = new List<ReportMeasure>();
+                    if (input.ReportFields != null)
+                    {
+                        bool isCorrectSave = _sharedService.AddExtraFields(null,(int) report.Id, input.ReportFields);
+                        if (!isCorrectSave)
+                        {
+                            return new ResultWithMessage(null, "Mandatory Field error");
+                        }
+                    }
+                    //-----------------Create Report Levels----------------
+                    report.Levels = input.Levels.Select(x=> new ReportLevel()
+                    {
+                        Id=x.Id,
+                        DisplayOrder=x.DisplayOrder,
+                        SortDirection=x.SortDirection,
+                        ReportId=report.Id,
+                        LevelId=x.LevelId
 
 					}).ToList();
 					//-----------------Create Report Filters--------------

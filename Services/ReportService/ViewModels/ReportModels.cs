@@ -42,7 +42,7 @@ namespace Tenor.Services.ReportService.ViewModels
             public int Id { get; set; }
             public int DisplayOrder { get; set; }
             public enSortDirection SortDirection { get; set; }
-            public int DimensionLevelId { get; set; }
+            public int LevelId { get; set; }
         }
         public class ReportFilterDto
         {
