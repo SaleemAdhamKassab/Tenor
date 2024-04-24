@@ -83,14 +83,22 @@ namespace Tenor.Services.ReportService
 
                     }).ToList();
                     //-----------------Create Report Filters--------------
-                    report.Filters = input.Filters.Select(x => new ReportFilter()
+                    report.FilterContainers = input.ContainerOfFilters.Select(x => new ReportFilterContainer()
                     {
                         Id=x.Id,
-                        LogicalOperator=x.LogicalOperator,
-                        Value= _sharedService.ConvertListToString(x.Value),
                         ReportId= report.Id,
-                        DimensionLevelId=x.DimensionLevelId
-                    }).ToList();
+                        ReportFilters= x.ReportFilters.Select(y=> new ReportFilter()
+                        {
+                            Id = y.Id,
+                            LogicalOperator = y.LogicalOperator,
+                            Value = _sharedService.ConvertListToString(y.Value),
+                            FilterContainerId = x.Id,
+                            DimensionLevelId = y.DimensionLevelId
+                        }).ToList()
+
+                }).ToList();
+
+
                     //-----------------Create Report Measures-------------
                     foreach (ReportMeasureDto m in input.Measures)
                     {

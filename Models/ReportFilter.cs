@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using static Tenor.Helper.Constant;
 
 namespace Tenor.Models
@@ -9,21 +10,23 @@ namespace Tenor.Models
 		public int Id { get; set; }
 		public enLogicalOperator LogicalOperator { get; set; }
 		public string? Value { get; set; }
-		public int ReportId { get; set; }
+		[ForeignKey("FilterContainer")]
+		public int FilterContainerId { get; set; }
+		[ForeignKey("DimensionLevel")]
 		public int DimensionLevelId { get; set; }
 		public bool IsMandatory { get; set; }
 
 
-        public DimensionLevel DimensionLevel { get; set; }
-        public Report Report { get; set; }
+        public virtual DimensionLevel DimensionLevel { get; set; }
+        public virtual ReportFilterContainer FilterContainer { get; set; }
 
 		public ReportFilter() { }
-		public ReportFilter(int id, enLogicalOperator logicalOperator, string? value, int reportId, int dimensionLevelId)
+		public ReportFilter(int id, enLogicalOperator logicalOperator, string? value, int filterContainerId, int dimensionLevelId)
 		{
 			Id = id;
 			LogicalOperator = logicalOperator;
 			Value = value;
-			ReportId = reportId;
+            FilterContainerId = filterContainerId;
 			DimensionLevelId = dimensionLevelId;
 		}
 

@@ -44,10 +44,10 @@ namespace Tenor.Data
 		public DbSet<Dimension> Dimensions { get; set; }
 		public DbSet<DimensionJoiner> DimensionJoiners { get; set; }
 		public DbSet<DimensionLevel> DimensionLevels { get; set; }
+		public DbSet<ReportFilterContainer> ReportFilterContainers { get; set; }
 
-
-		//Entity Config
-		protected override void OnModelCreating(ModelBuilder builder)
+        //Entity Config
+        protected override void OnModelCreating(ModelBuilder builder)
 		{
 			//Add Entities Configuration
 			builder.ApplyConfiguration(new RoleCfg());

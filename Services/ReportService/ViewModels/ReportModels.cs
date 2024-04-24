@@ -15,7 +15,7 @@ namespace Tenor.Services.ReportService.ViewModels
             public int DeviceId { get; set;}
             public List<ReportMeasureDto> Measures { get; set;}
             public List<ReportLevelDto> Levels { get; set; }
-            public List<ReportFilterDto> Filters { get; set; }
+            public List<ContainerOfFilter> ContainerOfFilters { get; set; }
             public List<ExtraFieldValue>? ReportFields { get; set; }
             public bool IsPublic { get; set; }
             public int? ChildId { get; set; }
@@ -52,6 +52,14 @@ namespace Tenor.Services.ReportService.ViewModels
             public int DimensionLevelId { get; set; }
             public bool IsMandatory { get; set; }
 
+        }
+
+        public class ContainerOfFilter
+        {
+            public int Id { get; set; }
+            public enLogicalOperator LogicalOperator { get; set; }
+
+            public List<ReportFilterDto> ReportFilters { get; set; }
         }
     }
 }

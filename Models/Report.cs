@@ -31,10 +31,12 @@ namespace Tenor.Models
 
 		public virtual ICollection<ReportFieldValue> ReportFieldValues { get; set; }
 		public virtual ICollection<ReportLevel> Levels { get; set; }
-		public virtual ICollection<ReportFilter> Filters { get; set; }
-		public virtual ICollection<ReportMeasure> Measures { get; set; }
+        public virtual ICollection<ReportFilterContainer> FilterContainers { get; set; }
+        public virtual ICollection<ReportMeasure> Measures { get; set; }
         public virtual Report Child { get; set; }
         public Device Device { get; set; }
+
+
 
         public Report() { }
 		public Report(CreateReport input)
