@@ -79,7 +79,7 @@ namespace Tenor.Services.ReportService
                         DisplayOrder=x.DisplayOrder,
                         SortDirection=x.SortDirection,
                         ReportId=report.Id,
-                        DimensionLevelId=x.DimensionLevelId
+                        LevelId=x.LevelId
 
                     }).ToList();
                     //-----------------Create Report Filters--------------

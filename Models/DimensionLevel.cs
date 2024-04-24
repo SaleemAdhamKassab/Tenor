@@ -20,7 +20,6 @@ namespace Tenor.Models
         public virtual Level Level { get; set; }
         public virtual DimensionLevel  Parent { get; set; }
         public virtual ICollection<DimensionLevel> Childs { get; set; }
-        public virtual ICollection<ReportLevel> ReportLevels { get; set; }
         public virtual ICollection<ReportFilter> ReportFilters { get; set; }
 
     }
