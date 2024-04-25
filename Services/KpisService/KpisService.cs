@@ -388,6 +388,7 @@ namespace Tenor.Services.KpisService
                     query = query.Where(x => x.Name.ToLower().Contains(filter.SearchQuery.ToLower())
                                   || x.DeviceId.ToString().Equals(filter.SearchQuery)
                                   || x.Id.ToString().Equals(filter.SearchQuery)
+                                  || x.CreatedBy.ToLower().Contains(filter.SearchQuery)
                                   );
                 }
                 if (filter.DeviceId != null && filter.DeviceId != 0)
