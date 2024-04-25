@@ -1,4 +1,7 @@
 ﻿using Tenor.Dtos;
+using Tenor.Models;
+using Tenor.Services.CountersService.ViewModels;
+using Tenor.Services.SubsetsService.ViewModels;
 
 namespace Tenor.Services.DevicesService.ViewModels
 {
@@ -42,4 +45,6 @@ namespace Tenor.Services.DevicesService.ViewModels
         public string? FileName { get; set; }
         public string? ContentType { get; set; }
     }
+
+   
 }

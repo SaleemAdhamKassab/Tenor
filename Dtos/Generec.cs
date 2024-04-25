@@ -33,4 +33,7 @@
         public string? Aggregation { get; set; }
         public string? SupplierId { get; set; }
     }
+
+
+
 }

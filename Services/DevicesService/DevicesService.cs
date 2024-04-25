@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
+using System.Linq;
 using System.Resources;
 using Tenor.Data;
 using Tenor.Dtos;
@@ -25,7 +26,10 @@ namespace Tenor.Services.DevicesService
 		ResultWithMessage validateDevice(int deviceId, string name);
 		ResultWithMessage GetDeviceByParentId(int parentid, string searchQuery, TenantDto authUser);
 		ResultWithMessage getAllDevices(TenantDto authUser);
-	}
+
+		ResultWithMessage getDevicesWithRelations(int ? parentid, string searchQuery, TenantDto authUser);
+
+    }
 
 	public class DevicesService : IDevicesService
 	{
@@ -371,7 +375,7 @@ namespace Tenor.Services.DevicesService
 			else
 			{
 				List<string> userDevices = authUser.deviceAccesses.Select(e => e.DeviceName).ToList();
-				devices = _db.Devices.Where(e=>userDevices.Contains(e.Name)).ToList();
+				devices = _db.Devices.Where(e => userDevices.Contains(e.Name)).ToList();
 			}
 
 			List<Device> rootDevices = devices.Where(e => string.IsNullOrEmpty(e.ParentId.ToString())).ToList();
@@ -398,5 +402,77 @@ namespace Tenor.Services.DevicesService
 
 			return new ResultWithMessage(result, string.Empty);
 		}
-	}
+
+		public ResultWithMessage getDevicesWithRelations(int? parentid, string ? searchQuery, TenantDto authUser)
+		{
+
+            IQueryable<Device> query = null;
+			IQueryable<Subset> subsetQuery = null;
+			List<TreeNodeViewModel> resultSubset = new List<TreeNodeViewModel>();
+
+            query = _db.Devices.Where(e => e.ParentId == parentid && !e.IsDeleted).AsQueryable();
+
+            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
+            {
+                query = query;
+
+            }
+            else
+            {
+                query = query.Where(e => authUser.deviceAccesses.Select(x=>x.DeviceId).ToList().Contains(e.Id));
+
+            }
+
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+				query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower())
+					  || x.Subsets.Any(y => y.Id.ToString() == searchQuery || y.Name.ToLower().Contains(searchQuery.ToLower()))
+					  || x.Subsets.Any(z => z.Counters.Any(e => e.Id.ToString() == searchQuery || e.Name.ToLower().Contains(searchQuery.ToLower()) || e.Code.ToLower() == searchQuery.ToLower()))
+					  || x.Childs.Any(y => y.Name.ToLower().Contains(searchQuery.ToLower())
+						 || y.Subsets.Any(z => z.Name.ToLower().Contains(searchQuery.ToLower()))
+						 || y.Subsets.Any(d => d.Counters.Any(b => b.Name.ToLower().Contains(searchQuery.ToLower()))))
+
+					  || x.Childs.Any(y => y.Childs.Any(y => y.Name.ToLower().Contains(searchQuery.ToLower())
+						 || y.Subsets.Any(z => z.Name.ToLower().Contains(searchQuery.ToLower()))
+						 || y.Subsets.Any(d => d.Counters.Any(b => b.Name.ToLower().Contains(searchQuery.ToLower())))))
+
+
+					  || x.Childs.Any(y => y.Childs.Any(z => z.Childs.Any(y => y.Name.ToLower().Contains(searchQuery.ToLower())
+						 || y.Subsets.Any(z => z.Name.ToLower().Contains(searchQuery.ToLower()))
+						 || y.Subsets.Any(d => d.Counters.Any(b => b.Name.ToLower().Contains(searchQuery.ToLower())))))));
+					  
+					  					 										  								                    
+            }
+
+            var resultDevice = query.Select(x => new TreeNodeViewModel()
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Type = "device",
+                HasChild = x.Childs.Count() > 0 || x.Subsets.Count()>0,
+
+            }).ToList();
+
+			if(parentid!=null && parentid!=0)
+			{
+				 subsetQuery = _db.Subsets.Where(x => x.DeviceId == parentid);
+                 resultSubset = subsetQuery.Select(x => new TreeNodeViewModel()
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Type = "subset",
+                    HasChild = x.Counters.Count() > 0,
+
+                }).ToList();
+
+                return new ResultWithMessage(resultDevice.Union(resultSubset), "");
+
+            }
+
+            return new ResultWithMessage(resultDevice, "");
+
+
+        }
+
+    }
 }

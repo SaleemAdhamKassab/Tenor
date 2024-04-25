@@ -104,5 +104,18 @@ namespace Tenor.Controllers
 
 		[HttpGet("getAllDevices")]
 		public IActionResult getAllDevices() => _returnResult(_deviceService.getAllDevices(AuthUser()));
-	}
+
+
+		[HttpGet("GetDevicesTree")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
+
+        public IActionResult GetTreeDevices(int? parentid, string ? searchQuery)
+		{
+			var authData= AuthUser();
+
+			return _returnResult(_deviceService.getDevicesWithRelations(parentid, searchQuery, authData));
+
+        }
+
+    }
 }
