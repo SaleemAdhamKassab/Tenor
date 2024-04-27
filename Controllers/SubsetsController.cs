@@ -12,13 +12,10 @@ namespace Tenor.Controllers
     public class SubsetsController : BaseController
     {
         private readonly ISubsetsService _subsetservice;
-        private readonly IHttpContextAccessor _contextAccessor;
-        private readonly IJwtService _jwtService;
-        public SubsetsController(ISubsetsService Subsetservice , IHttpContextAccessor contextAccessor, IJwtService jwtService)
+        public SubsetsController(ISubsetsService Subsetservice , IHttpContextAccessor contextAccessor,
+            IJwtService jwtService) : base(contextAccessor, jwtService)
         {
             _subsetservice = Subsetservice;
-            _contextAccessor = contextAccessor;
-            _jwtService = jwtService;
         }
 
 
@@ -70,17 +67,5 @@ namespace Tenor.Controllers
             return _returnResult(_subsetservice.GetSubsetByDeviceId(deviceid, searchQuery, authData));
         }
 
-
-        private AuthModels.TenantDto AuthUser()
-        {
-            string Header = _contextAccessor.HttpContext.Request.Headers["Authorization"];
-            var token = Header.Split(' ').Last();
-            var result = _jwtService.TokenConverter(token);
-            if (result == null)
-            {
-                return null;
-            }
-            return result;
-        }
     }
 }

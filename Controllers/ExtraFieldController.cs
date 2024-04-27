@@ -2,13 +2,15 @@ using Microsoft.AspNetCore.Mvc;
 using Tenor.ActionFilters;
 using Tenor.Controllers;
 using Tenor.Models;
+using Tenor.Services.AuthServives;
 
 [Route("api/ExtraFields")]
 [ApiController]
 public class ExtraFieldController:BaseController
 {
     private readonly IExtraPropService _extraPropService;
-    public ExtraFieldController(IExtraPropService extraPropService)
+    public ExtraFieldController(IExtraPropService extraPropService,IHttpContextAccessor contextAccessor,
+            IJwtService jwtService) : base(contextAccessor, jwtService)
     {
         _extraPropService = extraPropService;
     }

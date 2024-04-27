@@ -13,13 +13,10 @@ namespace Tenor.Controllers
     [ApiController]
     public class ReportController : BaseController
     {
-        private readonly IHttpContextAccessor _contextAccessor;
-        private readonly IJwtService _jwtService;
         private readonly IReportService _reportService;
-        public ReportController(IHttpContextAccessor contextAccessor, IJwtService jwtService, IReportService reportService)
+        public ReportController(IHttpContextAccessor contextAccessor, IJwtService jwtService,
+            IReportService reportService) : base(contextAccessor, jwtService)
         {
-            _contextAccessor= contextAccessor;
-            _jwtService= jwtService;
             _reportService= reportService;
         }
 
@@ -35,17 +32,6 @@ namespace Tenor.Controllers
 
         }
 
-        private AuthModels.TenantDto AuthUser()
-        {
-            string Header = _contextAccessor.HttpContext.Request.Headers["Authorization"];
-            var token = Header.Split(' ').Last();
-            var result = _jwtService.TokenConverter(token);
-            if (result == null)
-            {
-                return null;
-            }
-            return result;
-        }
 
     }
 }

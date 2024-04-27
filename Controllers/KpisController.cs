@@ -19,20 +19,21 @@ namespace Tenor.Controllers
 {
     [Route("api/kpis")]
     [ApiController]
+ 
+
     public class KpisController : BaseController
     {
+
         private readonly IKpisService _kpiservice;
-        private readonly IHttpContextAccessor _contextAccessor;
-        private readonly IJwtService _jwtService;
         private readonly ISharedService _sharedService;
 
-        public KpisController(IKpisService kpiservice, IHttpContextAccessor contextAccessor,
-            IJwtService jwtService, ISharedService sharedService)
+        public KpisController(IKpisService kpiservice,ISharedService sharedService,
+            IHttpContextAccessor contextAccessor, IJwtService jwtService):base(contextAccessor, jwtService)
+
         {
             _kpiservice = kpiservice;
-            _contextAccessor = contextAccessor;
-            _jwtService = jwtService;
             _sharedService=sharedService;
+
         }
 
         [HttpPost("getByFilter")]
@@ -153,17 +154,6 @@ namespace Tenor.Controllers
 
         }
 
-        private AuthModels.TenantDto AuthUser()
-        {
-            string Header = _contextAccessor.HttpContext.Request.Headers["Authorization"];
-            var token = Header.Split(' ').Last();
-            var result = _jwtService.TokenConverter(token);
-            if (result == null)
-            {
-                return null;
-            }
-            return result;
-        }
 
     }
 }

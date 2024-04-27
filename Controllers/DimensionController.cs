@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Tenor.Services.AuthServives;
 using Tenor.Services.DimensionService;
 
 namespace Tenor.Controllers
@@ -10,7 +11,8 @@ namespace Tenor.Controllers
     {
         private readonly IDimensionsService _dimensionsService;
 
-        public DimensionController(IDimensionsService dimensionsService)
+        public DimensionController(IDimensionsService dimensionsService, IHttpContextAccessor contextAccessor,
+            IJwtService jwtService) : base(contextAccessor, jwtService)
         {
             _dimensionsService = dimensionsService;
         }

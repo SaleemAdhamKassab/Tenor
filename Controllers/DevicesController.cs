@@ -13,27 +13,13 @@ namespace Tenor.Controllers
 	public class DevicesController : BaseController
 	{
 		private readonly IDevicesService _deviceService;
-		private readonly IHttpContextAccessor _contextAccessor;
-		private readonly IJwtService _jwtService;
-		public DevicesController(IDevicesService deviceService, IHttpContextAccessor contextAccessor, IJwtService jwtService)
+		public DevicesController(IDevicesService deviceService, IHttpContextAccessor contextAccessor,
+			IJwtService jwtService) : base(contextAccessor, jwtService)
 
-		{
+        {
 			_deviceService = deviceService;
-			_contextAccessor = contextAccessor;
-			_jwtService = jwtService;
 		}
 
-		private AuthModels.TenantDto AuthUser()
-		{
-			string Header = _contextAccessor.HttpContext.Request.Headers["Authorization"];
-			var token = Header.Split(' ').Last();
-			var result = _jwtService.TokenConverter(token);
-			if (result == null)
-			{
-				return null;
-			}
-			return result;
-		}
 
 		[HttpGet("getById")]
 		public IActionResult getById(int id) => _returnResult(_deviceService.getById(id));

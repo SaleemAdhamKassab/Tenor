@@ -16,13 +16,12 @@ namespace Tenor.Controllers
     [ApiController]
     public class TokenController : BaseController
     {
-        private readonly IHttpContextAccessor _contextAccessor;
-        private readonly IJwtService _jwtService;
         private static ClaimsPrincipal authPrincipal = null;
+        private readonly IJwtService _jwtService;
 
-        public TokenController(IHttpContextAccessor contextAccessor, IJwtService jwtService)
+
+        public TokenController(IHttpContextAccessor contextAccessor, IJwtService jwtService):base(contextAccessor, jwtService)
         {
-            _contextAccessor = contextAccessor;
             _jwtService = jwtService;
         }
 
@@ -42,20 +41,7 @@ namespace Tenor.Controllers
             
             return _returnResult(_jwtService.RefreshToken(authPrincipal, input.RefreshToken));
         }
-
-        [HttpGet("UserProfile")]
-        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User" })]
-        public IActionResult GetProfile()
-        {
-            string Header = _contextAccessor.HttpContext.Request.Headers["Authorization"];          
-            var token = Header.Split(' ').Last();
-            var result = _jwtService.TokenConverter(token);
-            if(result==null)
-            {
-                return BadRequest("token is invalid");
-            }
-            return Ok(result);
-        }
+      
 
         [HttpPost("RevokeToken")]
         [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin" })]

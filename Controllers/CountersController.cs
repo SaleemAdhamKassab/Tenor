@@ -14,13 +14,10 @@ namespace Tenor.Controllers
     public class CountersController : BaseController
     {
         private readonly ICountersService _countersService;
-        private readonly IHttpContextAccessor _contextAccessor;
-        private readonly IJwtService _jwtService;
-        public CountersController(ICountersService counterservice, IHttpContextAccessor contextAccessor, IJwtService jwtService)
+        public CountersController(ICountersService counterservice, IHttpContextAccessor contextAccessor,
+            IJwtService jwtService):base(contextAccessor, jwtService)
         {
             _countersService = counterservice;
-            _contextAccessor = contextAccessor;
-            _jwtService = jwtService;
         } 
 
         [HttpGet("getById")]
@@ -68,17 +65,6 @@ namespace Tenor.Controllers
             var authData = AuthUser();
 
             return _returnResult(_countersService.GetCounterBySubsetId(subsetid, searchQuery, authData));
-        }
-        private AuthModels.TenantDto AuthUser()
-        {
-            string Header = _contextAccessor.HttpContext.Request.Headers["Authorization"];
-            var token = Header.Split(' ').Last();
-            var result = _jwtService.TokenConverter(token);
-            if (result == null)
-            {
-                return null;
-            }
-            return result;
         }
 
     }
