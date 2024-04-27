@@ -430,16 +430,18 @@ namespace Tenor.Services.DevicesService
 					  || x.Subsets.Any(z => z.Counters.Any(e => e.Id.ToString() == searchQuery || e.Name.ToLower().Contains(searchQuery.ToLower()) || e.Code.ToLower() == searchQuery.ToLower()))
 					  || x.Childs.Any(y => y.Name.ToLower().Contains(searchQuery.ToLower())
 						 || y.Subsets.Any(z => z.Name.ToLower().Contains(searchQuery.ToLower()))
-						 || y.Subsets.Any(d => d.Counters.Any(b => b.Name.ToLower().Contains(searchQuery.ToLower()))))
+						 || y.Subsets.Any(d => d.Counters.Any(b => b.Name.ToLower().Contains(searchQuery.ToLower())))
 
-					  || x.Childs.Any(y => y.Childs.Any(y => y.Name.ToLower().Contains(searchQuery.ToLower())
-						 || y.Subsets.Any(z => z.Name.ToLower().Contains(searchQuery.ToLower()))
-						 || y.Subsets.Any(d => d.Counters.Any(b => b.Name.ToLower().Contains(searchQuery.ToLower())))))
-
-
-					  || x.Childs.Any(y => y.Childs.Any(z => z.Childs.Any(y => y.Name.ToLower().Contains(searchQuery.ToLower())
-						 || y.Subsets.Any(z => z.Name.ToLower().Contains(searchQuery.ToLower()))
-						 || y.Subsets.Any(d => d.Counters.Any(b => b.Name.ToLower().Contains(searchQuery.ToLower())))))));
+                         || y.Childs.Any(k => k.Name.ToLower().Contains(searchQuery.ToLower())
+                         || k.Subsets.Any(z => z.Name.ToLower().Contains(searchQuery.ToLower()))
+                         || k.Subsets.Any(d => d.Counters.Any(b => b.Name.ToLower().Contains(searchQuery.ToLower())))
+						 
+						 || k.Childs.Any(q => q.Name.ToLower().Contains(searchQuery.ToLower())
+                         || q.Subsets.Any(z => z.Name.ToLower().Contains(searchQuery.ToLower()))
+                         || q.Subsets.Any(d => d.Counters.Any(b => b.Name.ToLower().Contains(searchQuery.ToLower())))))
+						  
+						 )
+                      );
 					  
 					  					 										  								                    
             }
