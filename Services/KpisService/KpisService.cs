@@ -47,7 +47,7 @@ namespace Tenor.Services.KpisService
         Task<ResultWithMessage> Add(CreateKpi kpiModel, TenantDto authUser);
         Task<ResultWithMessage> Update(int id, CreateKpi Kpi, TenantDto authUser);
         Task<ResultWithMessage> Delete(int id , TenantDto authUser);
-        Task<ResultWithMessage> GetExtraFields();
+        Task<ResultWithMessage> GetExtraFields(int? deviceId);
         ResultWithMessage GetOperators();
         ResultWithMessage GetFunctions();
         FileBytesModel exportKpiByFilter(object kpiFilterM);
@@ -281,10 +281,21 @@ namespace Tenor.Services.KpisService
             _db.SaveChanges();
             return new ResultWithMessage(true, "");
         }
-        public async Task<ResultWithMessage> GetExtraFields()
+        public async Task<ResultWithMessage> GetExtraFields(int ? deviceId)
         {
-            var extraFields = _mapper.Map<List<KpiExtraField>>(_db.KpiFields.Where(x => x.IsActive).Include(x => x.ExtraField).ToList());
-            return new ResultWithMessage(extraFields, null);
+            List<KpiExtraField> result = new List<KpiExtraField>();
+            if(deviceId!=null && deviceId!=0)
+            {
+                 result = _mapper.Map<List<KpiExtraField>>(_db.KpiFields.Include(x => x.ExtraField).ThenInclude(x=>x.Device).Where(x => x.IsActive && x.ExtraField.DeviceId==deviceId).ToList());
+
+            }
+            else
+            {
+                 result = _mapper.Map<List<KpiExtraField>>(_db.KpiFields.Where(x => x.IsActive).Include(x => x.ExtraField).ThenInclude(x => x.Device).ToList());
+            }
+
+
+            return new ResultWithMessage(result, null);
 
         }
         public ResultWithMessage GetOperators()

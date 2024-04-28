@@ -52,7 +52,10 @@ namespace Tenor.Mapper
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.ExtraField.Name))
                 .ForMember(dest => dest.IsMandatory, opt => opt.MapFrom(src => src.ExtraField.IsMandatory))
                 .ForMember(dest => dest.Content, opt => opt.MapFrom(src => ConvertContentType(src.ExtraField.Type.GetDisplayName(), src.ExtraField.Content)))
-                .ForMember(dest => dest.Url, opt => opt.MapFrom(src => src.ExtraField.Url)).ReverseMap();
+                .ForMember(dest => dest.Url, opt => opt.MapFrom(src => src.ExtraField.Url))
+                .ForMember(dest => dest.DeviceId, opt => opt.MapFrom(src => src.ExtraField.DeviceId))
+                .ForMember(dest => dest.DeviceName, opt => opt.MapFrom(src => src.ExtraField.Device.Name))
+                .ReverseMap();
 
             CreateMap<KpiFieldValue, KpiFieldValueViewModel>()
                  .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))

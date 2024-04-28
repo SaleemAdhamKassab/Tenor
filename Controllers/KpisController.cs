@@ -89,9 +89,9 @@ namespace Tenor.Controllers
 
         [HttpGet("GetExtraFields")]
 
-        public async Task<IActionResult> GetExtraFields()
+        public async Task<IActionResult> GetExtraFields(int ? deviceId)
         {
-            return _returnResult(await _kpiservice.GetExtraFields());
+            return _returnResult(await _kpiservice.GetExtraFields(deviceId));
        
         }
 

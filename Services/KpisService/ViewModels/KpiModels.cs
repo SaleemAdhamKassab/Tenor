@@ -61,7 +61,10 @@ namespace Tenor.Services.KpisService.ViewModels
             public dynamic Content { get; set; }
             public string? Url { get; set; }
             public bool IsMandatory { get; set; }
-        }    
+            public int? DeviceId { get; set; }
+            public string ? DeviceName { get; set; }
+
+        }
         public class KpiFieldValueViewModel
         {
             public int Id { get; set; }
