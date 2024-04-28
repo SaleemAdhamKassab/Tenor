@@ -408,7 +408,8 @@ namespace Tenor.Services.DevicesService
 
             IQueryable<Device> query = null;
 			IQueryable<Subset> subsetQuery = null;
-			List<TreeNodeViewModel> resultSubset = new List<TreeNodeViewModel>();
+			List<TreeNodeViewModel> resultDevice = new List<TreeNodeViewModel>();
+            List<TreeNodeViewModel> resultSubset = new List<TreeNodeViewModel>();
 
             query = _db.Devices.Where(e => e.ParentId == parentid && !e.IsDeleted).AsQueryable();
 
@@ -425,18 +426,18 @@ namespace Tenor.Services.DevicesService
 
             if (!string.IsNullOrEmpty(searchQuery))
             {
-				query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower())
+				query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower()) || x.Parent.Name.ToLower().Contains(searchQuery.ToLower())
 					  || x.Subsets.Any(y => y.Id.ToString() == searchQuery || y.Name.ToLower().Contains(searchQuery.ToLower()))
 					  || x.Subsets.Any(z => z.Counters.Any(e => e.Id.ToString() == searchQuery || e.Name.ToLower().Contains(searchQuery.ToLower()) || e.Code.ToLower() == searchQuery.ToLower()))
-					  || x.Childs.Any(y => y.Name.ToLower().Contains(searchQuery.ToLower())
-						 || y.Subsets.Any(z => z.Name.ToLower().Contains(searchQuery.ToLower()))
+					  || x.Childs.Any(y => y.Name.ToLower().Contains(searchQuery.ToLower()) || y.Parent.Name.ToLower().Contains(searchQuery.ToLower())
+                         || y.Subsets.Any(z => z.Name.ToLower().Contains(searchQuery.ToLower()))
 						 || y.Subsets.Any(d => d.Counters.Any(b => b.Name.ToLower().Contains(searchQuery.ToLower())))
-
-                         || y.Childs.Any(k => k.Name.ToLower().Contains(searchQuery.ToLower())
+						 
+                         || y.Childs.Any(k => k.Name.ToLower().Contains(searchQuery.ToLower()) || k.Parent.Name.ToLower().Contains(searchQuery.ToLower())
                          || k.Subsets.Any(z => z.Name.ToLower().Contains(searchQuery.ToLower()))
                          || k.Subsets.Any(d => d.Counters.Any(b => b.Name.ToLower().Contains(searchQuery.ToLower())))
 						 
-						 || k.Childs.Any(q => q.Name.ToLower().Contains(searchQuery.ToLower())
+						 || k.Childs.Any(q => q.Name.ToLower().Contains(searchQuery.ToLower()) || q.Parent.Name.ToLower().Contains(searchQuery.ToLower())
                          || q.Subsets.Any(z => z.Name.ToLower().Contains(searchQuery.ToLower()))
                          || q.Subsets.Any(d => d.Counters.Any(b => b.Name.ToLower().Contains(searchQuery.ToLower())))))
 						  
@@ -446,14 +447,18 @@ namespace Tenor.Services.DevicesService
 					  					 										  								                    
             }
 
-            var resultDevice = query.Select(x => new TreeNodeViewModel()
-            {
-                Id = x.Id,
-                Name = x.Name,
-                Type = "device",
-                HasChild = x.Childs.Count() > 0 || x.Subsets.Count()>0,
+			
+		
+                 resultDevice = query.Select(x => new TreeNodeViewModel()
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Type = "device",
+                    HasChild = x.Childs.Count() > 0 || x.Subsets.Count() > 0,
 
-            }).ToList();
+                }).ToList();
+            
+           
 
 			if(parentid!=null && parentid!=0)
 			{
