@@ -27,7 +27,7 @@ namespace Tenor.Models
 		[ForeignKey("Child")]
 		public int? ChildId { get; set; }
 		public int DeviceId { get; set; }
-
+		public bool IsDeleted { get; set; }
 
 		public virtual ICollection<ReportFieldValue> ReportFieldValues { get; set; }
 		public virtual ICollection<ReportLevel> Levels { get; set; }
