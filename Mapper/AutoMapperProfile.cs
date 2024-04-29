@@ -117,9 +117,13 @@ namespace Tenor.Mapper
             CreateMap<ReportMeasure, ReportMeasureDto>().ReverseMap();
             CreateMap<MeasureHaving, Having>().ReverseMap();
             CreateMap<Report, CreateReport>().ReverseMap();
-            CreateMap<ReportMeasure, ReportMeasureDto>().ReverseMap();
             CreateMap<ReportLevel, ReportLevelDto>().ReverseMap();
             CreateMap<ReportFilter, ReportFilterDto>().ReverseMap();
+            CreateMap<ReportMeasure, MeasureViewModel>().ReverseMap();
+            CreateMap<MeasureHaving, HavingViewModel>()
+               .ForMember(dest => dest.LogicOptName, opt => opt.MapFrom(src => src.LogicOpt.ToString()))
+               .ForMember(dest => dest.OperatorName, opt => opt.MapFrom(src => src.Operator.Name))
+                .ReverseMap();
 
             //---------------------------Dimensions------------------------------------------
             CreateMap<DimensionLevel, DimLevelViewModel>()

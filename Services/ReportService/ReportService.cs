@@ -11,6 +11,8 @@ using Tenor.Services.SharedService;
 using System.Transactions;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Azure.Core;
+using System.Security.Cryptography;
 
 namespace Tenor.Services.ReportService
 {
@@ -20,7 +22,7 @@ namespace Tenor.Services.ReportService
 		Task<ResultWithMessage> getDimensionLevels(List<ReportMeasure> measures);
 		Task<ResultWithMessage> HardDelete(int id, TenantDto authUser);
 		Task<ResultWithMessage> SoftDelete(int id, TenantDto authUser);
-
+		Task<ResultWithMessage> GetById(int id);
     }
 	public class ReportService : IReportService
 	{
@@ -67,15 +69,7 @@ namespace Tenor.Services.ReportService
                     //-----------------Create Report-----------------------
                     Report report = new Report(input);
                     report.ChildId= (report.ChildId==0 || report.ChildId==null) ? null:report.ChildId;
-                    report.Measures = new List<ReportMeasure>();
-                    if (input.ReportFields != null)
-                    {
-                        bool isCorrectSave = _sharedService.AddExtraFields(null,(int) report.Id, input.ReportFields);
-                        if (!isCorrectSave)
-                        {
-                            return new ResultWithMessage(null, "Mandatory Field error");
-                        }
-                    }
+                    report.Measures = new List<ReportMeasure>();                
                     //-----------------Create Report Levels----------------
                     report.Levels = input.Levels.Select(x=> new ReportLevel()
                     {
@@ -102,7 +96,6 @@ namespace Tenor.Services.ReportService
 
 					}).ToList();
 
-
 					//-----------------Create Report Measures-------------
 					foreach (ReportMeasureDto m in input.Measures)
 					{
@@ -123,7 +116,16 @@ namespace Tenor.Services.ReportService
 					}
 					_db.Reports.Add(report);
 					_db.SaveChanges();
-					transaction.Complete();
+                    //------------------------Extra Fields--------------------------
+                    if (input.ReportFields != null)
+                    {
+                        bool isCorrectSave = _sharedService.AddExtraFields(null, (int)report.Id, input.ReportFields);
+                        if (!isCorrectSave)
+                        {
+                            return new ResultWithMessage(null, "Mandatory Field error");
+                        }
+                    }
+                    transaction.Complete();
 					return new ResultWithMessage(report, null);
 
 				}
@@ -140,7 +142,6 @@ namespace Tenor.Services.ReportService
 		{
 			return new ResultWithMessage(null, string.Empty);
 		}
-
 		public async Task<ResultWithMessage> HardDelete(int id, TenantDto authUser)
 		{
 			var report = _db.Reports.Include(x=>x.Measures).FirstOrDefault(x=>x.Id==id && !x.IsDeleted);
@@ -172,7 +173,6 @@ namespace Tenor.Services.ReportService
             return new ResultWithMessage(true, "");
 
         }
-
 		public async Task<ResultWithMessage> SoftDelete(int id, TenantDto authUser)
 		{
             var report = _db.Reports.FirstOrDefault(x => x.Id == id && !x.IsDeleted);
@@ -197,6 +197,94 @@ namespace Tenor.Services.ReportService
 			_db.SaveChanges();
           
             return new ResultWithMessage(true, "");
+        }
+		public async Task<ResultWithMessage> GetById(int id)
+		{
+			ReportViewModel result = new ReportViewModel();
+			var report = _db.Reports.Include(x=>x.Device).Include(x => x.Measures).ThenInclude(x=> x.Havings).ThenInclude(x=>x.Operator)
+				.Include(x => x.Levels).ThenInclude(x=>x.Level).Include(x => x.FilterContainers).ThenInclude(x=>x.ReportFilters)
+                .Include(x => x.ReportFieldValues).ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField)
+				.FirstOrDefault(x => x.Id == id);
+
+			if(report is null)
+			{
+                return new ResultWithMessage(null, "Cannot find report");
+
+            }
+
+			//--------------------------Build Mapping---------------------------------
+			result.Id = report.Id;
+			result.Name = report.Name;
+			result.DeviceId = report.DeviceId;
+			result.DeviceName = report.Device.Name;
+			result.IsPublic = report.IsPublic;
+			result.CreatedBy = report.CreatedBy;
+			result.CreatedDate = report.CreatedDate;
+			result.ChildId = report.ChildId;
+			result.Levels = report.Levels.Select(x => new ReportLevelViewModel()
+			{
+				Id=x.Id,
+				DisplayOrder=x.DisplayOrder,
+				SortDirection=x.SortDirection,
+				SortDirectionName = x.SortDirection.GetDisplayName(),
+				LevelId = x.LevelId,
+				LevelName = x.Level.Name,
+				IsFilter = x.Level.IsFilter,
+				IsLevel = x.Level.IsLevel
+			}).ToList();
+			result.ReportFields = report.ReportFieldValues.Select(x => new ReportFieldValueViewModel()
+			{
+				Id = x.Id,
+				FieldId = x.ReportFieldId,
+				Type = x.ReportField.ExtraField.Type.GetDisplayName(),
+				FieldName = x.ReportField.ExtraField.Name,
+				Value = _sharedService.ConvertContentType( x.ReportField.ExtraField.Type.GetDisplayName() , x.FieldValue)
+
+            }).ToList();
+			result.ContainerOfFilters = report.FilterContainers.Select(x => new ContainerOfFilter()
+			{
+				Id = x.Id,
+				LogicalOperator = x.LogicalOperator,
+				LogicalOperatorName = x.LogicalOperator.GetDisplayName(),
+				ReportFilters = x.ReportFilters.Select(y=> new ReportFilterDto()
+				{
+					Id = y.Id,
+					LogicalOperator = y.LogicalOperator,
+					LogicalOperatorName = y.LogicalOperator.GetDisplayName(),
+					Value = y.Value!= null? y.Value.Split(',').ToArray() : null,
+					DimensionLevelId = y.DimensionLevelId,
+					IsMandatory = y.IsMandatory
+				}).ToList()
+			}).ToList();
+			result.Measures = GetReportMeasureById(report.Measures.ToList());
+
+
+            return new ResultWithMessage(result,null);
+
+
+        }
+        private List<MeasureViewModel> GetReportMeasureById(List<ReportMeasure> reportMeasures)
+        {
+
+			List<MeasureViewModel> result = new List<MeasureViewModel>();
+
+			foreach(var s in reportMeasures)
+			{
+                var measure = _db.ReportMeasures.Include(x => x.Report).Include(x => x.Operation)
+                 .FirstOrDefault(x => x.Id == s.Id);
+
+                if (measure == null)
+                {
+					return null;
+
+                }
+                _sharedService.GetSelfRelation(measure.OperationId);
+                var measureMap = _mapper.Map<MeasureViewModel>(measure);
+				result.Add(measureMap);
+
+            }
+
+			return result;
         }
 
     }

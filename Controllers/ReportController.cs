@@ -50,7 +50,13 @@ namespace Tenor.Controllers
             return _returnResult(await _reportService.HardDelete(id, authData));
         }
 
+        [HttpGet("getById")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
+        public async Task<IActionResult> GetById(int id)
+        {
+            return _returnResult(await _reportService.GetById(id));
 
+        }
 
 
     }

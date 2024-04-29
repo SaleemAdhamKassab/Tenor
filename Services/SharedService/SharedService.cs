@@ -25,6 +25,7 @@ namespace Tenor.Services.SharedService
         string getJoinKey(string tableName);
         IEnumerable<string> GetTablesNameRegExp(string query);
         string GetOracleQuery(string query, List<string> tablesName);
+        dynamic ConvertContentType(string contenttype, string content);
     }
 
     public class SharedService: ISharedService
@@ -380,6 +381,16 @@ namespace Tenor.Services.SharedService
 
 
 
+
+        }
+        public dynamic ConvertContentType(string contenttype, string content)
+        {
+            if ((contenttype == "List" && !string.IsNullOrEmpty(content) ? !content.Contains(",") : true) && contenttype != "MultiSelectList")
+            {
+                return content;
+            }
+
+            return !string.IsNullOrEmpty(content) ? content.Split(',').ToList() : null;
 
         }
 
