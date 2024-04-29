@@ -32,6 +32,26 @@ namespace Tenor.Controllers
 
         }
 
+        [HttpDelete("softDelete")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,Editor,SuperAdmin" })]
+
+        public async Task<IActionResult> softDelete(int id)
+        {
+            var authData = AuthUser();
+            return _returnResult(await _reportService.SoftDelete(id, authData));
+        }
+
+        [HttpDelete("hardDelete")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,Editor,SuperAdmin" })]
+
+        public async Task<IActionResult> hardDelete(int id)
+        {
+            var authData = AuthUser();
+            return _returnResult(await _reportService.HardDelete(id, authData));
+        }
+
+
+
 
     }
 }

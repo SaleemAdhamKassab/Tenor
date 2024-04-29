@@ -10,6 +10,7 @@ using Microsoft.OpenApi.Extensions;
 using Tenor.Services.SharedService;
 using System.Transactions;
 using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 
 namespace Tenor.Services.ReportService
 {
@@ -18,7 +19,7 @@ namespace Tenor.Services.ReportService
 		Task<ResultWithMessage> Add(CreateReport input, TenantDto authUser);
 		Task<ResultWithMessage> getDimensionLevels(List<ReportMeasure> measures);
 		Task<ResultWithMessage> HardDelete(int id, TenantDto authUser);
-		//Task<ResultWithMessage> SoftDelete(int id, TenantDto authUser);
+		Task<ResultWithMessage> SoftDelete(int id, TenantDto authUser);
 
     }
 	public class ReportService : IReportService
@@ -142,7 +143,8 @@ namespace Tenor.Services.ReportService
 
 		public async Task<ResultWithMessage> HardDelete(int id, TenantDto authUser)
 		{
-			var report = _db.Reports.FirstOrDefault(x=>x.Id==id && !x.IsDeleted);
+			var report = _db.Reports.Include(x=>x.Measures).FirstOrDefault(x=>x.Id==id && !x.IsDeleted);
+
             if (report == null)
             {
                 return new ResultWithMessage(null, "Cannot find report");
@@ -159,10 +161,42 @@ namespace Tenor.Services.ReportService
 
             }
 
-			_db.Remove(report);
+			//Delete measures operation 
+			foreach(var s in report.Measures)
+			{
+                _sharedService.deleteOperation(s.OperationId);
+
+            }
+            _db.Remove(report);
 			_db.SaveChanges();
             return new ResultWithMessage(true, "");
 
+        }
+
+		public async Task<ResultWithMessage> SoftDelete(int id, TenantDto authUser)
+		{
+            var report = _db.Reports.FirstOrDefault(x => x.Id == id && !x.IsDeleted);
+            if (report == null)
+            {
+                return new ResultWithMessage(null, "Cannot find report");
+            }
+            string accessResult = _jwtService.checkUserTenantPermission(authUser, report.DeviceId);
+            if (accessResult == enAccessType.denied.GetDisplayName())
+            {
+                return new ResultWithMessage(null, "Access Denied");
+            }
+
+            if (accessResult == enAccessType.allOnlyMe.GetDisplayName() && report.CreatedBy != authUser.userName)
+            {
+                return new ResultWithMessage(null, "Access Denied");
+
+            }
+
+			report.IsDeleted = true;
+			_db.Update(report);
+			_db.SaveChanges();
+          
+            return new ResultWithMessage(true, "");
         }
 
     }

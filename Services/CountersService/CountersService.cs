@@ -774,8 +774,11 @@ namespace Tenor.Services.CountersService
                 query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower())
                        ||x.Code.ToLower().Contains(searchQuery.ToLower())
                        ||x.Subset.Name.ToLower().Contains(searchQuery.ToLower())
-                       ||x.Subset.Device.Name.ToLower().Contains(searchQuery.ToLower()));
-
+                       ||x.Subset.Device.Name.ToLower().Contains(searchQuery.ToLower())
+                       ||x.Subset.Device.Parent.Name.ToLower().Contains(searchQuery.ToLower())
+                       
+                       );
+                       
             }
             var result = query.Select(x => new TreeNodeViewModel
             {
