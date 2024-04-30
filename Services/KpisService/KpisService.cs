@@ -424,7 +424,7 @@ namespace Tenor.Services.KpisService
                     }
                 }
 
-                //mapping wit DTO querable
+                //mapping to DTO querable
                 var queryViewModel = query.Select(x => new KpiListViewModel()
                 {
                     Id = x.Id,

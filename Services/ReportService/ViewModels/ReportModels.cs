@@ -38,7 +38,6 @@ namespace Tenor.Services.ReportService.ViewModels
             public enLogicalOperator LogicOpt { get; set; }
             public string? Value { get; set; }
         }
-
         public class HavingViewModel
         {
 
@@ -116,6 +115,21 @@ namespace Tenor.Services.ReportService.ViewModels
             public string FieldName { get; set; }
             public object Value { get; set; }
         }
+        public class ReportDto
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+            public int DeviceId { get; set; }
+            public string DeviceName { get; set; }
+            public bool IsPublic { get; set; }
+            public string? CreatedBy { get; set; }
+            public DateTime? CreatedDate { get; set; }
+        }
+        public class ReportListFilter:GeneralFilterModel
+        {
+            public int deviceId { get; set; }
+            public IDictionary<string, object>? ExtraFields { get; set; }
 
+        }
     }
 }

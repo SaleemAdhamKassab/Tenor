@@ -13,6 +13,8 @@ using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Azure.Core;
 using System.Security.Cryptography;
+using Tenor.Helper;
+using Tenor.Services.CountersService.ViewModels;
 
 namespace Tenor.Services.ReportService
 {
@@ -23,6 +25,7 @@ namespace Tenor.Services.ReportService
 		Task<ResultWithMessage> HardDelete(int id, TenantDto authUser);
 		Task<ResultWithMessage> SoftDelete(int id, TenantDto authUser);
 		Task<ResultWithMessage> GetById(int id);
+        Task<ResultWithMessage> GetByFilter(ReportListFilter input , TenantDto authUser);
     }
 	public class ReportService : IReportService
 	{
@@ -263,6 +266,71 @@ namespace Tenor.Services.ReportService
 
 
         }
+		public async Task<ResultWithMessage> GetByFilter(ReportListFilter input , TenantDto authUser)
+		{
+            IQueryable<Report> query = null;
+            //------------------------------Data source--------------------------------------------
+            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
+            {
+                query = _db.Reports.Where(x=> !x.IsDeleted).Include(x=>x.Device).Include(x => x.ReportFieldValues)
+					.ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField).AsQueryable();
+            }
+            else
+            {
+                query = _db.Reports.Where(x => !x.IsDeleted && (x.CreatedBy == authUser.userName || x.IsPublic || authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains((int)x.DeviceId)))
+               .Include(x => x.ReportFieldValues).ThenInclude(x => x.ReportField)
+               .ThenInclude(x => x.ExtraField).AsQueryable();
+            }
+            //------------------------------Data filter-------------------------------------------
+            if (!string.IsNullOrEmpty(input.SearchQuery))
+            {
+                query = query.Where(x => x.Name.ToLower().Contains(input.SearchQuery.ToLower())
+                              || x.DeviceId.ToString().Equals(input.SearchQuery)
+                              || x.Id.ToString().Equals(input.SearchQuery)
+                              || x.CreatedBy.ToLower().Contains(input.SearchQuery)
+                              || x.Device.Name.ToLower().Contains(input.SearchQuery)
+                              );
+            }
+
+            if (input.deviceId != null && input.deviceId != 0)
+            {
+                query = query.Where(x => x.DeviceId == input.deviceId);
+
+            }
+
+            if (input.ExtraFields != null)
+            {
+                foreach (var s in input.ExtraFields)
+                {
+                    string strValue = string.Join(',', s.Value).ToString();
+                    strValue = strValue.Replace("[", "").Replace("]", "").Replace(@"\t|\n|\r|\s+", "").Replace("\"", "");
+
+                    if (!string.IsNullOrEmpty(strValue))
+                    {
+                        query = query.Where(x => x.ReportFieldValues.Any(y => y.ReportField.ExtraField.Name == s.Key.ToString() && strValue.Contains(y.FieldValue)));
+                    }
+
+                }
+            }
+
+			//mapping to DTO querable
+
+			var queryViewModel = query.Select(x => new ReportDto()
+			{
+				Id = x.Id,
+				Name = x.Name,
+				DeviceId = x.DeviceId,
+				DeviceName = x.Device.Name,
+				IsPublic = x.IsPublic,
+				CreatedBy = x.CreatedBy,
+				CreatedDate = x.CreatedDate
+
+			});
+
+            return sortAndPagination(input, queryViewModel);
+
+
+        }
         private List<MeasureViewModel> GetReportMeasureById(List<ReportMeasure> reportMeasures)
         {
 
@@ -285,6 +353,36 @@ namespace Tenor.Services.ReportService
             }
 
 			return result;
+        }
+        private ResultWithMessage sortAndPagination(ReportListFilter FilterModel, IQueryable<ReportDto> queryViewModel)
+        {
+            if (!string.IsNullOrEmpty(FilterModel.SortActive))
+            {
+
+                var sortProperty = typeof(ReportDto).GetProperty(char.ToUpper(FilterModel.SortActive[0]) + FilterModel.SortActive.Substring(1));
+                if (sortProperty != null && FilterModel.SortDirection == "asc")
+                    queryViewModel = queryViewModel.OrderBy2(FilterModel.SortActive);
+
+                else if (sortProperty != null && FilterModel.SortDirection == "desc")
+                    queryViewModel = queryViewModel.OrderByDescending2(FilterModel.SortActive);
+
+                int Count = queryViewModel.Count();
+
+                var result = queryViewModel.Skip((FilterModel.PageIndex) * FilterModel.PageSize)
+                .Take(FilterModel.PageSize).ToList();
+
+                return new ResultWithMessage(new DataWithSize(Count, result), "");
+            }
+
+            else
+            {
+                int Count = queryViewModel.Count();
+                var result = queryViewModel.Skip((FilterModel.PageIndex) * FilterModel.PageSize)
+                .Take(FilterModel.PageSize).ToList();
+
+                return new ResultWithMessage(new DataWithSize(Count, result), "");
+            }
+
         }
 
     }

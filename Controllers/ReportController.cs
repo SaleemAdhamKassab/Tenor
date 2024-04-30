@@ -58,6 +58,15 @@ namespace Tenor.Controllers
 
         }
 
+        [HttpPost("getByFilter")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
+        public async Task<IActionResult> getKpiByFilter(ReportListFilter filter)
+        {
+
+            var authData = AuthUser();
+            return  _returnResult(await _reportService.GetByFilter(filter, authData));
+
+        }
 
     }
 }
