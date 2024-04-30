@@ -104,7 +104,6 @@ namespace Tenor.Services.DevicesService
 
 			return string.Empty;
 		}
-
 		private List<Device> getDeviceChilds(ref List<Device> devices, int parentId)
 		{
 			List<Device> innerDevices = devices;
@@ -462,8 +461,17 @@ namespace Tenor.Services.DevicesService
 
 			if(parentid!=null && parentid!=0)
 			{
-				 subsetQuery = _db.Subsets.Where(x => x.DeviceId == parentid);
-                 resultSubset = subsetQuery.Select(x => new TreeNodeViewModel()
+				if(!string.IsNullOrEmpty(searchQuery))
+				{
+                    subsetQuery = _db.Subsets.Where(x => x.DeviceId == parentid && x.Name.ToLower().Contains(searchQuery.ToLower()));
+
+                }
+                else
+				{
+                    subsetQuery = _db.Subsets.Where(x => x.DeviceId == parentid);
+
+                }
+                resultSubset = subsetQuery.Select(x => new TreeNodeViewModel()
                 {
                     Id = x.Id,
                     Name = x.Name,
