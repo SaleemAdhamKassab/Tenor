@@ -99,5 +99,15 @@ namespace Tenor.Controllers
 
         }
 
+        [HttpPost("GetReportTreeByUserName")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
+        public async Task<IActionResult> GetReportTreeByUserName(ReportTreeFilter? input)
+        {
+
+            var authData = AuthUser();
+            return _returnResult(await _reportService.GetReportTreeByUserName(input, authData));
+
+        }
+
     }
 }

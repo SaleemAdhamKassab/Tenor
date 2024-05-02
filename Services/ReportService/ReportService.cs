@@ -29,6 +29,7 @@ namespace Tenor.Services.ReportService
         Task<ResultWithMessage> GetReportTreeUserNames(ReportTreeFilter input, TenantDto authUser);
         Task<ResultWithMessage> GetReportTreeDevicesByUserName(ReportTreeFilter input, TenantDto authUser);
         Task<ResultWithMessage> GetReportTreeByUserNameDevice(ReportTreeFilter input, TenantDto authUser);
+        Task<ResultWithMessage> GetReportTreeByUserName(ReportTreeFilter input, TenantDto authUser);
 
     }
     public class ReportService : IReportService
@@ -512,7 +513,53 @@ namespace Tenor.Services.ReportService
 
             return new ResultWithMessage(result, null);
         }
+        public async Task<ResultWithMessage> GetReportTreeByUserName(ReportTreeFilter input, TenantDto authUser)
+        {
+            IQueryable<Report> query = null;
+            //------------------------------Data source--------------------------------------------
+            query = _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == input.userName).Include(x => x.Device).Include(x => x.ReportFieldValues)
+                    .ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField).AsQueryable();
 
+            //------------------------------Data filter-------------------------------------------
+            if (!string.IsNullOrEmpty(input.SearchQuery))
+            {
+                query = query.Where(x => x.Name.ToLower().Contains(input.SearchQuery.ToLower())
+                              || x.DeviceId.ToString().Equals(input.SearchQuery)
+                              || x.Id.ToString().Equals(input.SearchQuery)
+                              || x.CreatedBy.ToLower().Contains(input.SearchQuery)
+                              || x.Device.Name.ToLower().Contains(input.SearchQuery)
+                              );
+            }
+
+
+            if (input.ExtraFields != null)
+            {
+                foreach (var s in input.ExtraFields)
+                {
+                    string strValue = string.Join(',', s.Value).ToString();
+                    strValue = strValue.Replace("[", "").Replace("]", "").Replace(@"\t|\n|\r|\s+", "").Replace("\"", "");
+
+                    if (!string.IsNullOrEmpty(strValue))
+                    {
+                        query = query.Where(x => x.ReportFieldValues.Any(y => y.ReportField.ExtraField.Name == s.Key.ToString() && strValue.Contains(y.FieldValue)));
+                    }
+
+                }
+            }
+
+            var result = query.Select(x => new TreeReportViewModel()
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Type = "report",
+
+            }).ToList();
+
+
+            return new ResultWithMessage(result, null);
+
+
+        }
         private List<MeasureViewModel> GetReportMeasureById(List<ReportMeasure> reportMeasures)
         {
 
