@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tenor.Data;
 
@@ -11,9 +12,11 @@ using Tenor.Data;
 namespace Tenor.Migrations
 {
     [DbContext(typeof(TenorDbContext))]
-    partial class TenorDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240502103406_EditReportFilterWithLevel")]
+    partial class EditReportFilterWithLevel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -780,6 +783,9 @@ namespace Tenor.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("DimensionLevelId")
+                        .HasColumnType("int");
+
                     b.Property<int>("FilterContainerId")
                         .HasColumnType("int");
 
@@ -796,6 +802,8 @@ namespace Tenor.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DimensionLevelId");
 
                     b.HasIndex("FilterContainerId");
 
@@ -1474,6 +1482,10 @@ namespace Tenor.Migrations
 
             modelBuilder.Entity("Tenor.Models.ReportFilter", b =>
                 {
+                    b.HasOne("Tenor.Models.DimensionLevel", null)
+                        .WithMany("ReportFilters")
+                        .HasForeignKey("DimensionLevelId");
+
                     b.HasOne("Tenor.Models.ReportFilterContainer", "FilterContainer")
                         .WithMany("ReportFilters")
                         .HasForeignKey("FilterContainerId")
@@ -1685,6 +1697,8 @@ namespace Tenor.Migrations
             modelBuilder.Entity("Tenor.Models.DimensionLevel", b =>
                 {
                     b.Navigation("Childs");
+
+                    b.Navigation("ReportFilters");
                 });
 
             modelBuilder.Entity("Tenor.Models.ExtraField", b =>

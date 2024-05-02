@@ -12,22 +12,22 @@ namespace Tenor.Models
 		public string? Value { get; set; }
 		[ForeignKey("FilterContainer")]
 		public int FilterContainerId { get; set; }
-		[ForeignKey("DimensionLevel")]
-		public int DimensionLevelId { get; set; }
+		[ForeignKey("Level")]
+		public int LevelId { get; set; }
 		public bool IsMandatory { get; set; }
 
 
-        public virtual DimensionLevel DimensionLevel { get; set; }
+        public virtual Level Level { get; set; }
         public virtual ReportFilterContainer FilterContainer { get; set; }
 
 		public ReportFilter() { }
-		public ReportFilter(int id, enLogicalOperator logicalOperator, string? value, int filterContainerId, int dimensionLevelId)
+		public ReportFilter(int id, enLogicalOperator logicalOperator, string? value, int filterContainerId, int levelId)
 		{
 			Id = id;
 			LogicalOperator = logicalOperator;
 			Value = value;
             FilterContainerId = filterContainerId;
-			DimensionLevelId = dimensionLevelId;
+			LevelId = levelId;
 		}
 
     }

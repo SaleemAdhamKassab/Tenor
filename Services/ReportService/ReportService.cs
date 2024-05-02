@@ -26,8 +26,12 @@ namespace Tenor.Services.ReportService
 		Task<ResultWithMessage> SoftDelete(int id, TenantDto authUser);
 		Task<ResultWithMessage> GetById(int id);
         Task<ResultWithMessage> GetByFilter(ReportListFilter input , TenantDto authUser);
+        Task<ResultWithMessage> GetReportTreeUserNames(ReportTreeFilter input, TenantDto authUser);
+        Task<ResultWithMessage> GetReportTreeDevicesByUserName(ReportTreeFilter input, TenantDto authUser);
+        Task<ResultWithMessage> GetReportTreeByUserNameDevice(ReportTreeFilter input, TenantDto authUser);
+
     }
-	public class ReportService : IReportService
+    public class ReportService : IReportService
 	{
 		private readonly TenorDbContext _db;
 		private readonly IJwtService _jwtService;
@@ -94,7 +98,7 @@ namespace Tenor.Services.ReportService
 							LogicalOperator = y.LogicalOperator,
 							Value = _sharedService.ConvertListToString(y.Value),
 							FilterContainerId = x.Id,
-							DimensionLevelId = y.DimensionLevelId
+							LevelId = y.LevelId
 						}).ToList()
 
 					}).ToList();
@@ -255,7 +259,7 @@ namespace Tenor.Services.ReportService
 					LogicalOperator = y.LogicalOperator,
 					LogicalOperatorName = y.LogicalOperator.GetDisplayName(),
 					Value = y.Value!= null? y.Value.Split(',').ToArray() : null,
-					DimensionLevelId = y.DimensionLevelId,
+					LevelId = y.LevelId,
 					IsMandatory = y.IsMandatory
 				}).ToList()
 			}).ToList();
@@ -331,6 +335,184 @@ namespace Tenor.Services.ReportService
 
 
         }
+		public async Task<ResultWithMessage> GetReportTreeUserNames(ReportTreeFilter input, TenantDto authUser)
+		{
+            IQueryable<Report> query = null;
+            //------------------------------Data source--------------------------------------------
+            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
+            {
+                query = _db.Reports.Where(x => !x.IsDeleted).Include(x => x.Device).Include(x => x.ReportFieldValues)
+                    .ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField).AsQueryable();
+            }
+            else
+            {
+                query = _db.Reports.Where(x => !x.IsDeleted && (x.CreatedBy == authUser.userName || x.IsPublic || authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains((int)x.DeviceId)))
+               .Include(x => x.ReportFieldValues).ThenInclude(x => x.ReportField)
+               .ThenInclude(x => x.ExtraField).AsQueryable();
+            }
+
+            //------------------------------Data filter-------------------------------------------
+            if (!string.IsNullOrEmpty(input.SearchQuery))
+            {
+                query = query.Where(x => x.Name.ToLower().Contains(input.SearchQuery.ToLower())
+                              || x.DeviceId.ToString().Equals(input.SearchQuery)
+                              || x.Id.ToString().Equals(input.SearchQuery)
+                              || x.CreatedBy.ToLower().Contains(input.SearchQuery)
+                              || x.Device.Name.ToLower().Contains(input.SearchQuery)
+                              );
+            }
+
+            if (input.deviceId != null && input.deviceId != 0)
+            {
+                query = query.Where(x => x.DeviceId == input.deviceId);
+
+            }
+
+            if (input.ExtraFields != null)
+            {
+                foreach (var s in input.ExtraFields)
+                {
+                    string strValue = string.Join(',', s.Value).ToString();
+                    strValue = strValue.Replace("[", "").Replace("]", "").Replace(@"\t|\n|\r|\s+", "").Replace("\"", "");
+
+                    if (!string.IsNullOrEmpty(strValue))
+                    {
+                        query = query.Where(x => x.ReportFieldValues.Any(y => y.ReportField.ExtraField.Name == s.Key.ToString() && strValue.Contains(y.FieldValue)));
+                    }
+
+                }
+            }
+
+              var res = query.GroupBy(
+               p => p.CreatedBy,
+               p => p.DeviceId,
+               (key, g) => new { CreatedBy = key, Devices = g.ToList() });
+
+            var result = res.Select(x => new TreeReportViewModel()
+            {
+                Name = x.CreatedBy,
+                Type = "userName",
+                HasChild = x.Devices.Count() > 0
+
+            }).ToList();
+
+
+            return new ResultWithMessage(result, null);
+
+        }
+        public async Task<ResultWithMessage> GetReportTreeDevicesByUserName(ReportTreeFilter input, TenantDto authUser)
+        {
+            IQueryable<Report> query = null;
+            //------------------------------Data source--------------------------------------------
+            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
+            {
+                query = _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy==input.userName).Include(x => x.Device).Include(x => x.ReportFieldValues)
+                    .ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField).AsQueryable();
+            }
+            else
+            {
+                query = _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == input.userName &&  ( x.IsPublic || authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains((int)x.DeviceId)))
+               .Include(x => x.ReportFieldValues).ThenInclude(x => x.ReportField)
+               .ThenInclude(x => x.ExtraField).AsQueryable();
+            }
+            //------------------------------Data filter-------------------------------------------
+            if (!string.IsNullOrEmpty(input.SearchQuery))
+            {
+                query = query.Where(x => x.Name.ToLower().Contains(input.SearchQuery.ToLower())
+                              || x.DeviceId.ToString().Equals(input.SearchQuery)
+                              || x.Id.ToString().Equals(input.SearchQuery)
+                              || x.CreatedBy.ToLower().Contains(input.SearchQuery)
+                              || x.Device.Name.ToLower().Contains(input.SearchQuery)
+                              );
+            }
+
+            if (input.deviceId != null && input.deviceId != 0)
+            {
+                query = query.Where(x => x.DeviceId == input.deviceId);
+
+            }
+
+            if (input.ExtraFields != null)
+            {
+                foreach (var s in input.ExtraFields)
+                {
+                    string strValue = string.Join(',', s.Value).ToString();
+                    strValue = strValue.Replace("[", "").Replace("]", "").Replace(@"\t|\n|\r|\s+", "").Replace("\"", "");
+
+                    if (!string.IsNullOrEmpty(strValue))
+                    {
+                        query = query.Where(x => x.ReportFieldValues.Any(y => y.ReportField.ExtraField.Name == s.Key.ToString() && strValue.Contains(y.FieldValue)));
+                    }
+
+                }
+            }
+
+
+            var res = query.GroupBy(
+               p => p.Device,
+               p => p.Name,
+               (key, g) => new { Device = key, Name = g.ToList() });
+
+            var result = res.Select(x => new TreeReportViewModel()
+            {
+                Id = x.Device.Id,
+                Name = x.Device.Name,
+                Type = "device",
+                HasChild = x.Name.Count() > 0
+
+            }).ToList();
+
+
+            return new ResultWithMessage(result, null);
+
+        }
+        public async Task<ResultWithMessage> GetReportTreeByUserNameDevice(ReportTreeFilter input, TenantDto authUser)
+        {
+            IQueryable<Report> query = null;
+            //------------------------------Data source--------------------------------------------
+            query = _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == input.userName && x.DeviceId == input.deviceId).Include(x => x.Device).Include(x => x.ReportFieldValues)
+                    .ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField).AsQueryable();
+
+            //------------------------------Data filter-------------------------------------------
+            if (!string.IsNullOrEmpty(input.SearchQuery))
+            {
+                query = query.Where(x => x.Name.ToLower().Contains(input.SearchQuery.ToLower())
+                              || x.DeviceId.ToString().Equals(input.SearchQuery)
+                              || x.Id.ToString().Equals(input.SearchQuery)
+                              || x.CreatedBy.ToLower().Contains(input.SearchQuery)
+                              || x.Device.Name.ToLower().Contains(input.SearchQuery)
+                              );
+            }
+
+         
+            if (input.ExtraFields != null)
+            {
+                foreach (var s in input.ExtraFields)
+                {
+                    string strValue = string.Join(',', s.Value).ToString();
+                    strValue = strValue.Replace("[", "").Replace("]", "").Replace(@"\t|\n|\r|\s+", "").Replace("\"", "");
+
+                    if (!string.IsNullOrEmpty(strValue))
+                    {
+                        query = query.Where(x => x.ReportFieldValues.Any(y => y.ReportField.ExtraField.Name == s.Key.ToString() && strValue.Contains(y.FieldValue)));
+                    }
+
+                }
+            }
+
+
+            var result = query.Select(x => new TreeReportViewModel()
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Type = "report",
+
+            }).ToList();
+
+
+            return new ResultWithMessage(result, null);
+        }
+
         private List<MeasureViewModel> GetReportMeasureById(List<ReportMeasure> reportMeasures)
         {
 

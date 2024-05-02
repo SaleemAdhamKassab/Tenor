@@ -68,5 +68,36 @@ namespace Tenor.Controllers
 
         }
 
+        [HttpPost("GetReportTreeUserNames")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
+        public async Task<IActionResult> GetReportTreeUserNames(ReportTreeFilter ? input)
+        {
+
+            var authData = AuthUser();
+            return _returnResult(await _reportService.GetReportTreeUserNames(input, authData));
+
+        }
+
+        [HttpPost("GetReportTreeDevicesByUserName")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
+        public async Task<IActionResult> GetReportTreeDevicesByUserName(ReportTreeFilter? input)
+        {
+
+            var authData = AuthUser();
+            return _returnResult(await _reportService.GetReportTreeDevicesByUserName(input, authData));
+
+        }
+
+
+        [HttpPost("GetReportTreeByUserNameDevice")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
+        public async Task<IActionResult> GetReportTreeByUserNameDevice(ReportTreeFilter? input)
+        {
+
+            var authData = AuthUser();
+            return _returnResult(await _reportService.GetReportTreeByUserNameDevice(input, authData));
+
+        }
+
     }
 }

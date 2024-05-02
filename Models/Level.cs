@@ -14,6 +14,7 @@ namespace Tenor.Models
         public bool IsLevel { get; set; }
         public virtual ICollection<DimensionLevel> DimensionLevels { get; set; }
         public virtual ICollection<ReportLevel> ReportLevels { get; set; }
+        public virtual ICollection<ReportFilter> ReportFilters { get; set; }
 
 
     }

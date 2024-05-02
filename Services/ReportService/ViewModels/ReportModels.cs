@@ -72,7 +72,7 @@ namespace Tenor.Services.ReportService.ViewModels
             public enLogicalOperator LogicalOperator { get; set; }
             public string ? LogicalOperatorName { get; set; }
             public string[] ? Value { get; set; }
-            public int DimensionLevelId { get; set; }
+            public int LevelId { get; set; }
             public bool IsMandatory { get; set; }
 
         }
@@ -130,6 +130,21 @@ namespace Tenor.Services.ReportService.ViewModels
             public int deviceId { get; set; }
             public IDictionary<string, object>? ExtraFields { get; set; }
 
+        }
+        public class ReportTreeFilter
+        {
+            public string ? SearchQuery { get; set; }
+            public int ? deviceId { get; set; }
+            public string ? userName { get; set; }
+            public IDictionary<string, object>? ExtraFields { get; set; }
+
+        }
+        public class TreeReportViewModel
+        {
+            public int ? Id { get; set; }
+            public string? Name { get; set; }
+            public string? Type { get; set; }
+            public bool HasChild { get; set; }
         }
     }
 }
