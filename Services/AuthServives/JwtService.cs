@@ -1,16 +1,9 @@
 ﻿using AutoMapper;
-using Azure;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Extensions;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using OfficeOpenXml.FormulaParsing.LexicalAnalysis;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Reflection;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -119,10 +112,10 @@ namespace Tenor.Services.AuthServives
                     ClockSkew = TimeSpan.Zero
                 };
 
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var tokenPrincipal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
-                JwtSecurityToken jwtSecurityToken = securityToken as JwtSecurityToken;
-                if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha512, StringComparison.InvariantCultureIgnoreCase))
+                var tokenHandler = new JsonWebTokenHandler();
+                var tokenPrincipal = tokenHandler.ValidateToken(token, tokenValidationParameters);
+                var jwtSecurityToken = tokenPrincipal.SecurityToken as JsonWebToken;
+                if (jwtSecurityToken == null)
                 {
                     return false;
                 }
@@ -150,10 +143,11 @@ namespace Tenor.Services.AuthServives
                     ClockSkew = TimeSpan.Zero
                 };
 
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
-                JwtSecurityToken jwtSecurityToken = securityToken as JwtSecurityToken;
-                if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha512, StringComparison.InvariantCultureIgnoreCase))
+                var tokenHandler = new JsonWebTokenHandler();
+                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters);
+                var jwtSecurityToken = principal.SecurityToken as JsonWebToken;
+
+                if (jwtSecurityToken == null)
                 {
                     return null;
                 }
@@ -299,7 +293,7 @@ namespace Tenor.Services.AuthServives
             var hmac = new HMACSHA512(Encoding.UTF8.GetBytes(_config["JWT:Secret"]));
 
             string TenantAccessDataStr = JsonConvert.SerializeObject(TenantAccessData);
-            var tokenHandler = new JwtSecurityTokenHandler();
+            var tokenHandler = new JsonWebTokenHandler();
             var tokenKey = new SymmetricSecurityKey(hmac.Key);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -312,8 +306,7 @@ namespace Tenor.Services.AuthServives
                 SigningCredentials = new SigningCredentials(tokenKey, SecurityAlgorithms.HmacSha512)
             };
 
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+            return tokenHandler.CreateToken(tokenDescriptor);
         }
         private TenantDto CovertToTenantDto(ClaimsPrincipal principal)
         {
