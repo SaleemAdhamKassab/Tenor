@@ -807,6 +807,7 @@ namespace Tenor.Services.ReportService
 				//1) get deviceDimensionLevels
 				List<DimensionLevel> dimensionLevels = _db.DimensionLevels
 				.Include(e => e.Dimension)
+				.Include(e => e.Level)
 				.Where(e => deviceIds.Contains((int)e.Dimension.DeviceId))
 				.ToList();
 
@@ -876,7 +877,9 @@ namespace Tenor.Services.ReportService
 						Childs = dimensionLevelsViewModel.DimensionLevels.Select(e => new TreeNodeViewModel()
 						{
 							Id = e.Id,
-							Name = e.ColumnName
+							Name = e.ColumnName,
+							IsFilter = e.Level.IsFilter,
+							IsLevel = e.Level.IsLevel
 						}).ToList(),
 					};
 

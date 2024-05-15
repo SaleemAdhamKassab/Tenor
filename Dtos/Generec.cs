@@ -1,4 +1,6 @@
-﻿namespace Tenor.Dtos
+﻿using System.Reflection.Metadata.Ecma335;
+
+namespace Tenor.Dtos
 {
 	public class DataWithSize
 	{
@@ -32,6 +34,8 @@
 		public bool HasChild { get; set; }
 		public string? Aggregation { get; set; }
 		public string? SupplierId { get; set; }
+		public bool IsFilter { get; set; }
+		public bool IsLevel { get; set; }
 		public List<TreeNodeViewModel>? Childs { get; set; }
 	}
 
