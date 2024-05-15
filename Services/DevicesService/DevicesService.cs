@@ -464,7 +464,10 @@ namespace Tenor.Services.DevicesService
 				if(!string.IsNullOrEmpty(searchQuery))
 				{
                     subsetQuery = _db.Subsets.Where(x => x.DeviceId == parentid && 
-					(x.Name.ToLower().Contains(searchQuery.ToLower()) || x.Counters.Any(y=>y.Name.ToLower().Contains(searchQuery.ToLower()))));
+					(x.Name.ToLower().Contains(searchQuery.ToLower()) ||
+					x.Counters.Any(y=>y.Name.ToLower().Contains(searchQuery.ToLower()))			
+					|| x.Device.Parent.Name.ToLower().Contains(searchQuery.ToLower())
+					));
 
                 }
                 else
