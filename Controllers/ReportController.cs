@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Tenor.ActionFilters;
+using Tenor.Models;
 using Tenor.Services.AuthServives;
 using Tenor.Services.AuthServives.ViewModels;
 using Tenor.Services.ReportService;
@@ -110,11 +111,9 @@ namespace Tenor.Controllers
 		}
 
 		[HttpPost("getDimensionLevels")]
-		//public async Task<IActionResult> getDimensionLevels(List<ReportMeasure> reportMeasures)
-		public async Task<IActionResult> getDimensionLevels()
+		public async Task<IActionResult> getDimensionLevels(List<ReportMeasure> reportMeasures)
 		{
-			//return _returnResult(await _reportService.getDimensionLevels(reportMeasures));
-			return _returnResult(await _reportService.getDimensionLevels());
+			return _returnResult(await _reportService.getDimensionLevels(reportMeasures));
 		}
 	}
 }

@@ -32,8 +32,7 @@ namespace Tenor.Services.ReportService
 		Task<ResultWithMessage> GetReportTreeDevicesByUserName(ReportTreeFilter input, TenantDto authUser);
 		Task<ResultWithMessage> GetReportTreeByUserNameDevice(ReportTreeFilter input, TenantDto authUser);
 		Task<ResultWithMessage> GetReportTreeByUserName(ReportTreeFilter input, TenantDto authUser);
-		//Task<ResultWithMessage> getDimensionLevels(List<ReportMeasure> reportMeasures);
-		Task<ResultWithMessage> getDimensionLevels();
+		Task<ResultWithMessage> getDimensionLevels(List<ReportMeasure> reportMeasures);
 	}
 	public class ReportService : IReportService
 	{
@@ -657,10 +656,10 @@ namespace Tenor.Services.ReportService
 		}
 
 		// 2- get counters devices
-		private List<int> getMeasureCounterIds(Operation operation, List<Operation> operations, List<int> c)
+		private List<int> getMeasureCounterIds(Operation operation, List<Operation> operations, List<int> prevCounterIds)
 		{
 			//https://stackoverflow.com/questions/73485400/c-sharp-recursively-loop-over-object-and-return-all-children
-			List<int> counterIds = c;
+			List<int> counterIds = prevCounterIds;
 			int? counterId = 0;
 
 			if (operation.Childs != null)
@@ -703,191 +702,57 @@ namespace Tenor.Services.ReportService
 			return x;
 		}
 
-		//public async Task<ResultWithMessage> getDimensionLevels(List<ReportMeasure> measures)
-		public async Task<ResultWithMessage> getDimensionLevels()
+		public async Task<ResultWithMessage> getDimensionLevels(List<ReportMeasure> reportMeasures)
 		{
-			List<TreeNodeViewModel> result = [];
-
 			// 1- get operation childs
-			List<Operation> operations = getMeasureOperations(3397);
+			List<List<Operation>> measureOperations = [];
+			foreach (ReportMeasure reportMeasure in reportMeasures)
+				measureOperations.Add(getMeasureOperations(reportMeasure.OperationId));
+
 
 			// 2- get counters devices
-			List<int> deviceIds = getMeasureDeviceIds(operations);
+			List<int> deviceIds = [];
+			foreach (List<Operation> operations in measureOperations)
+				deviceIds.AddRange(getMeasureDeviceIds(operations));
 
-			// 3- get shared Level Ids for deviceIds
-			if (deviceIds.Count > 0)
-			{
-				// 3-1 get dimension device Ids
-				//List<int> deviceDimensionIds = _db.Dimensions.Where(e => deviceIds.Contains((int)e.DeviceId)).Select(e => e.Id).ToList();
+			if (deviceIds.Count == 0)
+				return new ResultWithMessage(null, "Empty device Ids");
 
-				// 3-2 get level Ids
-				//List<int> deviceDimensionLevelIds = _db.DimensionLevels.Where(e => deviceDimensionIds.Contains(e.DimensionId)).Select(e => e.LevelId).ToList();
-				//var deviceDimensionLevelIdsWithParentIds = _db.DimensionLevels
-				//	.Where(e => deviceDimensionIds.Contains(e.DimensionId))
-				//	.Select(e => new { e.LevelId, e.ParentId })
-				//	.ToList();
-
-
-				//// 3-3 get shared level Ids between device Ids
-				//var sharedDeviceDimensionLevelIdsWithParentIds = deviceDimensionLevelIdsWithParentIds.GroupBy(e => e.LevelId).Where(e => e.Count() > 1).Select(e => e.Key).ToList();
-
-				//// 3-4 get shared levels between devices
-				//sharedLevelsBetweenDevices = _db.Levels.Where(e => getSharedLevelIdsBetweenDeviceIds.Contains(e.Id)).ToList();
-				//sharedLevelsBetweenDevices = _db.Levels
-				//	.Where(e => getSharedLevelIdsBetweenDeviceIds.Contains(e.Id))
-				//	.Select(e => new TreeNodeViewModel()
-				//	{
-				//		Id = e.Id,
-				//		Name = e.Name,
-				//		Type = e.DataType
-				//	})
-				//	.ToList();
-
-
-				//1)
-				//List<DimensionLevel> dimensionLevels = _db.DimensionLevels
-				//.Include(e => e.Dimension)
-				//.Where(e => deviceIds.Contains((int)e.Dimension.DeviceId))
-				//.ToList();
-
-				////2) get shared level Ids
-				//int countDeviceIds = _db.Dimensions.Where(e => deviceIds.Contains((int)e.DeviceId)).Count();
-				//List<int> sharedLevelIds = dimensionLevels.GroupBy(x => x.LevelId)
-				//.Where(g => g.Count() >= countDeviceIds)
-				//.Select(y => y.Key)
-				//.ToList();
-
-
-				//3) group by dimension id
-				//var groupByDimensionId = dimensionLevels
-				//		.GroupBy(e => e.DimensionId)
-				//		.Select(g => new
-				//		{
-				//			dimensionName = dimensionLevels.Where(e => e.Dimension.Id == g.Key).First().Dimension.Name,
-				//			levels = g.Where(e => sharedLevelIds.Contains(e.LevelId)).Select(c => c)
-				//		}).ToList();
-
-
-				//4 return result
-
-				//foreach (var item in groupByDimensionId)
-				//{
-				//	TreeNodeViewModel model = new()
-				//	{
-				//		Name = item.dimensionName,
-				//		HasChild = true,
-				//		Childs = item.levels.Select(e => new TreeNodeViewModel()
-				//		{
-				//			Id = e.Id,
-				//			Name = e.ColumnName
-				//		}).ToList(),
-				//	};
-
-
-				//	if (!result.Any(e => e.Name == model.Name))
-				//		result.Add(model);
-				//}
-
-
-				//3) group by dimension name
-				//var groupByDimensionName = dimensionLevels
-				//		.GroupBy(e => e.Dimension.Name)
-				//		.Select(g => new
-				//		{
-				//			dimensionName = g.Key,
-				//			levels = g.Select(e => e)
-				//		}).ToList();
-
-				/// New
-
-
-
-
-
-				//1) get deviceDimensionLevels
-				List<DimensionLevel> dimensionLevels = _db.DimensionLevels
-				.Include(e => e.Dimension)
-				.Include(e => e.Level)
-				.Where(e => deviceIds.Contains((int)e.Dimension.DeviceId))
-				.ToList();
-
-				//2) group By DimensionId And Name
-				var groupByDimensionIdAndName = dimensionLevels
-						.GroupBy(e => new { e.Dimension.Id, e.Dimension.Name })
-						.Select(g => new
-						{
-							dimensionName = g.Key,
-							levels = g.Select(e => e)
-						}).ToList();
-
-				//3) get shared levels only
-				List<DimensionLevelsViewModel> sharedDimensionLevels = [];
-				List<DimensionLevel> oldLevels = [];
-				List<DimensionLevel> newLevels = [];
-				List<DimensionLevel> sharedLevels = [];
-
-				foreach (var item in groupByDimensionIdAndName)
+			// 3- return shared levels between devices 
+			var result = _db.Dimensions
+					.Where(x => deviceIds.Contains(x.DeviceId.Value))
+					.Select(d => d.DimensionLevels.Select(dl => new
+					{
+						DimensionName = d.Name,
+						dl.LevelId,
+						LevelName = dl.Level.Name,
+						LevelType = dl.Level.DataType,
+						dl.Level.IsFilter,
+						dl.Level.IsLevel
+					})).ToList()
+				.SelectMany(x => x)
+				.GroupBy(z => z)
+				.Select(b => new { data = b.Key, Count = b.Count() })
+				.Where(f => f.Count == deviceIds.Count)
+				.GroupBy(f => f.data.DimensionName)
+				.Select(g => new TreeNodeViewModel
 				{
-					DimensionLevelsViewModel model = new()
+					Id = 0,
+					Name = g.Key,
+					HasChild = true,
+					Type = "dimension",
+					Childs = g.Select(z => new TreeNodeViewModel
 					{
-						DimensionName = item.dimensionName.Name,
-						DimensionLevels = item.levels.ToList()
-					};
+						Id = z.data.LevelId,
+						Name = z.data.LevelName,
+						HasChild = false,
+						IsFilter = z.data.IsFilter,
+						IsLevel = z.data.IsLevel,
+						Type = z.data.LevelType
+					}).ToList()
+				});
 
-					if (sharedDimensionLevels.Count(e => e.DimensionName == model.DimensionName) == 0)
-					{
-						//if not exist add new dimension with all levels
-						sharedDimensionLevels.Add(model);
-					}
-					else
-					{
-						//if exist get shared levels only
-						DimensionLevelsViewModel oldDimension =
-							sharedDimensionLevels
-							.First(e => e.DimensionName == model.DimensionName);
-
-						oldLevels = oldDimension.DimensionLevels;
-						newLevels = model.DimensionLevels;
-
-						foreach (DimensionLevel oldLevel in oldLevels)
-						{
-							foreach (DimensionLevel newLevel in newLevels)
-							{
-								if (oldLevel.ColumnName == newLevel.ColumnName)
-								{
-									sharedLevels.Add(oldLevel);
-									break;
-								}
-							}
-						}
-
-						oldDimension.DimensionLevels = sharedLevels;
-						sharedLevels = [];
-					}
-				}
-
-
-				//4 return result
-				foreach (DimensionLevelsViewModel dimensionLevelsViewModel in sharedDimensionLevels)
-				{
-					TreeNodeViewModel model = new()
-					{
-						Name = dimensionLevelsViewModel.DimensionName,
-						HasChild = true,
-						Childs = dimensionLevelsViewModel.DimensionLevels.Select(e => new TreeNodeViewModel()
-						{
-							Id = e.Id,
-							Name = e.ColumnName,
-							IsFilter = e.Level.IsFilter,
-							IsLevel = e.Level.IsLevel
-						}).ToList(),
-					};
-
-					result.Add(model);
-				}
-			}
-
-			return new ResultWithMessage(result, string.Empty);
+			return new ResultWithMessage(result, "");
 		}
 	}
 }
