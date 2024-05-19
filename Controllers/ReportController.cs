@@ -111,7 +111,7 @@ namespace Tenor.Controllers
 		}
 
 		[HttpPost("getDimensionLevels")]
-		public async Task<IActionResult> getDimensionLevels(List<ReportMeasure> reportMeasures)
+		public async Task<IActionResult> getDimensionLevels(List<ReportMeasureDto> reportMeasures)
 		{
 			return _returnResult(await _reportService.getDimensionLevels(reportMeasures));
 		}

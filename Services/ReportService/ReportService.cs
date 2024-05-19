@@ -18,6 +18,7 @@ using Tenor.Services.CountersService.ViewModels;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Collections.Generic;
 using System.Collections;
+using static Tenor.Services.SharedService.ViewModels.SharedModels;
 
 namespace Tenor.Services.ReportService
 {
@@ -32,7 +33,7 @@ namespace Tenor.Services.ReportService
 		Task<ResultWithMessage> GetReportTreeDevicesByUserName(ReportTreeFilter input, TenantDto authUser);
 		Task<ResultWithMessage> GetReportTreeByUserNameDevice(ReportTreeFilter input, TenantDto authUser);
 		Task<ResultWithMessage> GetReportTreeByUserName(ReportTreeFilter input, TenantDto authUser);
-		Task<ResultWithMessage> getDimensionLevels(List<ReportMeasure> reportMeasures);
+		Task<ResultWithMessage> getDimensionLevels(List<ReportMeasureDto> reportMeasures);
 	}
 	public class ReportService : IReportService
 	{
@@ -48,6 +49,74 @@ namespace Tenor.Services.ReportService
 			_sharedService = sharedService;
 			_mapper = mapper;
 		}
+
+
+
+		////////////////////////////////////////////////AMR ////////////////////////////////////////////////
+		private List<int> getOperationDeviceIds(OperationBinding rootOperation)
+		{
+			List<int> deviceIds = [];
+			foreach (OperationBinding operation in rootOperation.Childs)
+			{
+				if (operation.Type == enOPerationTypes.counter)
+				{
+					var deviceId = _db.Counters.Where(x => x.Id == operation.CounterId).Select(y => y.Subset.DeviceId).FirstOrDefault();
+					deviceIds.Add(deviceId);
+				}
+				else if (operation.Type == enOPerationTypes.voidFunction ||
+						operation.Type == enOPerationTypes.function)
+				{
+					foreach (var item in operation.Childs ?? [])
+					{
+						deviceIds.AddRange(getOperationDeviceIds(item));
+					}
+				}
+				else if (operation.Type == enOPerationTypes.kpi)
+				{
+					var item = _db.Kpis.Include(x => x.Operation).FirstOrDefault(x => x.Id == operation.KpiId);
+					if (item != null)
+					{
+						deviceIds.AddRange(getOperationDeviceIds(item.Operation));
+					}
+				}
+			}
+
+			return deviceIds;
+		}
+		private List<int> getOperationDeviceIds(Operation rootOperation)
+		{
+			List<int> deviceIds = [];
+			var operationChilds = _db.Operations.Where(x => x.ParentId == rootOperation.Id);
+			foreach (var operation in operationChilds.ToList() ?? [])
+			{
+				if (operation.Type == enOPerationTypes.counter)
+				{
+					var deviceId = _db.Counters.Where(x => x.Id == operation.CounterId).Select(y => y.Subset.DeviceId).FirstOrDefault();
+					deviceIds.Add(deviceId);
+				}
+				else if (operation.Type == enOPerationTypes.voidFunction ||
+						operation.Type == enOPerationTypes.function)
+				{
+					var operations = _db.Operations.Where(x => x.ParentId == operation.Id);
+					foreach (var item in operations.ToList() ?? [])
+					{
+						deviceIds.AddRange(getOperationDeviceIds(item));
+					}
+				}
+				else if (operation.Type == enOPerationTypes.kpi)
+				{
+					var item = _db.Kpis.Include(x => x.Operation).FirstOrDefault(x => x.Id == operation.KpiId);
+					if (item != null)
+					{
+						deviceIds.AddRange(getOperationDeviceIds(item.Operation));
+					}
+				}
+			}
+			return deviceIds;
+		}
+		///////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 		public async Task<ResultWithMessage> Add(CreateReport input, TenantDto authUser)
 		{
@@ -611,113 +680,14 @@ namespace Tenor.Services.ReportService
 			}
 
 		}
-
-
-
-
-
-
-		///// SALEEM
-		///////////////////////// private methods
-		// 1- get operation childs
-		private List<Operation> getMeasureOperations(int operationId)
+		public async Task<ResultWithMessage> getDimensionLevels(List<ReportMeasureDto> reportMeasures)
 		{
-			List<Operation> operations = _db.Operations.ToList();
-			List<Operation> rootOperations = operations.Where(e => e.Id == operationId).ToList();
-			List<Operation> subList = new();
-			List<Operation> result = new();
-
-			foreach (Operation operation in rootOperations)
-			{
-				subList = rootOperations.Where(x => x.Id == operation.Id).Select(x => new Operation()
-				{
-					Id = x.Id,
-					Order = x.Order,
-					Childs = getOperationChilds(ref operations, x.Id)
-				}).ToList();
-
-				result.AddRange(subList);
-			}
-
-			return result;
-		}
-		private List<Operation> getOperationChilds(ref List<Operation> operations, int parentId)
-		{
-			List<Operation> innerOperations = operations;
-
-			return operations.Where(e => e.ParentId == parentId).Select(e => new Operation()
-			{
-				Id = e.Id,
-				Order = e.Order,
-				CounterId = e.CounterId,
-				Childs = innerOperations.Where(x => x.ParentId == e.Id).Count() > 0 ? getOperationChilds(ref innerOperations, e.Id) : null
-			}).ToList();
-
-		}
-
-		// 2- get counters devices
-		private List<int> getMeasureCounterIds(Operation operation, List<Operation> operations, List<int> prevCounterIds)
-		{
-			//https://stackoverflow.com/questions/73485400/c-sharp-recursively-loop-over-object-and-return-all-children
-			List<int> counterIds = prevCounterIds;
-			int? counterId = 0;
-
-			if (operation.Childs != null)
-			{
-				foreach (Operation child in operation.Childs)
-				{
-					counterId = child.CounterId;
-
-					if (!string.IsNullOrEmpty(counterId.ToString()))
-						counterIds.Add(int.Parse(counterId.ToString()));
-
-					getMeasureCounterIds(child, operations, counterIds);
-				}
-			}
-
-			return counterIds;
-		}
-		private Device getCounterDevice(int counterId)
-		{
-			Device device = _db.Counters.Include(e => e.Subset)
-							 .ThenInclude(e => e.Device)
-							 .Where(e => e.Id == counterId)
-							 .Select(e => new Device()
-							 {
-								 Id = e.Subset.Device.Id,
-								 Name = e.Subset.Device.Name,
-								 Description = e.Subset.Device.Description
-							 }).First();
-			return device;
-		}
-		private List<int> getMeasureDeviceIds(List<Operation> operations)
-		{
-			List<int> counterIds = getMeasureCounterIds(operations.ElementAt(0), operations, new List<int>());
-			List<Device> devices = new();
-			foreach (int counterId in counterIds)
-				devices.Add(getCounterDevice(counterId));
-
-			List<int> x = devices.Select(x => x.Id).Distinct().ToList();
-
-			return x;
-		}
-
-		public async Task<ResultWithMessage> getDimensionLevels(List<ReportMeasure> reportMeasures)
-		{
-			// 1- get operation childs
-			List<List<Operation>> measureOperations = [];
-			foreach (ReportMeasure reportMeasure in reportMeasures)
-				measureOperations.Add(getMeasureOperations(reportMeasure.OperationId));
-
-
-			// 2- get counters devices
 			List<int> deviceIds = [];
-			foreach (List<Operation> operations in measureOperations)
-				deviceIds.AddRange(getMeasureDeviceIds(operations));
-
-			if (deviceIds.Count == 0)
-				return new ResultWithMessage(null, "Empty device Ids");
-
+			foreach (ReportMeasureDto measure in reportMeasures)
+			{
+				deviceIds.AddRange(getOperationDeviceIds(measure.Operation));
+			}
+			deviceIds = deviceIds.Where(x => x != 0).Distinct().ToList();
 			// 3- return shared levels between devices 
 			var result = _db.Dimensions
 					.Where(x => deviceIds.Contains(x.DeviceId.Value))
