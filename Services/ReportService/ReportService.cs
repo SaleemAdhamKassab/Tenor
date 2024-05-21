@@ -19,6 +19,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Collections.Generic;
 using System.Collections;
 using static Tenor.Services.SharedService.ViewModels.SharedModels;
+using Tenor.Services.DataServices;
 
 namespace Tenor.Services.ReportService
 {
@@ -34,24 +35,26 @@ namespace Tenor.Services.ReportService
 		Task<ResultWithMessage> GetReportTreeByUserNameDevice(ReportTreeFilter input, TenantDto authUser);
 		Task<ResultWithMessage> GetReportTreeByUserName(ReportTreeFilter input, TenantDto authUser);
 		Task<ResultWithMessage> getDimensionLevels(List<ReportMeasureDto> reportMeasures);
-	}
+        ResultWithMessage getFilterOptions(int levelId, string searchQuery, int pageIndex, int pageSize);
+    }
 	public class ReportService : IReportService
 	{
 		private readonly TenorDbContext _db;
 		private readonly IJwtService _jwtService;
 		private readonly ISharedService _sharedService;
 		private readonly IMapper _mapper;
+		private readonly IQueryBuilderService _queryBuilder;
+        private readonly IDataProviderService _dataProvider;
 
-		public ReportService(TenorDbContext db, IJwtService jwtService, ISharedService sharedService, IMapper mapper)
+        public ReportService(TenorDbContext db, IJwtService jwtService, ISharedService sharedService, IMapper mapper, IQueryBuilderService queryBuilder, IDataProviderService dataProvider)
 		{
 			_db = db;
 			_jwtService = jwtService;
 			_sharedService = sharedService;
 			_mapper = mapper;
+			_queryBuilder = queryBuilder;
+			_dataProvider = dataProvider;
 		}
-
-
-
 		////////////////////////////////////////////////AMR ////////////////////////////////////////////////
 		private List<int> getOperationDeviceIds(OperationBinding rootOperation)
 		{
@@ -724,5 +727,12 @@ namespace Tenor.Services.ReportService
 
 			return new ResultWithMessage(result, "");
 		}
-	}
+
+        public ResultWithMessage getFilterOptions(int levelId, string searchQuery, int pageIndex, int pageSize)
+        {
+			var query = _queryBuilder.getFilterOptionsQuery(levelId, searchQuery, pageIndex, pageSize);
+			var data = _dataProvider.fetchFilterOptionsByQuery(query);
+			return new ResultWithMessage(data, "");
+        }
+    }
 }

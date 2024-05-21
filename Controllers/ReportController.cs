@@ -115,5 +115,10 @@ namespace Tenor.Controllers
 		{
 			return _returnResult(await _reportService.getDimensionLevels(reportMeasures));
 		}
+		[HttpGet("getFilterOptions")]
+		public IActionResult getFilterOptions(int levelId, string searchQuery, int pageIndex, int pageSize)
+		{
+			return _returnResult(_reportService.getFilterOptions(levelId, searchQuery, pageIndex, pageSize));
+		}
 	}
 }
