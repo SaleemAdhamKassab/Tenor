@@ -36,7 +36,7 @@ namespace Tenor.Services.ReportService.ViewModels
 			public int Id { get; set; }
 			public int? OperatorId { get; set; }
 			public enLogicalOperator LogicOpt { get; set; }
-			public string? Value { get; set; }
+			public double? Value { get; set; }
 		}
 		public class HavingViewModel
 		{
@@ -46,7 +46,7 @@ namespace Tenor.Services.ReportService.ViewModels
 			public string? OperatorName { get; set; }
 			public enLogicalOperator LogicOpt { get; set; }
 			public string? LogicOptName { get; set; }
-			public string? Value { get; set; }
+			public int? Value { get; set; }
 		}
 		public class ReportLevelDto
 		{
@@ -73,6 +73,7 @@ namespace Tenor.Services.ReportService.ViewModels
 			public string? LogicalOperatorName { get; set; }
 			public string[]? Value { get; set; }
 			public int LevelId { get; set; }
+			public string? LevelName { get; set; }
 			public bool IsMandatory { get; set; }
 
 		}

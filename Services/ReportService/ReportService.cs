@@ -35,9 +35,13 @@ namespace Tenor.Services.ReportService
 		Task<ResultWithMessage> GetReportTreeByUserNameDevice(ReportTreeFilter input, TenantDto authUser);
 		Task<ResultWithMessage> GetReportTreeByUserName(ReportTreeFilter input, TenantDto authUser);
 		Task<ResultWithMessage> getDimensionLevels(List<ReportMeasureDto> reportMeasures);
-        ResultWithMessage getFilterOptions(int levelId, string searchQuery, int pageIndex, int pageSize);
+        Task<ResultWithMessage> getDimensionFilters(List<ReportMeasureDto> reportMeasures);
+        ResultWithMessage getFilterOptions(int levelId, string? searchQuery, int pageIndex, int pageSize);
+        Task<ResultWithMessage> GetExtraFields(int? deviceId);
+        ResultWithMessage ValidateReport(int? deviceId, string reportName);
+		ResultWithMessage getReportDataByCreateReport(CreateReport report);
     }
-	public class ReportService : IReportService
+    public class ReportService : IReportService
 	{
 		private readonly TenorDbContext _db;
 		private readonly IJwtService _jwtService;
@@ -55,72 +59,6 @@ namespace Tenor.Services.ReportService
 			_queryBuilder = queryBuilder;
 			_dataProvider = dataProvider;
 		}
-		////////////////////////////////////////////////AMR ////////////////////////////////////////////////
-		private List<int> getOperationDeviceIds(OperationBinding rootOperation)
-		{
-			List<int> deviceIds = [];
-			foreach (OperationBinding operation in rootOperation.Childs)
-			{
-				if (operation.Type == enOPerationTypes.counter)
-				{
-					var deviceId = _db.Counters.Where(x => x.Id == operation.CounterId).Select(y => y.Subset.DeviceId).FirstOrDefault();
-					deviceIds.Add(deviceId);
-				}
-				else if (operation.Type == enOPerationTypes.voidFunction ||
-						operation.Type == enOPerationTypes.function)
-				{
-					foreach (var item in operation.Childs ?? [])
-					{
-						deviceIds.AddRange(getOperationDeviceIds(item));
-					}
-				}
-				else if (operation.Type == enOPerationTypes.kpi)
-				{
-					var item = _db.Kpis.Include(x => x.Operation).FirstOrDefault(x => x.Id == operation.KpiId);
-					if (item != null)
-					{
-						deviceIds.AddRange(getOperationDeviceIds(item.Operation));
-					}
-				}
-			}
-
-			return deviceIds;
-		}
-		private List<int> getOperationDeviceIds(Operation rootOperation)
-		{
-			List<int> deviceIds = [];
-			var operationChilds = _db.Operations.Where(x => x.ParentId == rootOperation.Id);
-			foreach (var operation in operationChilds.ToList() ?? [])
-			{
-				if (operation.Type == enOPerationTypes.counter)
-				{
-					var deviceId = _db.Counters.Where(x => x.Id == operation.CounterId).Select(y => y.Subset.DeviceId).FirstOrDefault();
-					deviceIds.Add(deviceId);
-				}
-				else if (operation.Type == enOPerationTypes.voidFunction ||
-						operation.Type == enOPerationTypes.function)
-				{
-					var operations = _db.Operations.Where(x => x.ParentId == operation.Id);
-					foreach (var item in operations.ToList() ?? [])
-					{
-						deviceIds.AddRange(getOperationDeviceIds(item));
-					}
-				}
-				else if (operation.Type == enOPerationTypes.kpi)
-				{
-					var item = _db.Kpis.Include(x => x.Operation).FirstOrDefault(x => x.Id == operation.KpiId);
-					if (item != null)
-					{
-						deviceIds.AddRange(getOperationDeviceIds(item.Operation));
-					}
-				}
-			}
-			return deviceIds;
-		}
-		///////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
 		public async Task<ResultWithMessage> Add(CreateReport input, TenantDto authUser)
 		{
 			//---------------------General Validations---------------------------------
@@ -280,7 +218,7 @@ namespace Tenor.Services.ReportService
 		{
 			ReportViewModel result = new ReportViewModel();
 			var report = _db.Reports.Include(x => x.Device).Include(x => x.Measures).ThenInclude(x => x.Havings).ThenInclude(x => x.Operator)
-				.Include(x => x.Levels).ThenInclude(x => x.Level).Include(x => x.FilterContainers).ThenInclude(x => x.ReportFilters)
+				.Include(x => x.Levels).ThenInclude(x => x.Level).Include(x => x.FilterContainers).ThenInclude(x => x.ReportFilters).ThenInclude(x => x.Level)
 				.Include(x => x.ReportFieldValues).ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField)
 				.FirstOrDefault(x => x.Id == id);
 
@@ -331,6 +269,7 @@ namespace Tenor.Services.ReportService
 					LogicalOperatorName = y.LogicalOperator.GetDisplayName(),
 					Value = y.Value != null ? y.Value.Split(',').ToArray() : null,
 					LevelId = y.LevelId,
+					LevelName = y.Level.Name,
 					IsMandatory = y.IsMandatory
 				}).ToList()
 			}).ToList();
@@ -688,13 +627,13 @@ namespace Tenor.Services.ReportService
 			List<int> deviceIds = [];
 			foreach (ReportMeasureDto measure in reportMeasures)
 			{
-				deviceIds.AddRange(getOperationDeviceIds(measure.Operation));
+				deviceIds.AddRange(_sharedService.getOperationSubqueryModel(measure.Operation).Select(x => x.DeviceId));
 			}
 			deviceIds = deviceIds.Where(x => x != 0).Distinct().ToList();
 			// 3- return shared levels between devices 
 			var result = _db.Dimensions
 					.Where(x => deviceIds.Contains(x.DeviceId.Value))
-					.Select(d => d.DimensionLevels.Select(dl => new
+					.Select(d => d.DimensionLevels.Where(dl => dl.Level.IsLevel).Select(dl => new
 					{
 						DimensionName = d.Name,
 						dl.LevelId,
@@ -727,12 +666,99 @@ namespace Tenor.Services.ReportService
 
 			return new ResultWithMessage(result, "");
 		}
+        public async Task<ResultWithMessage> getDimensionFilters(List<ReportMeasureDto> reportMeasures)
+        {
+            List<int> deviceIds = [];
+            foreach (ReportMeasureDto measure in reportMeasures)
+            {
+                deviceIds.AddRange(_sharedService.getOperationSubqueryModel(measure.Operation).Select(x => x.DeviceId));
+            }
+            deviceIds = deviceIds.Where(x => x != 0).Distinct().ToList();
+            // 3- return shared levels between devices 
+            var result = _db.Dimensions
+                    .Where(x => deviceIds.Contains(x.DeviceId.Value))
+                    .Select(d => d.DimensionLevels.Where(dl => dl.Level.IsFilter).Select(dl => new
+                    {
+                        DimensionName = d.Name,
+                        dl.LevelId,
+                        LevelName = dl.Level.Name,
+                        LevelType = dl.Level.DataType,
+                        dl.Level.IsFilter,
+                        dl.Level.IsLevel
+                    })).ToList()
+                .SelectMany(x => x)
+                .GroupBy(z => z)
+                .Select(b => new { data = b.Key, Count = b.Count() })
+                .Where(f => f.Count == deviceIds.Count)
+                .GroupBy(f => f.data.DimensionName)
+                .Select(g => new TreeNodeViewModel
+                {
+                    Id = 0,
+                    Name = g.Key,
+                    HasChild = true,
+                    Type = "dimension",
+                    Childs = g.Select(z => new TreeNodeViewModel
+                    {
+                        Id = z.data.LevelId,
+                        Name = z.data.LevelName,
+                        HasChild = false,
+                        IsFilter = z.data.IsFilter,
+                        IsLevel = z.data.IsLevel,
+                        Type = z.data.LevelType
+                    }).ToList()
+                });
 
-        public ResultWithMessage getFilterOptions(int levelId, string searchQuery, int pageIndex, int pageSize)
+            return new ResultWithMessage(result, "");
+        }
+        public ResultWithMessage getFilterOptions(int levelId, string? searchQuery, int pageIndex, int pageSize)
         {
 			var query = _queryBuilder.getFilterOptionsQuery(levelId, searchQuery, pageIndex, pageSize);
-			var data = _dataProvider.fetchFilterOptionsByQuery(query);
+			// var data = _dataProvider.fetchFilterOptionsByQuery(query);
+			var data = new List<string> { "A", "B", "C" };
 			return new ResultWithMessage(data, "");
+        }
+        public async Task<ResultWithMessage> GetExtraFields(int? deviceId)
+        {
+
+			var dbResult = deviceId != null && deviceId != 0 ?
+				_db.ReportFields.Where(x => x.IsActive && x.ExtraField.DeviceId == deviceId) :
+				_db.ReportFields.Where(x => x.IsActive);
+                var result = dbResult.Select(x => new KpiExtraField
+                {
+                    Id = x.Id,
+                    Type = x.ExtraField.Type.GetDisplayName(),
+                    Name = x.ExtraField.Name,
+                    IsMandatory = x.ExtraField.IsMandatory,
+                    Content = ConvertContentType(x.ExtraField.Type.GetDisplayName(), x.ExtraField.Content),
+                    Url = x.ExtraField.Url,
+                    DeviceId = x.ExtraField.DeviceId,
+                    DeviceName = x.ExtraField.Device.Name
+                }).ToList();
+            return new ResultWithMessage(result, null);
+        }
+        private static dynamic ConvertContentType(string contenttype, string content)
+        {
+            if ((contenttype == "List" && !string.IsNullOrEmpty(content) ? !content.Contains(",") : true) && contenttype != "MultiSelectList")
+            {
+                return content;
+            }
+
+            return !string.IsNullOrEmpty(content) ? content.Split(',').ToList() : null;
+
+        }
+        public ResultWithMessage ValidateReport(int? deviceId, string reportName)
+        {
+            if (_sharedService.IsExist(0, deviceId, null, null, reportName))
+            {
+                return new ResultWithMessage(false, "This Report name is already exsist on this device.");
+            }
+            return new ResultWithMessage(true, null);
+        }
+
+        public ResultWithMessage getReportDataByCreateReport(CreateReport report)
+        {
+			var sql = _queryBuilder.getReportQueryByCreateReport(report);
+			return new ResultWithMessage(sql, "");
         }
     }
 }

@@ -115,10 +115,36 @@ namespace Tenor.Controllers
 		{
 			return _returnResult(await _reportService.getDimensionLevels(reportMeasures));
 		}
-		[HttpGet("getFilterOptions")]
-		public IActionResult getFilterOptions(int levelId, string searchQuery, int pageIndex, int pageSize)
+        [HttpPost("getDimensionFilters")]
+        public async Task<IActionResult> getDimensionFilters(List<ReportMeasureDto> reportMeasures)
+        {
+            return _returnResult(await _reportService.getDimensionFilters(reportMeasures));
+        }
+        [HttpGet("getFilterOptions")]
+		public IActionResult getFilterOptions(int levelId, string? searchQuery, int pageIndex, int pageSize)
 		{
 			return _returnResult(_reportService.getFilterOptions(levelId, searchQuery, pageIndex, pageSize));
 		}
-	}
+
+        [HttpGet("GetExtraFields")]
+
+        public async Task<IActionResult> GetExtraFields(int? deviceId)
+        {
+            return _returnResult(await _reportService.GetExtraFields(deviceId));
+
+        }
+
+        [HttpGet("ValidateKpi")]
+        public IActionResult ValidateKpi(int? deviceid, string reportname)
+        {
+            var result = _reportService.ValidateReport(deviceid, reportname);
+            return Ok(result.Data);
+
+        }
+		[HttpPost("getReportData")]
+		public IActionResult getReportData(CreateReport report)
+		{
+			return _returnResult(_reportService.getReportDataByCreateReport(report));
+		}
+    }
 }

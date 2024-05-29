@@ -14,7 +14,7 @@ namespace Tenor.Models
 		[ForeignKey("ReportMeasure")]
 		public int ReportMeasureId { get; set; }
 		public enLogicalOperator LogicOpt { get; set; }
-		public string ? Value { get; set; }
+		public double? Value { get; set; }
 
         public virtual ReportMeasure ReportMeasure { get; set; }
 		public virtual Operator Operator { get; set; }	

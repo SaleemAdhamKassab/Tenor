@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tenor.Data;
 
@@ -11,9 +12,11 @@ using Tenor.Data;
 namespace Tenor.Migrations
 {
     [DbContext(typeof(TenorDbContext))]
-    partial class TenorDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240525091646_update-having-to-int")]
+    partial class updatehavingtoint
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -570,8 +573,8 @@ namespace Tenor.Migrations
                     b.Property<int>("ReportMeasureId")
                         .HasColumnType("int");
 
-                    b.Property<double?>("Value")
-                        .HasColumnType("float");
+                    b.Property<int?>("Value")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 

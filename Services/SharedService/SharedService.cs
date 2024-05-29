@@ -26,6 +26,8 @@ namespace Tenor.Services.SharedService
         IEnumerable<string> GetTablesNameRegExp(string query);
         string GetOracleQuery(string query, List<string> tablesName);
         dynamic ConvertContentType(string contenttype, string content);
+        public List<ReportSubqueryModel> getOperationSubqueryModel(OperationBinding rootOperation);
+        public List<ReportSubqueryModel> getOperationSubqueryModel(Operation rootOperation);
     }
 
     public class SharedService: ISharedService
@@ -392,6 +394,139 @@ namespace Tenor.Services.SharedService
 
             return !string.IsNullOrEmpty(content) ? content.Split(',').ToList() : null;
 
+        }
+        public List<ReportSubqueryModel> getOperationSubqueryModel(OperationBinding rootOperation)
+        {
+            List<ReportSubqueryModel> reportSubqueries = [];
+            foreach (OperationBinding operation in rootOperation.Childs)
+            {
+                if (operation.Type == enOPerationTypes.counter)
+                {
+                    var counter = _db.Counters.Include(x => x.Subset).FirstOrDefault(x => x.Id == operation.CounterId);
+                    if (counter == null)
+                    {
+                        continue;
+                    }
+                    var existCounterAndAggregation = reportSubqueries
+                        .Any(x => x.ReportSubqueryMeasures
+                        .Any(y => y.Aggregation == operation.Aggregation.GetDisplayName() && y.ColumnName == counter.ColumnName));
+                    if (!existCounterAndAggregation)
+                    {
+                        var existDeviceAndSubset = reportSubqueries.FirstOrDefault(x => x.SubsetTableName == counter.Subset.TableName && x.DeviceId == counter.Subset.DeviceId);
+                        if (existDeviceAndSubset != null)
+                        {
+                            existDeviceAndSubset.ReportSubqueryMeasures.Add(new ReportSubqueryMeasure
+                            {
+                                CounterId = operation.CounterId ?? 0,
+                                Aggregation = operation.Aggregation.GetDisplayName(),
+                                ColumnName = counter.ColumnName
+                            });
+                        }
+                        else
+                        {
+                            reportSubqueries.Add(new ReportSubqueryModel
+                            {
+                                DeviceId = counter.Subset.DeviceId,
+                                SubsetTableName = counter.Subset.TableName,
+                                ReportSubqueryMeasures = new List<ReportSubqueryMeasure>
+                                {
+                                    new ReportSubqueryMeasure
+                                    {
+                                        CounterId = operation.CounterId ?? 0,
+                                        Aggregation = operation.Aggregation.GetDisplayName(),
+                                        ColumnName = counter.ColumnName
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }
+                else if (operation.Type == enOPerationTypes.voidFunction ||
+                        operation.Type == enOPerationTypes.function)
+                {
+                    foreach (var item in operation.Childs ?? [])
+                    {
+                        reportSubqueries.AddRange(getOperationSubqueryModel(item));
+                    }
+                }
+                else if (operation.Type == enOPerationTypes.kpi)
+                {
+                    var item = _db.Kpis.Include(x => x.Operation).FirstOrDefault(x => x.Id == operation.KpiId);
+                    if (item != null)
+                    {
+                        reportSubqueries.AddRange(getOperationSubqueryModel(item.Operation));
+                    }
+                }
+            }
+
+            return reportSubqueries;
+        }
+        public List<ReportSubqueryModel> getOperationSubqueryModel(Operation rootOperation)
+        {
+            List<ReportSubqueryModel> reportSubqueries = [];
+            var operationChilds = _db.Operations.Where(x => x.ParentId == rootOperation.Id);
+            foreach (var operation in operationChilds.ToList() ?? [])
+            {
+                if (operation.Type == enOPerationTypes.counter)
+                {
+                    var counter = _db.Counters.Include(x => x.Subset).FirstOrDefault(x => x.Id == operation.CounterId);
+                    if (counter == null)
+                    {
+                        continue;
+                    }
+                    var existCounterAndAggregation = reportSubqueries
+                        .Any(x => x.ReportSubqueryMeasures
+                        .Any(y => y.Aggregation == operation.Aggregation.GetDisplayName() && y.ColumnName == counter.ColumnName));
+                    if (!existCounterAndAggregation)
+                    {
+                        var existDeviceAndSubset = reportSubqueries.FirstOrDefault(x => x.SubsetTableName == counter.Subset.TableName && x.DeviceId == counter.Subset.DeviceId);
+                        if (existDeviceAndSubset != null)
+                        {
+                            existDeviceAndSubset.ReportSubqueryMeasures.Add(new ReportSubqueryMeasure
+                            {
+                                CounterId = operation.CounterId ?? 0,
+                                Aggregation = operation.Aggregation.GetDisplayName(),
+                                ColumnName = counter.ColumnName
+                            });
+                        }
+                        else
+                        {
+                            reportSubqueries.Add(new ReportSubqueryModel
+                            {
+                                DeviceId = counter.Subset.DeviceId,
+                                SubsetTableName = counter.Subset.TableName,
+                                ReportSubqueryMeasures = new List<ReportSubqueryMeasure>
+                                {
+                                    new ReportSubqueryMeasure
+                                    {
+                                        CounterId = operation.CounterId ?? 0,
+                                        Aggregation = operation.Aggregation.GetDisplayName(),
+                                        ColumnName = counter.ColumnName
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }
+                else if (operation.Type == enOPerationTypes.voidFunction ||
+                        operation.Type == enOPerationTypes.function)
+                {
+                    var operations = _db.Operations.Where(x => x.ParentId == operation.Id);
+                    foreach (var item in operations.ToList() ?? [])
+                    {
+                        reportSubqueries.AddRange(getOperationSubqueryModel(item));
+                    }
+                }
+                else if (operation.Type == enOPerationTypes.kpi)
+                {
+                    var item = _db.Kpis.Include(x => x.Operation).FirstOrDefault(x => x.Id == operation.KpiId);
+                    if (item != null)
+                    {
+                        reportSubqueries.AddRange(getOperationSubqueryModel(item.Operation));
+                    }
+                }
+            }
+            return reportSubqueries;
         }
 
 
