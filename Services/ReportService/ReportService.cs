@@ -754,7 +754,6 @@ namespace Tenor.Services.ReportService
             }
             return new ResultWithMessage(true, null);
         }
-
         public ResultWithMessage getReportDataByCreateReport(CreateReport report)
         {
 			var sql = _queryBuilder.getReportQueryByCreateReport(report);

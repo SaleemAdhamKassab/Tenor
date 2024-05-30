@@ -123,7 +123,7 @@ namespace Tenor.Services.DataServices
 
 
             }
-            var levelSelectSql = "SELECT " + String.Join(", ", joinedSubQueryModel[0].ReportSubqueryDimensions.Select(x => x.LevelColumns).SelectMany(c => c).Select(x => nvlLevel(joinedSubQueryModel.Count, $"\"{x.LevelName}\"") + $" AS \"{x.LevelName}\""));
+            var levelSelectSql = "SELECT " + String.Join(", ", joinedSubQueryModel[0].ReportSubqueryDimensions.Select(x => x.LevelColumns).SelectMany(c => c).Select(x => nvlLevel(joinedSubQueryModel.Count - 1, $"\"{x.LevelName}\"") + $" AS \"{x.LevelName}\""));
             var measureSelectSql = String.Join(", ", report
                 .Measures
                 .Select(m => $" ROUND({getMeasureQuery(m.Operation)},2)" +
@@ -231,7 +231,15 @@ namespace Tenor.Services.DataServices
                         }
                     case (enOPerationTypes.function):
                         {
-                            sql += $" {operation.Value}({operation.Childs.Select(x => getMeasureQuery(x))}) ";
+                            var fun = _db.Functions.FirstOrDefault(x => x.Id == operation.FunctionId);
+                            if (fun.Name.ToLower() == "if")
+                            {
+                                sql += $"(CASE WHEN ({getMeasureQuery(operation.Childs[0])}) THEN ({getMeasureQuery(operation.Childs[1])}) ELSE ({getMeasureQuery(operation.Childs[2])}) END)";
+                            }
+                            else
+                            {
+                                sql += $" {fun.Name}({String.Join(", ", operation.Childs.Select(x => getMeasureQuery(x)))}) ";
+                            }
                             break;
                         }
                     default:
@@ -277,7 +285,13 @@ namespace Tenor.Services.DataServices
                     case (enOPerationTypes.function):
                         {
                             var childs = _db.Operations.Where(x => x.ParentId == operation.Id).ToList();
-                            sql += $" {operation.Function.Name}({childs.Select(x => getMeasureQuery(x))}) ";
+                            if(operation.Function.Name.ToLower() == "if")
+                            {
+                                sql += $"(CASE WHEN ({getMeasureQuery(childs[0])}) THEN ({getMeasureQuery(childs[1])}) ELSE ({getMeasureQuery(childs[2])}) END)";
+                            } else
+                            {
+                                sql += $" {operation.Function.Name}({String.Join(", ", childs.Select(x => getMeasureQuery(x)))}) ";
+                            }
                             break;
                         }
                     default:
