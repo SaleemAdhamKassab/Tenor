@@ -91,10 +91,10 @@ namespace Tenor.Services.ReportService
 					report.ChildId = (report.ChildId == 0 || report.ChildId == null) ? null : report.ChildId;
 					report.Measures = new List<ReportMeasure>();
 					//-----------------Create Report Levels----------------
-					report.Levels = input.Levels.Select(x => new ReportLevel()
+					report.Levels = input.Levels.Select((x,i) => new ReportLevel()
 					{
 						Id = x.Id,
-						DisplayOrder = x.DisplayOrder,
+						DisplayOrder = i,
 						SortDirection = x.SortDirection,
 						ReportId = report.Id,
 						LevelId = x.LevelId
@@ -117,15 +117,14 @@ namespace Tenor.Services.ReportService
 						}).ToList()
 
 					}).ToList();
-
 					//-----------------Create Report Measures-------------
 					foreach (ReportMeasureDto m in input.Measures)
 					{
-						if (_sharedService.IsExist(0, null, null, m.DisplayName, null))
-						{
-							return new ResultWithMessage(null, "This Measure name :  " + m.DisplayName + "  alraedy exsit");
+						//if (_sharedService.IsExist(0, null, null, m.DisplayName, null))
+						//{
+						//	return new ResultWithMessage(null, "This Measure name :  " + m.DisplayName + "  alraedy exsit");
 
-						}
+						//}
 						if (Convert.ToBoolean(_sharedService.CheckValidFormat(m.Operation).Data) == false)
 						{
 							return new ResultWithMessage(null, _sharedService.CheckValidFormat(m.Operation).Message);

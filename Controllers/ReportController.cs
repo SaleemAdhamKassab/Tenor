@@ -134,7 +134,7 @@ namespace Tenor.Controllers
 
         }
 
-        [HttpGet("ValidateKpi")]
+        [HttpGet("ValidateReport")]
         public IActionResult ValidateKpi(int? deviceid, string reportname)
         {
             var result = _reportService.ValidateReport(deviceid, reportname);
