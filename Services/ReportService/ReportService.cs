@@ -309,9 +309,9 @@ namespace Tenor.Services.ReportService
 							  );
 			}
 
-			if (input.deviceId != null && input.deviceId != 0)
+			if (input.DeviceId != null && input.DeviceId != 0)
 			{
-				query = query.Where(x => x.DeviceId == input.deviceId);
+				query = query.Where(x => x.DeviceId == input.DeviceId);
 
 			}
 

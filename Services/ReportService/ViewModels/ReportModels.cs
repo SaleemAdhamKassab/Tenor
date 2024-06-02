@@ -130,7 +130,7 @@ namespace Tenor.Services.ReportService.ViewModels
 		}
 		public class ReportListFilter : GeneralFilterModel
 		{
-			public int deviceId { get; set; }
+			public int DeviceId { get; set; }
 			public IDictionary<string, object>? ExtraFields { get; set; }
 
 		}
