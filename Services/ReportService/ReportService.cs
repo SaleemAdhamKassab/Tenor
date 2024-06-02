@@ -111,7 +111,9 @@ namespace Tenor.Services.ReportService
 							LogicalOperator = y.LogicalOperator,
 							Value = _sharedService.ConvertListToString(y.Value),
 							FilterContainerId = x.Id,
-							LevelId = y.LevelId
+							LevelId = y.LevelId,
+							IsMandatory = y.IsMandatory,
+							IsVariable = y.IsVariable
 						}).ToList()
 
 					}).ToList();
@@ -270,7 +272,9 @@ namespace Tenor.Services.ReportService
 					Value = y.Value != null ? y.Value.Split(',').ToArray() : null,
 					LevelId = y.LevelId,
 					LevelName = y.Level.Name,
-					IsMandatory = y.IsMandatory
+					IsMandatory = y.IsMandatory,
+					Type = y.Level.DataType,
+					IsVariable = y.IsVariable
 				}).ToList()
 			}).ToList();
 			result.Measures = GetReportMeasureById(report.Measures.ToList());

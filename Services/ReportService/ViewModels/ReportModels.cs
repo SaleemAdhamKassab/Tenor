@@ -74,7 +74,9 @@ namespace Tenor.Services.ReportService.ViewModels
 			public string[]? Value { get; set; }
 			public int LevelId { get; set; }
 			public string? LevelName { get; set; }
+			public string? Type { get; set; }
 			public bool IsMandatory { get; set; }
+			public bool IsVariable { get; set; }
 
 		}
 		public class ContainerOfFilter

@@ -172,15 +172,20 @@ namespace Tenor.Services.DataServices
                         whereQuery += $"{filter.LogicalOperator} {filter.FilterTableName}.{filter.FilterColumnName} in ";
                         whereQuery += $"({String.Join(",", filter.FilterValues.Select(x => "'" + x + "'"))}) ";
                     }
-                    else if (filter.Type == "Date")
+                    else if (filter.Type.ToLower() == "date")
                     {
                         whereQuery += $"{filter.LogicalOperator} {filter.FilterTableName}.{filter.FilterColumnName} between ";
                         whereQuery += $"TO_DATE('{filter.FilterValues?[0]}00', 'YYYYMMDDHH24') AND TO_DATE('{filter.FilterValues?[1]}23', 'YYYYMMDDHH24') ";
                     }
-                    else if (filter.Type == "DATE_MIN")
+                    else if (filter.Type.ToLower() == "date_min")
                     {
                         whereQuery += $"{filter.LogicalOperator} {filter.FilterTableName}.{filter.FilterColumnName} between ";
                         whereQuery += $"TO_DATE('{filter.FilterValues?[0]}0000', 'YYYYMMDDHH24MI') AND TO_DATE('{filter.FilterValues?[1]}2359', 'YYYYMMDDHH24MI') ";
+                    }
+                    else if (filter.Type.ToLower() == "date_day")
+                    {
+                        whereQuery += $"{filter.LogicalOperator} {filter.FilterTableName}.{filter.FilterColumnName} between ";
+                        whereQuery += $"TO_DATE('{filter.FilterValues?[0]}', 'YYYYMMDD') AND TO_DATE('{filter.FilterValues?[1]}', 'YYYYMMDD') ";
                     }
 
                 }
@@ -193,7 +198,6 @@ namespace Tenor.Services.DataServices
         private string nvlLevel(int index, string levelName)
         {
             if (index <= 0) return $"S{index}.{levelName}";
-            //if (index == 1) return $"NVL(S{index - 1}.{levelName}, S{index}.{levelName})
             return $"NVL({nvlLevel(index - 1, levelName)}, S{index}.{levelName})";
         }
         private string getMeasureQuery(OperationBinding rootOperation)

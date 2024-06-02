@@ -16,7 +16,7 @@ namespace Tenor.Models
 		public int LevelId { get; set; }
 		public bool IsMandatory { get; set; }
 
-
+		public bool IsVariable { get; set; }
         public virtual Level Level { get; set; }
         public virtual ReportFilterContainer FilterContainer { get; set; }
 
