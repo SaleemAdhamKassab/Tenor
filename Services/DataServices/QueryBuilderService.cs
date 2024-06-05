@@ -91,7 +91,9 @@ namespace Tenor.Services.DataServices
                                                         LevelColumns = report.Levels.Select(x => new ReportLevelSubquery
                                                         {
                                                             LevelColumn = g.FirstOrDefault(y => y.LevelId == x.LevelId)?.ColumnName,
-                                                            LevelName = g.FirstOrDefault(y => y.LevelId == x.LevelId)?.ColumnName
+                                                            LevelName = g.FirstOrDefault(y => y.LevelId == x.LevelId)?.ColumnName,
+                                                            LevelOrderByColumn = g.FirstOrDefault(y => y.LevelId == x.LevelId)?.OrderBy,
+                                                            SortDirection = x.SortDirection.GetDisplayName()
                                                         }).Where(l => l.LevelColumn != null).ToList()
                                                     }).ToList();
                 subquery.FilterContainers = report.ContainerOfFilters.Select(x => new ReportFilterContainerSubqueryModel
@@ -124,6 +126,7 @@ namespace Tenor.Services.DataServices
 
             }
             var levelSelectSql = "SELECT " + String.Join(", ", joinedSubQueryModel[0].ReportSubqueryDimensions.Select(x => x.LevelColumns).SelectMany(c => c).Select(x => nvlLevel(joinedSubQueryModel.Count - 1, $"\"{x.LevelName}\"") + $" AS \"{x.LevelName}\""));
+            var levelOrderBySql = " ORDER BY " + String.Join(", ", joinedSubQueryModel[0].ReportSubqueryDimensions.Select(x => x.LevelColumns).SelectMany(c => c).Select(x => nvlLevel(joinedSubQueryModel.Count - 1, $"\"{x.LevelName}\"") + $" {x.SortDirection} "));
             var measureSelectSql = String.Join(", ", report
                 .Measures
                 .Select(m => $" ROUND({getMeasureQuery(m.Operation)},2)" +
@@ -134,7 +137,7 @@ namespace Tenor.Services.DataServices
             sql = levelSelectSql + ", " +
                     measureSelectSql +
                 " FROM " + sql + " WHERE 1 = 1 " +
-                havingSelectSql;
+                havingSelectSql + levelOrderBySql;
             return sql;
         }
         private string getSubquery(ReportSubqueryModel subqueryModel, int index)

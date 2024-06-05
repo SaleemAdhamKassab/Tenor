@@ -65,6 +65,8 @@ namespace Tenor.Services.SharedService.ViewModels
         {
             public string? LevelName { get; set; }
             public string? LevelColumn { get; set; }
+            public string? LevelOrderByColumn { get; set; }
+            public string? SortDirection { get; set; }
         }
     }
 }
