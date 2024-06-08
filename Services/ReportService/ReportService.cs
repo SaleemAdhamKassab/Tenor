@@ -716,8 +716,8 @@ namespace Tenor.Services.ReportService
         public ResultWithMessage getFilterOptions(int levelId, string? searchQuery, int pageIndex, int pageSize)
         {
 			var query = _queryBuilder.getFilterOptionsQuery(levelId, searchQuery, pageIndex, pageSize);
-			// var data = _dataProvider.fetchFilterOptionsByQuery(query);
-			var data = new List<string> { "A", "B", "C" };
+			var data = _dataProvider.fetchFilterOptionsByQuery(query);
+			//var data = new List<string> { "A", "B", "C" };
 			return new ResultWithMessage(data, "");
         }
         public async Task<ResultWithMessage> GetExtraFields(int? deviceId)

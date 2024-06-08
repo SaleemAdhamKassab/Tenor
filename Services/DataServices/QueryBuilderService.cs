@@ -91,7 +91,7 @@ namespace Tenor.Services.DataServices
                                                         LevelColumns = report.Levels.Select(x => new ReportLevelSubquery
                                                         {
                                                             LevelColumn = g.FirstOrDefault(y => y.LevelId == x.LevelId)?.ColumnName,
-                                                            LevelName = g.FirstOrDefault(y => y.LevelId == x.LevelId)?.ColumnName,
+                                                            LevelName = g.FirstOrDefault(y => y.LevelId == x.LevelId)?.Level.Name,
                                                             LevelOrderByColumn = g.FirstOrDefault(y => y.LevelId == x.LevelId)?.OrderBy,
                                                             SortDirection = x.SortDirection.GetDisplayName()
                                                         }).Where(l => l.LevelColumn != null).ToList()
@@ -144,11 +144,11 @@ namespace Tenor.Services.DataServices
         {
             var levelColumnList = subqueryModel.ReportSubqueryDimensions.Select(x => String.Join(",", x.LevelColumns.Select(y => x.DimensionTableName + "." + y.LevelColumn + $" AS \"{y.LevelName}\"")));
             var groupByColumnList = subqueryModel.ReportSubqueryDimensions.Select(x => String.Join(",", x.LevelColumns.Select(y => x.DimensionTableName + "." + y.LevelColumn)));
-            var levelColumns = String.Join(",", levelColumnList);
-            var groupByColumns = String.Join(",", groupByColumnList);
+            var levelColumns = String.Join(",", levelColumnList.Where(x => x.Count() > 0));
+            var groupByColumns = String.Join(",", groupByColumnList.Where(x => x.Count() > 0));
             var measureColumnList = subqueryModel.ReportSubqueryMeasures.Select(x => String.Join(",", $"{x.Aggregation}({subqueryModel.SubsetTableName}.{x.ColumnName}) {x.Aggregation}_{x.CounterId} "));
             var measureColumns = String.Join(",", measureColumnList);
-            var selectQuery = "SELECT " + levelColumns + "," + measureColumns + " ";
+            var selectQuery = "SELECT " + levelColumns  + "," + measureColumns + " ";
             var groupByQuery = "GROUP BY " + groupByColumns;
 
             var fromQuery = $"FROM {subqueryModel.SubsetTableName} {subqueryModel.SubsetTableName} ";
