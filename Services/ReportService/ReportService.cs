@@ -40,6 +40,8 @@ namespace Tenor.Services.ReportService
         Task<ResultWithMessage> GetExtraFields(int? deviceId);
         ResultWithMessage ValidateReport(int? deviceId, string reportName);
 		ResultWithMessage getReportDataByCreateReport(CreateReport report);
+        Task<ResultWithMessage> Update(int id,CreateReport input, TenantDto authUser);
+
     }
     public class ReportService : IReportService
 	{
@@ -761,6 +763,144 @@ namespace Tenor.Services.ReportService
         {
 			var sql = _queryBuilder.getReportQueryByCreateReport(report);
 			return new ResultWithMessage(sql, "");
+        }
+        public async Task<ResultWithMessage> Update(int id, CreateReport input, TenantDto authUser)
+		{
+			if(id!=input.Id)
+			{
+				return  new ResultWithMessage(null,"Miss match in report Id");
+			}
+            //---------------------General Validations---------------------------------
+            string accessResult = _jwtService.checkUserTenantPermission(authUser, input.DeviceId);
+            if (accessResult == enAccessType.denied.GetDisplayName())
+            {
+                return new ResultWithMessage(null, "Access Denied");
+            }
+            if (_sharedService.IsExist(input.Id, input.DeviceId, null, null, input.Name))
+            {
+                return new ResultWithMessage(null, "This Report name alraedy exsit on the same device");
+
+            }
+            foreach (var s in input.Measures)
+            {
+                if (Convert.ToBoolean(_sharedService.CheckValidFormat(s.Operation).Data) == false)
+                {
+                    return new ResultWithMessage(null, _sharedService.CheckValidFormat(s.Operation).Message);
+
+                }
+
+            }
+
+            //-------------------------Edit Report with relations--------------------------
+            using (TransactionScope transaction = new TransactionScope())
+			{
+				try
+				{
+					Report oldReport = null;
+                    if (accessResult == enAccessType.allOnlyMe.GetDisplayName())
+                    {
+                        oldReport = _db.Reports.AsNoTracking().Include(x=>x.Measures).Include(x=>x.Levels).Include(x=>x.FilterContainers)
+							.Include(x=>x.ReportFieldValues).FirstOrDefault(x => x.Id == input.Id && x.CreatedBy == authUser.userName);
+
+                    }
+                    else
+                    {
+                        oldReport = _db.Reports.AsNoTracking().Include(x => x.Measures).Include(x => x.Levels).Include(x => x.FilterContainers)
+                            .Include(x => x.ReportFieldValues).FirstOrDefault(x => x.Id == input.Id);
+
+                    }
+                    if (oldReport == null)
+                    {
+                        return new ResultWithMessage(null, "This Id is invalid or Access denied");
+                    }
+					//------------------------Edit report prop----------------------------------
+					input.CreatedBy = oldReport.CreatedBy;
+					input.CreatedDate = oldReport.CreatedDate;
+                    Report report = new Report(input,authUser.userName,DateTime.Now);
+                    report.ChildId = (report.ChildId == 0 || report.ChildId == null) ? null : report.ChildId;
+                    report.Measures = new List<ReportMeasure>();
+					//-----------------Edit Report Levels----------------
+					_db.ReportLevels.RemoveRange(oldReport.Levels);
+				
+                    report.Levels = input.Levels.Select((x, i) => new ReportLevel()
+                    {
+                        Id = x.Id,
+                        DisplayOrder = i,
+                        SortDirection = x.SortDirection,
+                        ReportId = report.Id,
+                        LevelId = x.LevelId
+
+                    }).ToList();
+					//-----------------Edit Report Filters--------------
+					_db.ReportFilterContainers.RemoveRange(oldReport.FilterContainers);
+
+                    report.FilterContainers = input.ContainerOfFilters.Select(x => new ReportFilterContainer()
+                    {
+                        Id = x.Id,
+                        ReportId = report.Id,
+                        ReportFilters = x.ReportFilters.Select(y => new ReportFilter()
+                        {
+                            Id = y.Id,
+                            LogicalOperator = y.LogicalOperator,
+                            Value = _sharedService.ConvertListToString(y.Value),
+                            FilterContainerId = x.Id,
+                            LevelId = y.LevelId,
+                            IsMandatory = y.IsMandatory,
+                            IsVariable = y.IsVariable
+                        }).ToList()
+
+                    }).ToList();
+					//-----------------Edit Report Measures-------------
+					_db.ReportMeasures.RemoveRange(oldReport.Measures);
+
+					foreach (var s in oldReport.Measures)
+					{
+						_sharedService.deleteOperation(s.OperationId);
+					}
+
+					foreach (ReportMeasureDto m in input.Measures)
+                    {
+                        //if (_sharedService.IsExist(0, null, null, m.DisplayName, null))
+                        //{
+                        //	return new ResultWithMessage(null, "This Measure name :  " + m.DisplayName + "  alraedy exsit");
+
+                        //}
+                        if (Convert.ToBoolean(_sharedService.CheckValidFormat(m.Operation).Data) == false)
+                        {
+                            return new ResultWithMessage(null, _sharedService.CheckValidFormat(m.Operation).Message);
+                        }
+
+                        ReportMeasure measure = _mapper.Map<ReportMeasure>(m);
+                        measure.ReportId = report.Id;
+                        report.Measures.Add(measure);
+
+                    }
+					//------------------------Extra Fields--------------------------
+					_db.ReportFieldValues.RemoveRange(oldReport.ReportFieldValues);
+                    if (input.ReportFields != null)
+                    {
+                        bool isCorrectSave = _sharedService.AddExtraFields(null, (int)report.Id, input.ReportFields);
+                        if (!isCorrectSave)
+                        {
+                            return new ResultWithMessage(null, "Mandatory Field error");
+                        }
+                    }
+					_db.Entry(oldReport).State = EntityState.Detached;
+                    _db.Update(report);
+
+                    _db.SaveChanges();
+                    transaction.Complete();
+                    return new ResultWithMessage(report, null);
+
+                }
+				catch(Exception ex)
+				{
+                    return new ResultWithMessage(null, ex.Message);
+
+                }
+            }
+
+
         }
     }
 }
