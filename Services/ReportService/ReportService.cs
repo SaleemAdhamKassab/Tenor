@@ -40,6 +40,8 @@ namespace Tenor.Services.ReportService
         Task<ResultWithMessage> GetExtraFields(int? deviceId);
         ResultWithMessage ValidateReport(int? deviceId, string reportName);
 		ResultWithMessage getReportDataByCreateReport(CreateReport report);
+        Task<ResultWithMessage> Update(int id,CreateReport input, TenantDto authUser);
+
     }
     public class ReportService : IReportService
 	{
@@ -714,58 +716,6 @@ namespace Tenor.Services.ReportService
         {
 			var sql = _queryBuilder.getReportQueryByCreateReport(report);
 			return new ResultWithMessage(sql, "");
-        }
-		private ReportViewModel ConvertToViewModel(Report report)
-		{
-            ReportViewModel result = new ReportViewModel();
-            result.Id = report.Id;
-            result.Name = report.Name;
-            result.DeviceId = report.DeviceId;
-            result.DeviceName = report.Device.Name;
-            result.IsPublic = report.IsPublic;
-            result.CreatedBy = report.CreatedBy;
-            result.CreatedDate = report.CreatedDate;
-            result.ChildId = report.ChildId;
-            result.Levels = report.Levels.Select(x => new ReportLevelViewModel()
-            {
-                Id = x.Id,
-                DisplayOrder = x.DisplayOrder,
-                SortDirection = x.SortDirection,
-                SortDirectionName = x.SortDirection.GetDisplayName(),
-                LevelId = x.LevelId,
-                LevelName = x.Level.Name,
-                IsFilter = x.Level.IsFilter,
-                IsLevel = x.Level.IsLevel
-            }).ToList();
-            result.ReportFields = report.ReportFieldValues.Select(x => new ReportFieldValueViewModel()
-            {
-                Id = x.Id,
-                FieldId = x.ReportFieldId,
-                Type = x.ReportField.ExtraField.Type.GetDisplayName(),
-                FieldName = x.ReportField.ExtraField.Name,
-                Value = _sharedService.ConvertContentType(x.ReportField.ExtraField.Type.GetDisplayName(), x.FieldValue)
-
-            }).ToList();
-            result.ContainerOfFilters = report.FilterContainers.Select(x => new ContainerOfFilter()
-            {
-                Id = x.Id,
-                LogicalOperator = x.LogicalOperator,
-                LogicalOperatorName = x.LogicalOperator.GetDisplayName(),
-                ReportFilters = x.ReportFilters.Select(y => new ReportFilterDto()
-                {
-                    Id = y.Id,
-                    LogicalOperator = y.LogicalOperator,
-                    LogicalOperatorName = y.LogicalOperator.GetDisplayName(),
-                    Value = y.Value != null ? y.Value.Split(',').ToArray() : null,
-                    LevelId = y.LevelId,
-                    LevelName = y.Level.Name,
-                    IsMandatory = y.IsMandatory,
-                    Type = y.Level.DataType,
-                    IsVariable = y.IsVariable
-                }).ToList()
-            }).ToList();
-            result.Measures = GetReportMeasureById(report.Measures.ToList());
-			return result;
         }
     }
 }

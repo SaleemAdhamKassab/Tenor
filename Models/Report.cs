@@ -48,6 +48,19 @@ namespace Tenor.Models
 			DeviceId=input.DeviceId;
 			CreatedBy = input.CreatedBy;
 			CreatedDate = (DateTime) input.CreatedDate;
+			
 		}
+        public Report(CreateReport input , string? changedBy , DateTime? changedDate)
+        {
+            Id = input.Id;
+            Name = input.Name;
+            IsPublic = input.IsPublic;
+            ChildId = input.ChildId;
+            DeviceId = input.DeviceId;
+            CreatedBy = input.CreatedBy;
+            CreatedDate = (DateTime)input.CreatedDate;
+			ChangedBy = changedBy;
+			ChangedDate = changedDate;
+        }
     }
 }

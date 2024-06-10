@@ -5,6 +5,7 @@ using Tenor.Models;
 using Tenor.Services.AuthServives;
 using Tenor.Services.AuthServives.ViewModels;
 using Tenor.Services.ReportService;
+using static Tenor.Services.AuthServives.ViewModels.AuthModels;
 using static Tenor.Services.KpisService.ViewModels.KpiModels;
 using static Tenor.Services.ReportService.ViewModels.ReportModels;
 
@@ -146,5 +147,15 @@ namespace Tenor.Controllers
 		{
 			return _returnResult(_reportService.getReportDataByCreateReport(report));
 		}
+
+        [HttpPut("edit")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,Editor,SuperAdmin" })]
+
+        public async Task<IActionResult> Put(int id, CreateReport input)
+        {
+            var authData = AuthUser();
+            return _returnResult(await _reportService.Update(id,input, authData));
+
+        }
     }
 }
