@@ -28,6 +28,7 @@ namespace Tenor.Services.SharedService
         dynamic ConvertContentType(string contenttype, string content);
         public List<ReportSubqueryModel> getOperationSubqueryModel(OperationBinding rootOperation);
         public List<ReportSubqueryModel> getOperationSubqueryModel(Operation rootOperation);
+        public List<ReportSubqueryModel> getOperationSubqueryModel(OperationDto rootOperation);
     }
 
     public class SharedService: ISharedService
@@ -399,6 +400,72 @@ namespace Tenor.Services.SharedService
         {
             List<ReportSubqueryModel> reportSubqueries = [];
             foreach (OperationBinding operation in rootOperation.Childs)
+            {
+                if (operation.Type == enOPerationTypes.counter)
+                {
+                    var counter = _db.Counters.Include(x => x.Subset).FirstOrDefault(x => x.Id == operation.CounterId);
+                    if (counter == null)
+                    {
+                        continue;
+                    }
+                    var existCounterAndAggregation = reportSubqueries
+                        .Any(x => x.ReportSubqueryMeasures
+                        .Any(y => y.Aggregation == operation.Aggregation.GetDisplayName() && y.ColumnName == counter.ColumnName));
+                    if (!existCounterAndAggregation)
+                    {
+                        var existDeviceAndSubset = reportSubqueries.FirstOrDefault(x => x.SubsetTableName == counter.Subset.TableName && x.DeviceId == counter.Subset.DeviceId);
+                        if (existDeviceAndSubset != null)
+                        {
+                            existDeviceAndSubset.ReportSubqueryMeasures.Add(new ReportSubqueryMeasure
+                            {
+                                CounterId = operation.CounterId ?? 0,
+                                Aggregation = operation.Aggregation.GetDisplayName(),
+                                ColumnName = counter.ColumnName
+                            });
+                        }
+                        else
+                        {
+                            reportSubqueries.Add(new ReportSubqueryModel
+                            {
+                                DeviceId = counter.Subset.DeviceId,
+                                SubsetTableName = counter.Subset.TableName,
+                                ReportSubqueryMeasures = new List<ReportSubqueryMeasure>
+                                {
+                                    new ReportSubqueryMeasure
+                                    {
+                                        CounterId = operation.CounterId ?? 0,
+                                        Aggregation = operation.Aggregation.GetDisplayName(),
+                                        ColumnName = counter.ColumnName
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }
+                else if (operation.Type == enOPerationTypes.voidFunction ||
+                        operation.Type == enOPerationTypes.function)
+                {
+                    foreach (var item in operation.Childs ?? [])
+                    {
+                        reportSubqueries.AddRange(getOperationSubqueryModel(item));
+                    }
+                }
+                else if (operation.Type == enOPerationTypes.kpi)
+                {
+                    var item = _db.Kpis.Include(x => x.Operation).FirstOrDefault(x => x.Id == operation.KpiId);
+                    if (item != null)
+                    {
+                        reportSubqueries.AddRange(getOperationSubqueryModel(item.Operation));
+                    }
+                }
+            }
+
+            return reportSubqueries;
+        }
+        public List<ReportSubqueryModel> getOperationSubqueryModel(OperationDto rootOperation)
+        {
+            List<ReportSubqueryModel> reportSubqueries = [];
+            foreach (OperationDto operation in rootOperation.Childs)
             {
                 if (operation.Type == enOPerationTypes.counter)
                 {

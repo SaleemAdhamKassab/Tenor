@@ -7,6 +7,7 @@ using Tenor.Dtos;
 using Tenor.Models;
 using Tenor.Services.SharedService;
 using static Tenor.Helper.Constant;
+using static Tenor.Services.KpisService.ViewModels.KpiModels;
 using static Tenor.Services.ReportService.ViewModels.ReportModels;
 using static Tenor.Services.SharedService.ViewModels.SharedModels;
 
@@ -15,7 +16,8 @@ namespace Tenor.Services.DataServices
     public interface IQueryBuilderService
     {
         public string getFilterOptionsQuery(int levelId, string? searchQuery, int pageIndex, int pageSize);
-        public string getReportQueryByCreateReport(CreateReport report);
+        public string getReportQueryByCreateReport(CreateReport report, int pageSize, int pageIndex);
+        public string getReportQueryByViewModel(ReportViewModel report, int pageSize, int pageIndex, List<ContainerOfFilter> filters);
     }
     public class QueryBuilderService : IQueryBuilderService
     {
@@ -45,7 +47,7 @@ namespace Tenor.Services.DataServices
 
             return filterOptionsQuery.ToString();
         }
-        public string getReportQueryByCreateReport(CreateReport report)
+        public string getReportQueryByCreateReport(CreateReport report, int pageSize, int pageIndex)
         {
             var sql = "";
 
@@ -137,8 +139,106 @@ namespace Tenor.Services.DataServices
             sql = levelSelectSql + ", " +
                     measureSelectSql +
                 " FROM " + sql + " WHERE 1 = 1 " +
-                havingSelectSql + levelOrderBySql;
+                havingSelectSql + levelOrderBySql
+                +$" OFFSET {pageIndex * pageSize}"
+                + $" ROWS FETCH NEXT {pageSize} ROWS ONLY";
             return sql;
+        }
+        public string getReportQueryByViewModel(ReportViewModel report, int pageSize, int pageIndex, List<ContainerOfFilter> filters)
+        {
+            var sql = "";
+            var allSubqueryModels = report.Measures.Select(x => _sharedService.getOperationSubqueryModel(x.Operation)).SelectMany(x => x).ToList();
+            var joinedSubQueryModel = new List<ReportSubqueryModel>
+            {
+                allSubqueryModels[0]
+            };
+            for (int i = 1; i < (allSubqueryModels.Count); i++)
+            {
+                var exist = joinedSubQueryModel.FirstOrDefault(x => x.DeviceId == allSubqueryModels[i].DeviceId && x.SubsetTableName == allSubqueryModels[i].SubsetTableName);
+                if (exist != null)
+                {
+                    exist.ReportSubqueryMeasures.AddRange(allSubqueryModels[i].ReportSubqueryMeasures);
+                    exist.ReportSubqueryMeasures = exist.ReportSubqueryMeasures.GroupBy(c => new { c.ColumnName, c.Aggregation }).Select(g => g.First()).ToList();
+                }
+                else
+                {
+                    joinedSubQueryModel.Add(allSubqueryModels[i]);
+                }
+            }
+            var reportLevelIds = report.Levels.Select(x => x.LevelId);
+            var reportFilterLevelIds = filters.Select(cf => cf.ReportFilters).SelectMany(f => f).Select(f => f.LevelId);
+            for (int i = 0; i < joinedSubQueryModel.Count; i++)
+            {
+                var subquery = joinedSubQueryModel[i];
+                var dim = _db.DimensionLevels
+                            .Include(x => x.Level)
+                            .Include(x => x.Dimension)
+                            .ThenInclude(d => d.DimensionJoiners)
+                            .Where(x => reportLevelIds
+                                        .Concat(reportFilterLevelIds)
+                            .Contains(x.LevelId) && x.Dimension.DeviceId == subquery.DeviceId)
+                            .ToList();
+
+                subquery.ReportSubqueryDimensions = dim
+                                                    .GroupBy(y => new { y.Dimension.TableName, y.Dimension.DimensionJoiners })
+                                                    .Select(g => new ReportSubqueryDimension
+                                                    {
+                                                        DimensionJoiners = g.Key.DimensionJoiners.ToList(),
+                                                        DimensionTableName = g.Key.TableName,
+                                                        LevelColumns = report.Levels.Select(x => new ReportLevelSubquery
+                                                        {
+                                                            LevelColumn = g.FirstOrDefault(y => y.LevelId == x.LevelId)?.ColumnName,
+                                                            LevelName = g.FirstOrDefault(y => y.LevelId == x.LevelId)?.Level.Name,
+                                                            LevelOrderByColumn = g.FirstOrDefault(y => y.LevelId == x.LevelId)?.OrderBy,
+                                                            SortDirection = x.SortDirection.GetDisplayName()
+                                                        }).Where(l => l.LevelColumn != null).ToList()
+                                                    }).ToList();
+                subquery.FilterContainers = filters.Select(x => new ReportFilterContainerSubqueryModel
+                {
+                    LogicalOperator = x.LogicalOperator.GetDisplayName(),
+                    Filters = x.ReportFilters.Select(f => new ReportFilterWithValue
+                    {
+                        FilterColumnName = dim.Where(b => b.LevelId == f.LevelId).Select(b => b.ColumnName).FirstOrDefault(),
+                        FilterTableName = dim.Where(b => b.LevelId == f.LevelId).Select(b => b.Dimension.TableName).FirstOrDefault(),
+                        FilterValues = f.Value?.ToList(),
+                        LogicalOperator = f.LogicalOperator.GetDisplayName(),
+                        Type = dim.Where(b => b.LevelId == f.LevelId).Select(b => b.Level.DataType).FirstOrDefault(),
+
+                    }).ToList()
+                }).ToList();
+                if (i > 0)
+                {
+                    sql += " FULL OUTER JOIN " + getSubquery(subquery, i) + "ON 1 = 1 ";
+                    foreach (var level in subquery.ReportSubqueryDimensions.Select(x => x.LevelColumns).SelectMany(c => c))
+                    {
+                        sql += $"AND {nvlLevel(i - 1, $"\"{level.LevelName}\"")} = S{i}.\"{level.LevelName}\" ";
+                    }
+
+                }
+                else
+                {
+                    sql += getSubquery(subquery, i);
+                }
+
+
+            }
+            var levelSelectSql = "SELECT " + String.Join(", ", joinedSubQueryModel[0].ReportSubqueryDimensions.Select(x => x.LevelColumns).SelectMany(c => c).Select(x => nvlLevel(joinedSubQueryModel.Count - 1, $"\"{x.LevelName}\"") + $" AS \"{x.LevelName}\""));
+            var levelOrderBySql = " ORDER BY " + String.Join(", ", joinedSubQueryModel[0].ReportSubqueryDimensions.Select(x => x.LevelColumns).SelectMany(c => c).Select(x => nvlLevel(joinedSubQueryModel.Count - 1, $"\"{x.LevelName}\"") + $" {x.SortDirection} "));
+            var measureSelectSql = String.Join(", ", report
+                .Measures
+                .Select(m => $" ROUND({getMeasureQuery(m.Operation)},2)" +
+                $" AS \"{m.DisplayName}\""));
+            var havingSelectSql = String.Join(" ", report.Measures
+                .SelectMany(m => m.Havings
+                    .Select(h => $"{h.LogicOpt.GetDisplayName()} {getMeasureQuery(m.Operation)} {_db.Operators.FirstOrDefault(o => o.Id == h.OperatorId).Name} {h.Value}")));
+            sql = levelSelectSql + ", " +
+                    measureSelectSql +
+                " FROM " + sql + " WHERE 1 = 1 " +
+                havingSelectSql + levelOrderBySql
+                + $" OFFSET {pageIndex * pageSize}"
+                + $" ROWS FETCH NEXT {pageSize} ROWS ONLY";
+            return sql;
+
         }
         private string getSubquery(ReportSubqueryModel subqueryModel, int index)
         {
@@ -202,6 +302,62 @@ namespace Tenor.Services.DataServices
         {
             if (index <= 0) return $"S{index}.{levelName}";
             return $"NVL({nvlLevel(index - 1, levelName)}, S{index}.{levelName})";
+        }
+        private string getMeasureQuery(OperationDto rootOperation)
+        {
+            var sql = "";
+            foreach (OperationDto operation in rootOperation.Childs)
+            {
+                switch (operation.Type)
+                {
+                    case (enOPerationTypes.counter):
+                        {
+                            sql += $" {operation.Aggregation.GetDisplayName()}_{operation.CounterId} ";
+                            break;
+                        }
+                    case (enOPerationTypes.voidFunction):
+                        {
+                            sql += $"({operation.Childs.Select(x => getMeasureQuery(x))})";
+                            break;
+                        }
+                    case (enOPerationTypes.kpi):
+                        {
+                            var item = _db.Kpis.Include(x => x.Operation).FirstOrDefault(x => x.Id == operation.KpiId);
+                            sql += $" ({getMeasureQuery(item.Operation)}) ";
+                            break;
+                        }
+                    case (enOPerationTypes.number):
+                        {
+                            sql += $" ({operation.Value}) ";
+                            break;
+                        }
+                    case (enOPerationTypes.opt):
+                        {
+                            sql += $" {operation.Value} ";
+                            break;
+                        }
+                    case (enOPerationTypes.function):
+                        {
+                            var fun = _db.Functions.FirstOrDefault(x => x.Id == operation.FunctionId);
+                            if (fun.Name.ToLower() == "if")
+                            {
+                                sql += $"(CASE WHEN ({getMeasureQuery(operation.Childs[0])}) THEN ({getMeasureQuery(operation.Childs[1])}) ELSE ({getMeasureQuery(operation.Childs[2])}) END)";
+                            }
+                            else
+                            {
+                                sql += $" {fun.Name}({String.Join(", ", operation.Childs.Select(x => getMeasureQuery(x)))}) ";
+                            }
+                            break;
+                        }
+                    default:
+                        {
+                            sql += " ";
+                            break;
+                        }
+                }
+
+            }
+            return sql;
         }
         private string getMeasureQuery(OperationBinding rootOperation)
         {

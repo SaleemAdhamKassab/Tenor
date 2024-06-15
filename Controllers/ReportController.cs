@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Composition;
+using System.Drawing.Printing;
 using Tenor.ActionFilters;
 using Tenor.Models;
 using Tenor.Services.AuthServives;
@@ -142,11 +144,21 @@ namespace Tenor.Controllers
             return Ok(result.Data);
 
         }
-		[HttpPost("getReportData")]
-		public IActionResult getReportData(CreateReport report)
+		[HttpGet]
+		public async Task<IActionResult> getReportRehearsal(int id)
+        {
+            return _returnResult(await _reportService.GetReportRehearsal(id));
+        }
+        [HttpPost("getReportData")]
+		public IActionResult getReportData(int pageSize, int pageIndex, CreateReport report)
 		{
-			return _returnResult(_reportService.getReportDataByCreateReport(report));
+			return _returnResult(_reportService.getReportDataByCreateReport(report, pageSize, pageIndex));
 		}
+        [HttpPost("getReportDataById")]
+        public async Task<IActionResult> getReportDataById(int reportId, int pageSize, int pageIndex, List<ContainerOfFilter> filters)
+        {
+            return _returnResult(await _reportService.getReportDataById(reportId, pageSize, pageIndex, filters));
+        }
 
         [HttpPut("edit")]
         [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,Editor,SuperAdmin" })]

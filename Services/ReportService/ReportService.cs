@@ -39,8 +39,10 @@ namespace Tenor.Services.ReportService
         ResultWithMessage getFilterOptions(int levelId, string? searchQuery, int pageIndex, int pageSize);
         Task<ResultWithMessage> GetExtraFields(int? deviceId);
         ResultWithMessage ValidateReport(int? deviceId, string reportName);
-        ResultWithMessage getReportDataByCreateReport(CreateReport report);
+        ResultWithMessage getReportDataByCreateReport(CreateReport report, int pageSize, int pageIndex);
+        Task<ResultWithMessage> getReportDataById(int id, int pageSize, int pageIndex, List<ContainerOfFilter> filters);
         Task<ResultWithMessage> Update(int id, CreateReport input, TenantDto authUser);
+        Task<ResultWithMessage> GetReportRehearsal(int reportId);
 
     }
     public class ReportService : IReportService
@@ -712,9 +714,9 @@ namespace Tenor.Services.ReportService
             }
             return new ResultWithMessage(true, null);
         }
-        public ResultWithMessage getReportDataByCreateReport(CreateReport report)
+        public ResultWithMessage getReportDataByCreateReport(CreateReport report, int pageSize, int pageIndex)
         {
-            var sql = _queryBuilder.getReportQueryByCreateReport(report);
+            var sql = _queryBuilder.getReportQueryByCreateReport(report, pageSize, pageIndex);
             return new ResultWithMessage(sql, "");
         }
         public async Task<ResultWithMessage> Update(int id, CreateReport input, TenantDto authUser)
@@ -777,7 +779,7 @@ namespace Tenor.Services.ReportService
 
                     report.Levels = input.Levels.Select((x, i) => new ReportLevel()
                     {
-                        Id = x.Id,
+                        Id = 0,
                         DisplayOrder = i,
                         SortDirection = x.SortDirection,
                         ReportId = report.Id,
@@ -789,11 +791,11 @@ namespace Tenor.Services.ReportService
 
                     report.FilterContainers = input.ContainerOfFilters.Select(x => new ReportFilterContainer()
                     {
-                        Id = x.Id,
+                        Id = 0,
                         ReportId = report.Id,
                         ReportFilters = x.ReportFilters.Select(y => new ReportFilter()
                         {
-                            Id = y.Id,
+                            Id = 0,
                             LogicalOperator = y.LogicalOperator,
                             Value = _sharedService.ConvertListToString(y.Value),
                             FilterContainerId = x.Id,
@@ -825,6 +827,7 @@ namespace Tenor.Services.ReportService
 
                         ReportMeasure measure = _mapper.Map<ReportMeasure>(m);
                         measure.ReportId = report.Id;
+                        measure.Id = 0;
                         report.Measures.Add(measure);
 
                     }
@@ -906,6 +909,61 @@ namespace Tenor.Services.ReportService
             }).ToList();
             result.Measures = GetReportMeasureById(report.Measures.ToList());
             return result;
+        }
+
+        public async Task<ResultWithMessage> GetReportRehearsal(int id)
+        {
+            var x = await _db.Reports
+                .Include(x => x.Device)
+                .Include(x => x.Measures)
+                .Include(x => x.Levels).ThenInclude(x => x.Level)
+                .Include(x => x.FilterContainers).ThenInclude(x => x.ReportFilters).ThenInclude(x => x.Level)
+                .FirstOrDefaultAsync(x => x.Id == id);
+            if (x == null)
+            {
+                return new ResultWithMessage(null, "Cannot find report");
+            }
+            var reportRehearsal = new ReportRehearsalModel
+            {
+                Columns = x.Levels.OrderBy(l => l.DisplayOrder).Select(l => new ReportPreviewColumnModel
+                {
+                    Name = l.Level.Name,
+                    Type = l.Level.DataType == "Date" ? "Date" : "String"
+                }).Concat(
+                        x.Measures.Select(m => new ReportPreviewColumnModel
+                        {
+                            Name = m.DisplayName,
+                            Type = "Number"
+                        })
+                        ).ToList(),
+                ContainerOfFilters = x.FilterContainers.Select(fc => new ContainerOfFilter
+                {
+                    Id = fc.Id,
+                    LogicalOperator = fc.LogicalOperator,
+                    LogicalOperatorName = fc.LogicalOperator.GetDisplayName(),
+                    ReportFilters = fc.ReportFilters.Select(f => new ReportFilterDto
+                    {
+                        Id = f.Id,
+                        IsMandatory = f.IsMandatory,
+                        IsVariable = f.IsVariable,
+                        LevelId = f.LevelId,
+                        LevelName = f.Level.Name,
+                        LogicalOperator = f.LogicalOperator,
+                        LogicalOperatorName = f.LogicalOperator.GetDisplayName(),
+                        Type = f.Level.DataType,
+                        Value = f.Value == null ? null : f.Value.Split(',').ToArray()
+                    }).ToList()
+                }).ToList()
+            };
+            return new ResultWithMessage(reportRehearsal, "");
+        }
+
+        public async Task<ResultWithMessage> getReportDataById(int id, int pageSize, int pageIndex, List<ContainerOfFilter> filters)
+        {
+            var report = (ReportViewModel)(await GetById(id)).Data;
+            var sql = _queryBuilder.getReportQueryByViewModel(report, pageSize, pageIndex, filters);
+            var data =  _dataProvider.fetchData(sql);
+            return new ResultWithMessage(data, "");
         }
     }
 }

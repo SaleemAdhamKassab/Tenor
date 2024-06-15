@@ -155,5 +155,15 @@ namespace Tenor.Services.ReportService.ViewModels
 			public string DimensionName { get; set; }
 			public List<DimensionLevel> DimensionLevels { get; set; }
 		}
+		public class ReportPreviewColumnModel
+		{
+			public string? Name { get; set; }
+			public string? Type { get; set; }
+		}
+		public class ReportRehearsalModel
+		{
+			public List<ReportPreviewColumnModel> Columns { get; set; } = new List<ReportPreviewColumnModel>();
+            public List<ContainerOfFilter> ContainerOfFilters { get; set; } = new List<ContainerOfFilter>();
+        }
 	}
 }
