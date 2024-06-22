@@ -793,6 +793,7 @@ namespace Tenor.Services.ReportService
                     {
                         Id = 0,
                         ReportId = report.Id,
+                        LogicalOperator = x.LogicalOperator,
                         ReportFilters = x.ReportFilters.Select(y => new ReportFilter()
                         {
                             Id = 0,
@@ -925,6 +926,7 @@ namespace Tenor.Services.ReportService
             }
             var reportRehearsal = new ReportRehearsalModel
             {
+                Name = x.Name,
                 Columns = x.Levels.OrderBy(l => l.DisplayOrder).Select(l => new ReportPreviewColumnModel
                 {
                     Name = l.Level.Name,
@@ -961,9 +963,10 @@ namespace Tenor.Services.ReportService
         public async Task<ResultWithMessage> getReportDataById(int id, int pageSize, int pageIndex, List<ContainerOfFilter> filters)
         {
             var report = (ReportViewModel)(await GetById(id)).Data;
-            var sql = _queryBuilder.getReportQueryByViewModel(report, pageSize, pageIndex, filters);
-            var data =  _dataProvider.fetchData(sql);
-            return new ResultWithMessage(data, "");
+            var queryWithSize = _queryBuilder.getReportQueryByViewModel(report, pageSize, pageIndex, filters);
+            var data =  _dataProvider.fetchData(queryWithSize.Sql);
+            var count = _dataProvider.fetchCount(queryWithSize.CountSql);
+            return new ResultWithMessage(new DataWithSize(count, data), "");
         }
     }
 }

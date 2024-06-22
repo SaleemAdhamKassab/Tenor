@@ -162,6 +162,7 @@ namespace Tenor.Services.ReportService.ViewModels
 		}
 		public class ReportRehearsalModel
 		{
+			public string? Name { get; set; }
 			public List<ReportPreviewColumnModel> Columns { get; set; } = new List<ReportPreviewColumnModel>();
             public List<ContainerOfFilter> ContainerOfFilters { get; set; } = new List<ContainerOfFilter>();
         }

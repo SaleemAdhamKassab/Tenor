@@ -60,6 +60,7 @@ namespace Tenor.Services.SharedService.ViewModels
             public string FilterColumnName { get; set; }
             public List<string>? FilterValues { get; set; }
             public string? Type { get; set; }
+            public bool isMandatory { get; set; }
         }
         public class ReportLevelSubquery
         {
@@ -67,6 +68,11 @@ namespace Tenor.Services.SharedService.ViewModels
             public string? LevelColumn { get; set; }
             public string? LevelOrderByColumn { get; set; }
             public string? SortDirection { get; set; }
+        }
+        public class QueryWithSize
+        {
+            public string? Sql { get; set; }
+            public string? CountSql { get; set; }
         }
     }
 }

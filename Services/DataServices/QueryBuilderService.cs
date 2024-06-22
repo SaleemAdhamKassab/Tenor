@@ -16,8 +16,8 @@ namespace Tenor.Services.DataServices
     public interface IQueryBuilderService
     {
         public string getFilterOptionsQuery(int levelId, string? searchQuery, int pageIndex, int pageSize);
-        public string getReportQueryByCreateReport(CreateReport report, int pageSize, int pageIndex);
-        public string getReportQueryByViewModel(ReportViewModel report, int pageSize, int pageIndex, List<ContainerOfFilter> filters);
+        public QueryWithSize getReportQueryByCreateReport(CreateReport report, int pageSize, int pageIndex);
+        public QueryWithSize getReportQueryByViewModel(ReportViewModel report, int pageSize, int pageIndex, List<ContainerOfFilter> filters);
     }
     public class QueryBuilderService : IQueryBuilderService
     {
@@ -47,7 +47,7 @@ namespace Tenor.Services.DataServices
 
             return filterOptionsQuery.ToString();
         }
-        public string getReportQueryByCreateReport(CreateReport report, int pageSize, int pageIndex)
+        public QueryWithSize getReportQueryByCreateReport(CreateReport report, int pageSize, int pageIndex)
         {
             var sql = "";
 
@@ -108,7 +108,7 @@ namespace Tenor.Services.DataServices
                         FilterValues = f.Value?.ToList(),
                         LogicalOperator = f.LogicalOperator.GetDisplayName(),
                         Type = dim.Where(b => b.LevelId == f.LevelId).Select(b => b.Level.DataType).FirstOrDefault(),
-
+                        isMandatory = f.IsMandatory
                     }).ToList()
                 }).ToList();
                 if (i > 0)
@@ -139,12 +139,14 @@ namespace Tenor.Services.DataServices
             sql = levelSelectSql + ", " +
                     measureSelectSql +
                 " FROM " + sql + " WHERE 1 = 1 " +
-                havingSelectSql + levelOrderBySql
+                havingSelectSql + levelOrderBySql;
+            var countSql = $"SELECT COUNT(*) FROM ({sql})";
+            sql = sql
                 +$" OFFSET {pageIndex * pageSize}"
                 + $" ROWS FETCH NEXT {pageSize} ROWS ONLY";
-            return sql;
+            return new QueryWithSize {Sql = sql, CountSql = countSql };
         }
-        public string getReportQueryByViewModel(ReportViewModel report, int pageSize, int pageIndex, List<ContainerOfFilter> filters)
+        public QueryWithSize getReportQueryByViewModel(ReportViewModel report, int pageSize, int pageIndex, List<ContainerOfFilter> filters)
         {
             var sql = "";
             var allSubqueryModels = report.Measures.Select(x => _sharedService.getOperationSubqueryModel(x.Operation)).SelectMany(x => x).ToList();
@@ -203,6 +205,7 @@ namespace Tenor.Services.DataServices
                         FilterValues = f.Value?.ToList(),
                         LogicalOperator = f.LogicalOperator.GetDisplayName(),
                         Type = dim.Where(b => b.LevelId == f.LevelId).Select(b => b.Level.DataType).FirstOrDefault(),
+                        isMandatory = f.IsMandatory
 
                     }).ToList()
                 }).ToList();
@@ -234,10 +237,12 @@ namespace Tenor.Services.DataServices
             sql = levelSelectSql + ", " +
                     measureSelectSql +
                 " FROM " + sql + " WHERE 1 = 1 " +
-                havingSelectSql + levelOrderBySql
+                havingSelectSql + levelOrderBySql;
+            var countSql = $"SELECT COUNT(*) FROM ({sql})";
+            sql = sql
                 + $" OFFSET {pageIndex * pageSize}"
                 + $" ROWS FETCH NEXT {pageSize} ROWS ONLY";
-            return sql;
+            return new QueryWithSize {Sql = sql,CountSql = countSql };
 
         }
         private string getSubquery(ReportSubqueryModel subqueryModel, int index)
@@ -268,8 +273,9 @@ namespace Tenor.Services.DataServices
             foreach (var container in subqueryModel.FilterContainers)
             {
                 whereQuery += $"{container.LogicalOperator} ( 1 = 1 ";
-                foreach (var filter in container.Filters)
+                foreach (var filter in container.Filters.Where(f => f.isMandatory || f.FilterValues?.Count > 0))
                 {
+                    
                     if (filter.Type == "List")
                     {
                         whereQuery += $"{filter.LogicalOperator} {filter.FilterTableName}.{filter.FilterColumnName} in ";

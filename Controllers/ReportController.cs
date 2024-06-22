@@ -144,7 +144,7 @@ namespace Tenor.Controllers
             return Ok(result.Data);
 
         }
-		[HttpGet]
+		[HttpGet("getRehearsal")]
 		public async Task<IActionResult> getReportRehearsal(int id)
         {
             return _returnResult(await _reportService.GetReportRehearsal(id));
