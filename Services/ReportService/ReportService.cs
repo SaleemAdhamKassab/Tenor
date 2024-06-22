@@ -20,6 +20,9 @@ using System.Collections.Generic;
 using System.Collections;
 using static Tenor.Services.SharedService.ViewModels.SharedModels;
 using Tenor.Services.DataServices;
+using System.Formats.Asn1;
+using System.Globalization;
+using CsvHelper;
 
 namespace Tenor.Services.ReportService
 {
@@ -43,6 +46,7 @@ namespace Tenor.Services.ReportService
         Task<ResultWithMessage> getReportDataById(int id, int pageSize, int pageIndex, List<ContainerOfFilter> filters);
         Task<ResultWithMessage> Update(int id, CreateReport input, TenantDto authUser);
         Task<ResultWithMessage> GetReportRehearsal(int reportId);
+        public Task<byte[]> exportReportDataById(int id, List<ContainerOfFilter> filters);
 
     }
     public class ReportService : IReportService
@@ -97,7 +101,7 @@ namespace Tenor.Services.ReportService
                     //-----------------Create Report Levels----------------
                     report.Levels = input.Levels.Select((x, i) => new ReportLevel()
                     {
-                        Id = x.Id,
+                        Id = 0,
                         DisplayOrder = i,
                         SortDirection = x.SortDirection,
                         ReportId = report.Id,
@@ -107,11 +111,11 @@ namespace Tenor.Services.ReportService
                     //-----------------Create Report Filters--------------
                     report.FilterContainers = input.ContainerOfFilters.Select(x => new ReportFilterContainer()
                     {
-                        Id = x.Id,
+                        Id = 0,
                         ReportId = report.Id,
                         ReportFilters = x.ReportFilters.Select(y => new ReportFilter()
                         {
-                            Id = y.Id,
+                            Id = 0,
                             LogicalOperator = y.LogicalOperator,
                             Value = _sharedService.ConvertListToString(y.Value),
                             FilterContainerId = x.Id,
@@ -133,7 +137,7 @@ namespace Tenor.Services.ReportService
                         {
                             return new ResultWithMessage(null, _sharedService.CheckValidFormat(m.Operation).Message);
                         }
-
+                        m.Id = 0;
                         ReportMeasure measure = _mapper.Map<ReportMeasure>(m);
                         measure.ReportId = report.Id;
                         report.Measures.Add(measure);
@@ -967,6 +971,21 @@ namespace Tenor.Services.ReportService
             var data =  _dataProvider.fetchData(queryWithSize.Sql);
             var count = _dataProvider.fetchCount(queryWithSize.CountSql);
             return new ResultWithMessage(new DataWithSize(count, data), "");
+        }
+        public async Task<byte[]> exportReportDataById(int id, List<ContainerOfFilter> filters)
+        {
+            var report = (ReportViewModel)(await GetById(id)).Data;
+            var queryWithSize = _queryBuilder.getReportQueryByViewModel(report, int.MaxValue, 0, filters);
+            var data = _dataProvider.fetchData(queryWithSize.Sql);
+            using (var memoryStream = new MemoryStream())
+            {
+                using (var streamWriter = new StreamWriter(memoryStream))
+                using (var csvWriter = new CsvWriter(streamWriter, CultureInfo.InvariantCulture))
+                {
+                    csvWriter.WriteRecords(data);
+                }
+                return memoryStream.ToArray();   
+            }
         }
     }
 }

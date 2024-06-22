@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Composition;
 using System.Drawing.Printing;
+using System.IO;
 using Tenor.ActionFilters;
 using Tenor.Models;
 using Tenor.Services.AuthServives;
@@ -158,6 +159,15 @@ namespace Tenor.Controllers
         public async Task<IActionResult> getReportDataById(int reportId, int pageSize, int pageIndex, List<ContainerOfFilter> filters)
         {
             return _returnResult(await _reportService.getReportDataById(reportId, pageSize, pageIndex, filters));
+        }
+        
+        [HttpPost("exportReportDataById")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [Produces("text/csv")]
+        public async Task<FileResult> exportReportDataById(int reportId, List<ContainerOfFilter> filters)
+        {
+			var result = await _reportService.exportReportDataById(reportId, filters);
+            return File(result, "text/csv", $"Export-{DateTime.Now.ToString("s")}.csv");
         }
 
         [HttpPut("edit")]
