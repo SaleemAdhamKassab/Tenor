@@ -252,7 +252,7 @@ namespace Tenor.Services.ReportService
 
             }
             var result = ConvertToViewModel(report);
-            result.CanEdit = checkEditValidation(authUser , report.DeviceId);
+            result.CanEdit = checkEditValidation(authUser , report.DeviceId, report);
 
             //--------------------------Build Mapping---------------------------------
 
@@ -318,7 +318,7 @@ namespace Tenor.Services.ReportService
                 IsPublic = x.IsPublic,
                 CreatedBy = x.CreatedBy,
                 CreatedDate = x.CreatedDate,
-                CanEdit = checkEditValidation(authUser,x.DeviceId)
+                CanEdit = checkEditValidation(authUser,x.DeviceId,x)
 
             });
 
@@ -496,7 +496,7 @@ namespace Tenor.Services.ReportService
             {
                 Id = x.Id,
                 Name = x.Name,
-                CanEdit = checkEditValidation(authUser, x.DeviceId),
+                CanEdit = checkEditValidation(authUser, x.DeviceId,x),
                 Type = "report",
 
             }).ToList();
@@ -542,7 +542,7 @@ namespace Tenor.Services.ReportService
             {
                 Id = x.Id,
                 Name = x.Name,
-                CanEdit = checkEditValidation(authUser, x.DeviceId),
+                CanEdit = checkEditValidation(authUser, x.DeviceId,x),
                 Type = "report",
 
             }).ToList();
@@ -964,7 +964,7 @@ namespace Tenor.Services.ReportService
             var reportRehearsal = new ReportRehearsalModel
             {
                 Name = x.Name,
-                canEdit = checkEditValidation(authUser,x.DeviceId),
+                canEdit = checkEditValidation(authUser,x.DeviceId,x),
                 Columns = x.Levels.OrderBy(l => l.DisplayOrder).Select(l => new ReportPreviewColumnModel
                 {
                     Name = l.Level.Name,
@@ -1022,11 +1022,20 @@ namespace Tenor.Services.ReportService
             }
         }
 
-        private bool checkEditValidation(TenantDto authUser , int deviceId)
+        private bool checkEditValidation(TenantDto authUser , int deviceId , Report report)
         {
             string accessResult = _jwtService.checkUserTenantPermission(authUser, deviceId);
             if (accessResult == enAccessType.denied.GetDisplayName() || accessResult == enAccessType.viewOnlyMe.GetDisplayName())
             {
+                return false;
+            }
+
+            if(accessResult == enAccessType.allOnlyMe.GetDisplayName())
+            {
+                if(authUser.userName == report.CreatedBy)
+                {
+                    return true;
+                }
                 return false;
             }
             return true;
