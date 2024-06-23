@@ -104,6 +104,7 @@ namespace Tenor.Services.ReportService.ViewModels
 			public string? CreatedBy { get; set; }
 			public DateTime? CreatedDate { get; set; }
 			public int? ChildId { get; set; }
+			public bool CanEdit { get; set; }
 			public List<MeasureViewModel> Measures { get; set; }
 			public List<ReportLevelViewModel> Levels { get; set; }
 			public List<ReportFieldValueViewModel>? ReportFields { get; set; }
@@ -127,6 +128,7 @@ namespace Tenor.Services.ReportService.ViewModels
 			public bool IsPublic { get; set; }
 			public string? CreatedBy { get; set; }
 			public DateTime? CreatedDate { get; set; }
+			public bool CanEdit { get; set; }
 		}
 		public class ReportListFilter : GeneralFilterModel
 		{
@@ -148,6 +150,7 @@ namespace Tenor.Services.ReportService.ViewModels
 			public string? Name { get; set; }
 			public string? Type { get; set; }
 			public bool HasChild { get; set; }
+			public bool CanEdit { get; set; }
 		}
 
 		public class DimensionLevelsViewModel
@@ -165,6 +168,7 @@ namespace Tenor.Services.ReportService.ViewModels
 			public string? Name { get; set; }
 			public List<ReportPreviewColumnModel> Columns { get; set; } = new List<ReportPreviewColumnModel>();
             public List<ContainerOfFilter> ContainerOfFilters { get; set; } = new List<ContainerOfFilter>();
+			public bool canEdit { get; set; }
         }
 	}
 }

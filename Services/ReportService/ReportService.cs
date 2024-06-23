@@ -23,6 +23,7 @@ using Tenor.Services.DataServices;
 using System.Formats.Asn1;
 using System.Globalization;
 using CsvHelper;
+using System.Composition;
 
 namespace Tenor.Services.ReportService
 {
@@ -31,7 +32,7 @@ namespace Tenor.Services.ReportService
         Task<ResultWithMessage> Add(CreateReport input, TenantDto authUser);
         Task<ResultWithMessage> HardDelete(int id, TenantDto authUser);
         Task<ResultWithMessage> SoftDelete(int id, TenantDto authUser);
-        Task<ResultWithMessage> GetById(int id);
+        Task<ResultWithMessage> GetById(int id, TenantDto authUser);
         Task<ResultWithMessage> GetByFilter(ReportListFilter input, TenantDto authUser);
         Task<ResultWithMessage> GetReportTreeUserNames(ReportTreeFilter input, TenantDto authUser);
         Task<ResultWithMessage> GetReportTreeDevicesByUserName(ReportTreeFilter input, TenantDto authUser);
@@ -43,10 +44,10 @@ namespace Tenor.Services.ReportService
         Task<ResultWithMessage> GetExtraFields(int? deviceId);
         ResultWithMessage ValidateReport(int? deviceId, string reportName);
         ResultWithMessage getReportDataByCreateReport(CreateReport report, int pageSize, int pageIndex);
-        Task<ResultWithMessage> getReportDataById(int id, int pageSize, int pageIndex, List<ContainerOfFilter> filters);
+        Task<ResultWithMessage> getReportDataById(int id, int pageSize, int pageIndex, List<ContainerOfFilter> filters, TenantDto authUser);
         Task<ResultWithMessage> Update(int id, CreateReport input, TenantDto authUser);
-        Task<ResultWithMessage> GetReportRehearsal(int reportId);
-        public Task<byte[]> exportReportDataById(int id, List<ContainerOfFilter> filters);
+        Task<ResultWithMessage> GetReportRehearsal(int reportId, TenantDto authUser);
+        public Task<byte[]> exportReportDataById(int id, List<ContainerOfFilter> filters, TenantDto authUser);
 
     }
     public class ReportService : IReportService
@@ -223,22 +224,37 @@ namespace Tenor.Services.ReportService
 
             return new ResultWithMessage(true, "");
         }
-        public async Task<ResultWithMessage> GetById(int id)
+        public async Task<ResultWithMessage> GetById(int id, TenantDto authUser)
         {
-            var report = _db.Reports.Include(x => x.Device).Include(x => x.Measures).ThenInclude(x => x.Havings).ThenInclude(x => x.Operator)
+            
+            Report report = null;
+            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
+            {
+                report = _db.Reports.Include(x => x.Device).Include(x => x.Measures).ThenInclude(x => x.Havings).ThenInclude(x => x.Operator)
                 .Include(x => x.Levels).ThenInclude(x => x.Level).Include(x => x.FilterContainers).ThenInclude(x => x.ReportFilters).ThenInclude(x => x.Level)
                 .Include(x => x.ReportFieldValues).ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField)
                 .FirstOrDefault(x => x.Id == id);
+            }
+            else
+            {
+                report = _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == authUser.userName && (x.IsPublic || authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains((int)x.DeviceId)))
+                .Include(x => x.Device).Include(x => x.Measures).ThenInclude(x => x.Havings).ThenInclude(x => x.Operator)
+               .Include(x => x.Levels).ThenInclude(x => x.Level).Include(x => x.FilterContainers).ThenInclude(x => x.ReportFilters).ThenInclude(x => x.Level)
+               .Include(x => x.ReportFieldValues).ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField)
+               .FirstOrDefault(x => x.Id == id);
+
+               
+            }
 
             if (report is null)
             {
                 return new ResultWithMessage(null, "Cannot find report");
 
             }
+            var result = ConvertToViewModel(report);
+            result.CanEdit = checkEditValidation(authUser , report.DeviceId);
 
             //--------------------------Build Mapping---------------------------------
-
-            var result = ConvertToViewModel(report);
 
             return new ResultWithMessage(result, null);
 
@@ -301,7 +317,8 @@ namespace Tenor.Services.ReportService
                 DeviceName = x.Device.Name,
                 IsPublic = x.IsPublic,
                 CreatedBy = x.CreatedBy,
-                CreatedDate = x.CreatedDate
+                CreatedDate = x.CreatedDate,
+                CanEdit = checkEditValidation(authUser,x.DeviceId)
 
             });
 
@@ -479,6 +496,7 @@ namespace Tenor.Services.ReportService
             {
                 Id = x.Id,
                 Name = x.Name,
+                CanEdit = checkEditValidation(authUser, x.DeviceId),
                 Type = "report",
 
             }).ToList();
@@ -491,7 +509,7 @@ namespace Tenor.Services.ReportService
             IQueryable<Report> query = null;
             //------------------------------Data source--------------------------------------------
             query = _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == input.userName).Include(x => x.Device).Include(x => x.ReportFieldValues)
-                    .ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField).AsQueryable();
+                   .ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField).AsQueryable();
 
             //------------------------------Data filter-------------------------------------------
             if (!string.IsNullOrEmpty(input.SearchQuery))
@@ -524,6 +542,7 @@ namespace Tenor.Services.ReportService
             {
                 Id = x.Id,
                 Name = x.Name,
+                CanEdit = checkEditValidation(authUser, x.DeviceId),
                 Type = "report",
 
             }).ToList();
@@ -916,14 +935,28 @@ namespace Tenor.Services.ReportService
             return result;
         }
 
-        public async Task<ResultWithMessage> GetReportRehearsal(int id)
+        public async Task<ResultWithMessage> GetReportRehearsal(int id, TenantDto authUser)
         {
-            var x = await _db.Reports
+
+            Report x = null;
+            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
+            {
+                x = await _db.Reports.Where(x => !x.IsDeleted).Include(x => x.Device)
+                .Include(x => x.Measures)
+                .Include(x => x.Levels).ThenInclude(x => x.Level)
+                .Include(x => x.FilterContainers).ThenInclude(x => x.ReportFilters).ThenInclude(x => x.Level).FirstOrDefaultAsync(x => x.Id == id);
+            }
+            else
+            {
+                x = await _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == authUser.userName && (x.IsPublic || authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains((int)x.DeviceId)))
                 .Include(x => x.Device)
                 .Include(x => x.Measures)
                 .Include(x => x.Levels).ThenInclude(x => x.Level)
                 .Include(x => x.FilterContainers).ThenInclude(x => x.ReportFilters).ThenInclude(x => x.Level)
-                .FirstOrDefaultAsync(x => x.Id == id);
+               .FirstOrDefaultAsync(x => x.Id == id);
+            }
+
+
             if (x == null)
             {
                 return new ResultWithMessage(null, "Cannot find report");
@@ -931,6 +964,7 @@ namespace Tenor.Services.ReportService
             var reportRehearsal = new ReportRehearsalModel
             {
                 Name = x.Name,
+                canEdit = checkEditValidation(authUser,x.DeviceId),
                 Columns = x.Levels.OrderBy(l => l.DisplayOrder).Select(l => new ReportPreviewColumnModel
                 {
                     Name = l.Level.Name,
@@ -964,17 +998,17 @@ namespace Tenor.Services.ReportService
             return new ResultWithMessage(reportRehearsal, "");
         }
 
-        public async Task<ResultWithMessage> getReportDataById(int id, int pageSize, int pageIndex, List<ContainerOfFilter> filters)
+        public async Task<ResultWithMessage> getReportDataById(int id, int pageSize, int pageIndex, List<ContainerOfFilter> filters, TenantDto authUser)
         {
-            var report = (ReportViewModel)(await GetById(id)).Data;
+            var report = (ReportViewModel)(await GetById(id,authUser)).Data;
             var queryWithSize = _queryBuilder.getReportQueryByViewModel(report, pageSize, pageIndex, filters);
             var data =  _dataProvider.fetchData(queryWithSize.Sql);
             var count = _dataProvider.fetchCount(queryWithSize.CountSql);
             return new ResultWithMessage(new DataWithSize(count, data), "");
         }
-        public async Task<byte[]> exportReportDataById(int id, List<ContainerOfFilter> filters)
+        public async Task<byte[]> exportReportDataById(int id, List<ContainerOfFilter> filters, TenantDto authUser)
         {
-            var report = (ReportViewModel)(await GetById(id)).Data;
+            var report = (ReportViewModel)(await GetById(id, authUser)).Data;
             var queryWithSize = _queryBuilder.getReportQueryByViewModel(report, int.MaxValue, 0, filters);
             var data = _dataProvider.fetchData(queryWithSize.Sql);
             using (var memoryStream = new MemoryStream())
@@ -986,6 +1020,16 @@ namespace Tenor.Services.ReportService
                 }
                 return memoryStream.ToArray();   
             }
+        }
+
+        private bool checkEditValidation(TenantDto authUser , int deviceId)
+        {
+            string accessResult = _jwtService.checkUserTenantPermission(authUser, deviceId);
+            if (accessResult == enAccessType.denied.GetDisplayName() || accessResult == enAccessType.viewOnlyMe.GetDisplayName())
+            {
+                return false;
+            }
+            return true;
         }
     }
 }

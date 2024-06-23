@@ -59,13 +59,14 @@ namespace Tenor.Controllers
 		[TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
 		public async Task<IActionResult> GetById(int id)
 		{
-			return _returnResult(await _reportService.GetById(id));
+			var authData = AuthUser();
+			return _returnResult(await _reportService.GetById(id, authData));
 
 		}
 
 		[HttpPost("getByFilter")]
 		[TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
-		public async Task<IActionResult> getKpiByFilter(ReportListFilter filter)
+		public async Task<IActionResult> getReportByFilter(ReportListFilter filter)
 		{
 
 			var authData = AuthUser();
@@ -146,19 +147,29 @@ namespace Tenor.Controllers
 
         }
 		[HttpGet("getRehearsal")]
-		public async Task<IActionResult> getReportRehearsal(int id)
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
+
+        public async Task<IActionResult> getReportRehearsal(int id)
         {
-            return _returnResult(await _reportService.GetReportRehearsal(id));
+            var authData = AuthUser();
+
+            return _returnResult(await _reportService.GetReportRehearsal(id, authData));
         }
         [HttpPost("getReportData")]
-		public IActionResult getReportData(int pageSize, int pageIndex, CreateReport report)
+
+        public IActionResult getReportData(int pageSize, int pageIndex, CreateReport report)
 		{
 			return _returnResult(_reportService.getReportDataByCreateReport(report, pageSize, pageIndex));
 		}
+
         [HttpPost("getReportDataById")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
+
         public async Task<IActionResult> getReportDataById(int reportId, int pageSize, int pageIndex, List<ContainerOfFilter> filters)
         {
-            return _returnResult(await _reportService.getReportDataById(reportId, pageSize, pageIndex, filters));
+            var authData = AuthUser();
+
+            return _returnResult(await _reportService.getReportDataById(reportId, pageSize, pageIndex, filters, authData));
         }
         
         [HttpPost("exportReportDataById")]
@@ -166,7 +177,9 @@ namespace Tenor.Controllers
         [Produces("text/csv")]
         public async Task<FileResult> exportReportDataById(int reportId, List<ContainerOfFilter> filters)
         {
-			var result = await _reportService.exportReportDataById(reportId, filters);
+            var authData = AuthUser();
+
+            var result = await _reportService.exportReportDataById(reportId, filters, authData);
             return File(result, "text/csv", $"Export-{DateTime.Now.ToString("s")}.csv");
         }
 
