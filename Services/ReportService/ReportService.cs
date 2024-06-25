@@ -24,6 +24,7 @@ using System.Formats.Asn1;
 using System.Globalization;
 using CsvHelper;
 using System.Composition;
+using System.Threading.Tasks;
 
 namespace Tenor.Services.ReportService
 {
@@ -252,7 +253,8 @@ namespace Tenor.Services.ReportService
 
             }
             var result = ConvertToViewModel(report);
-            result.CanEdit = checkEditValidation(authUser , report.DeviceId, report);
+            result.CanEdit = checkEditValidation(authUser, report.DeviceId, report, _jwtService);
+
 
             //--------------------------Build Mapping---------------------------------
 
@@ -268,6 +270,8 @@ namespace Tenor.Services.ReportService
             {
                 query = _db.Reports.Where(x => !x.IsDeleted).Include(x => x.Device).Include(x => x.ReportFieldValues)
                     .ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField).AsQueryable();
+
+                var xx = _db.Reports.ToList();
             }
             else
             {
@@ -308,8 +312,7 @@ namespace Tenor.Services.ReportService
             }
 
             //mapping to DTO querable
-
-            var queryViewModel = query.Select(x => new ReportDto()
+            var queryViewModel =query.Select(  x =>  new ReportDto()
             {
                 Id = x.Id,
                 Name = x.Name,
@@ -318,11 +321,12 @@ namespace Tenor.Services.ReportService
                 IsPublic = x.IsPublic,
                 CreatedBy = x.CreatedBy,
                 CreatedDate = x.CreatedDate,
-                CanEdit = checkEditValidation(authUser,x.DeviceId,x)
-
+               // CanEdit = checkEditValidation(authUser,x.DeviceId,x,_jwtService)
             });
 
-            return sortAndPagination(input, queryViewModel);
+           
+
+            return sortAndPagination(input, queryViewModel ,authUser);
 
 
         }
@@ -496,7 +500,7 @@ namespace Tenor.Services.ReportService
             {
                 Id = x.Id,
                 Name = x.Name,
-                CanEdit = checkEditValidation(authUser, x.DeviceId,x),
+                CanEdit = checkEditValidation(authUser, x.DeviceId, x, _jwtService),
                 Type = "report",
 
             }).ToList();
@@ -542,7 +546,7 @@ namespace Tenor.Services.ReportService
             {
                 Id = x.Id,
                 Name = x.Name,
-                CanEdit = checkEditValidation(authUser, x.DeviceId,x),
+                CanEdit = checkEditValidation(authUser, x.DeviceId, x, _jwtService),
                 Type = "report",
 
             }).ToList();
@@ -575,7 +579,7 @@ namespace Tenor.Services.ReportService
 
             return result;
         }
-        private ResultWithMessage sortAndPagination(ReportListFilter FilterModel, IQueryable<ReportDto> queryViewModel)
+        private ResultWithMessage sortAndPagination(ReportListFilter FilterModel, IQueryable<ReportDto> queryViewModel , TenantDto authUser)
         {
             if (!string.IsNullOrEmpty(FilterModel.SortActive))
             {
@@ -599,7 +603,8 @@ namespace Tenor.Services.ReportService
             {
                 int Count = queryViewModel.Count();
                 var result = queryViewModel.Skip((FilterModel.PageIndex) * FilterModel.PageSize)
-                .Take(FilterModel.PageSize).ToList();
+                .Take(FilterModel.PageSize).ToList();            
+
 
                 return new ResultWithMessage(new DataWithSize(Count, result), "");
             }
@@ -964,7 +969,7 @@ namespace Tenor.Services.ReportService
             var reportRehearsal = new ReportRehearsalModel
             {
                 Name = x.Name,
-                canEdit = checkEditValidation(authUser,x.DeviceId,x),
+                canEdit = checkEditValidation(authUser, x.DeviceId, x, _jwtService),
                 Columns = x.Levels.OrderBy(l => l.DisplayOrder).Select(l => new ReportPreviewColumnModel
                 {
                     Name = l.Level.Name,
@@ -1022,7 +1027,7 @@ namespace Tenor.Services.ReportService
             }
         }
 
-        private bool checkEditValidation(TenantDto authUser , int deviceId , Report report)
+        private static  bool checkEditValidation(TenantDto authUser , int deviceId , Report report, IJwtService _jwtService)
         {
             string accessResult = _jwtService.checkUserTenantPermission(authUser, deviceId);
             if (accessResult == enAccessType.denied.GetDisplayName() || accessResult == enAccessType.viewOnlyMe.GetDisplayName())
@@ -1030,15 +1035,19 @@ namespace Tenor.Services.ReportService
                 return false;
             }
 
-            if(accessResult == enAccessType.allOnlyMe.GetDisplayName())
+            if (accessResult == enAccessType.allOnlyMe.GetDisplayName())
             {
                 if(authUser.userName == report.CreatedBy)
                 {
                     return true;
+
                 }
                 return false;
             }
-            return true;
+            return false;
         }
+
+
+
     }
 }
