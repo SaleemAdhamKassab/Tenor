@@ -182,11 +182,12 @@ namespace Tenor.Services.DataServices
                             .ToList();
 
                 subquery.ReportSubqueryDimensions = dim
-                                                    .GroupBy(y => new { y.Dimension.TableName, y.Dimension.DimensionJoiners })
+                                                    .GroupBy(y => new { y.Dimension.TableName })
                                                     .Select(g => new ReportSubqueryDimension
                                                     {
-                                                        DimensionJoiners = g.Key.DimensionJoiners.ToList(),
+                                                        
                                                         DimensionTableName = g.Key.TableName,
+                                                        DimensionJoiners = g.SelectMany(x => x.Dimension.DimensionJoiners).Distinct().ToList(),
                                                         LevelColumns = report.Levels.Select(x => new ReportLevelSubquery
                                                         {
                                                             LevelColumn = g.FirstOrDefault(y => y.LevelId == x.LevelId)?.ColumnName,
@@ -265,9 +266,9 @@ namespace Tenor.Services.DataServices
             foreach (var dimension in subqueryModel.ReportSubqueryDimensions)
             {
                 joinQuery += $"JOIN {dimension.DimensionTableName} {dimension.DimensionTableName} ON 1 = 1 ";
-                foreach (var joiner in dimension.DimensionJoiners)
+                foreach (var joiner in dimension.DimensionJoiners.Select(x => new { Pk = x.PkName.ToUpper(), Fk = x.FkName.ToUpper()}).Distinct().ToList())
                 {
-                    joinQuery += $"AND {dimension.DimensionTableName}.{joiner.PkName} = {subqueryModel.SubsetTableName}.{joiner.FkName} ";
+                    joinQuery += $"AND {dimension.DimensionTableName}.{joiner.Pk} = {subqueryModel.SubsetTableName}.{joiner.Fk} ";
                 }
             }
             foreach (var container in subqueryModel.FilterContainers)

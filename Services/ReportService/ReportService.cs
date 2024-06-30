@@ -46,6 +46,7 @@ namespace Tenor.Services.ReportService
         ResultWithMessage ValidateReport(int? deviceId, string reportName);
         ResultWithMessage getReportDataByCreateReport(CreateReport report, int pageSize, int pageIndex);
         Task<ResultWithMessage> getReportDataById(int id, int pageSize, int pageIndex, List<ContainerOfFilter> filters, TenantDto authUser);
+        Task<ResultWithMessage> getReportSqlById(int id, int pageSize, int pageIndex, List<ContainerOfFilter> filters);
         Task<ResultWithMessage> Update(int id, CreateReport input, TenantDto authUser);
         Task<ResultWithMessage> GetReportRehearsal(int reportId, TenantDto authUser);
         public Task<byte[]> exportReportDataById(int id, List<ContainerOfFilter> filters, TenantDto authUser);
@@ -254,6 +255,29 @@ namespace Tenor.Services.ReportService
             }
             var result = ConvertToViewModel(report);
             result.CanEdit = checkEditValidation(authUser, report.DeviceId, report, _jwtService);
+
+
+            //--------------------------Build Mapping---------------------------------
+
+            return new ResultWithMessage(result, null);
+
+
+        }
+        private async Task<ResultWithMessage> GetById(int id)
+        {
+
+            var report = _db.Reports.Include(x => x.Device).Include(x => x.Measures).ThenInclude(x => x.Havings).ThenInclude(x => x.Operator)
+                .Include(x => x.Levels).ThenInclude(x => x.Level).Include(x => x.FilterContainers).ThenInclude(x => x.ReportFilters).ThenInclude(x => x.Level)
+                .Include(x => x.ReportFieldValues).ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField)
+                .FirstOrDefault(x => x.Id == id);
+
+            if (report is null)
+            {
+                return new ResultWithMessage(null, "Cannot find report");
+
+            }
+            var result = ConvertToViewModel(report);
+            // result.CanEdit = checkEditValidation(authUser, report.DeviceId, report, _jwtService);
 
 
             //--------------------------Build Mapping---------------------------------
@@ -619,6 +643,38 @@ namespace Tenor.Services.ReportService
             }
             deviceIds = deviceIds.Where(x => x != 0).Distinct().ToList();
             // 3- return shared levels between devices 
+            var q1 = _db.Dimensions
+                    .Where(x => deviceIds.Contains(x.DeviceId.Value))
+                    .Select(d => d.DimensionLevels.Where(dl => dl.Level.IsLevel).Select(dl => new
+                    {
+                        DimensionName = d.Name,
+                        dl.LevelId,
+                        LevelName = dl.Level.Name,
+                        LevelType = dl.Level.DataType,
+                        dl.Level.IsFilter,
+                        dl.Level.IsLevel
+                    })).ToList();
+            var q2 = q1.SelectMany(x => x)
+                .GroupBy(z => z)
+                .Select(b => new { data = b.Key, Count = b.Count() });
+            var q3 = q2.Where(f => f.Count == deviceIds.Count)
+                .GroupBy(f => f.data.DimensionName)
+                .Select(g => new TreeNodeViewModel
+                {
+                    Id = 0,
+                    Name = g.Key,
+                    HasChild = true,
+                    Type = "dimension",
+                    Childs = g.Select(z => new TreeNodeViewModel
+                    {
+                        Id = z.data.LevelId,
+                        Name = z.data.LevelName,
+                        HasChild = false,
+                        IsFilter = z.data.IsFilter,
+                        IsLevel = z.data.IsLevel,
+                        Type = z.data.LevelType
+                    }).ToList()
+                });
             var result = _db.Dimensions
                     .Where(x => deviceIds.Contains(x.DeviceId.Value))
                     .Select(d => d.DimensionLevels.Where(dl => dl.Level.IsLevel).Select(dl => new
@@ -1047,7 +1103,11 @@ namespace Tenor.Services.ReportService
             return false;
         }
 
-
-
+        public async Task<ResultWithMessage> getReportSqlById(int id, int pageSize, int pageIndex, List<ContainerOfFilter> filters)
+        {
+            var report = (ReportViewModel)(await GetById(id)).Data;
+            var queryWithSize = _queryBuilder.getReportQueryByViewModel(report, pageSize, pageIndex, filters);
+            return new ResultWithMessage(queryWithSize, "");
+        }
     }
 }
