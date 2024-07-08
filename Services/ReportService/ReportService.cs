@@ -25,6 +25,7 @@ using System.Globalization;
 using CsvHelper;
 using System.Composition;
 using System.Threading.Tasks;
+using Microsoft.Identity.Client;
 
 namespace Tenor.Services.ReportService
 {
@@ -873,6 +874,8 @@ namespace Tenor.Services.ReportService
                     //-----------------Edit Report Filters--------------
                     _db.ReportFilterContainers.RemoveRange(oldReport.FilterContainers);
 
+                    
+
                     report.FilterContainers = input.ContainerOfFilters.Select(x => new ReportFilterContainer()
                     {
                         Id = 0,
@@ -883,7 +886,7 @@ namespace Tenor.Services.ReportService
                             Id = 0,
                             LogicalOperator = y.LogicalOperator,
                             Value = _sharedService.ConvertListToString(y.Value),
-                            FilterContainerId = x.Id,
+                            FilterContainerId = 0,
                             LevelId = y.LevelId,
                             IsMandatory = y.IsMandatory,
                             IsVariable = y.IsVariable
