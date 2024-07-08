@@ -40,7 +40,7 @@ namespace Tenor.Services.DataServices
                         var row = new ExpandoObject() as IDictionary<string, object>;
                         for (var fieldCount = 0; fieldCount < dataReader.FieldCount; fieldCount++)
                         {
-                            row.Add(dataReader.GetName(fieldCount), dataReader[fieldCount]);
+                            row.Add(dataReader.GetName(fieldCount), (dataReader[fieldCount] is DBNull ? "" : dataReader[fieldCount]));
                         }
                         yield return row;
                     }
