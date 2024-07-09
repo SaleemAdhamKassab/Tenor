@@ -776,7 +776,8 @@ namespace Tenor.Services.CountersService
                        ||x.Subset.Name.ToLower().Contains(searchQuery.ToLower())
                        ||x.Subset.Device.Name.ToLower().Contains(searchQuery.ToLower())
                        ||x.Subset.Device.Parent.Name.ToLower().Contains(searchQuery.ToLower())
-                       ||x.Subset.Device.Childs.Any(y=>y.Name.ToLower().Contains(searchQuery.ToLower()))
+                       ||x.SupplierId.StartsWith(searchQuery)
+                       ||x.Subset.Device.Childs.Any(y=>y.Name.ToLower().Contains(searchQuery.ToLower()) || y.SupplierId.StartsWith(searchQuery))
                        );
                        
             }

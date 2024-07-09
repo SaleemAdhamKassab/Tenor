@@ -349,9 +349,9 @@ namespace Tenor.Services.DevicesService
 
 			if (!string.IsNullOrEmpty(searchQuery))
 			{
-				query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower())
-					  || x.Subsets.Any(y => y.Id.ToString() == searchQuery || y.Name.ToLower().Contains(searchQuery.ToLower()))
-					  || x.Subsets.Any(z => z.Counters.Any(e => e.Id.ToString() == searchQuery || e.Name.ToLower().Contains(searchQuery.ToLower()) || e.Code.ToLower() == searchQuery.ToLower()))
+				query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower()) || x.SupplierId.StartsWith(searchQuery)
+					  || x.Subsets.Any(y => y.Id.ToString() == searchQuery || y.Name.ToLower().Contains(searchQuery.ToLower()) || y.SupplierId.StartsWith(searchQuery))
+					  || x.Subsets.Any(z => z.Counters.Any(e => e.Id.ToString() == searchQuery || e.Name.ToLower().Contains(searchQuery.ToLower()) || e.Code.ToLower() == searchQuery.ToLower() || e.SupplierId.StartsWith(searchQuery)))
 					  );
 			}
 			var result = query.Select(x => new TreeNodeViewModel
@@ -465,8 +465,9 @@ namespace Tenor.Services.DevicesService
 				{
                     subsetQuery = _db.Subsets.Where(x => x.DeviceId == parentid && 
 					(x.Name.ToLower().Contains(searchQuery.ToLower()) ||
-					x.Counters.Any(y=>y.Name.ToLower().Contains(searchQuery.ToLower()))			
+					x.Counters.Any(y=>y.Name.ToLower().Contains(searchQuery.ToLower()) || y.SupplierId.StartsWith(searchQuery))			
 					|| x.Device.Parent.Name.ToLower().Contains(searchQuery.ToLower())
+					|| x.SupplierId.StartsWith(searchQuery)
 					));
 
                 }

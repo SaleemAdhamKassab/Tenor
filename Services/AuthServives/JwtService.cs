@@ -429,12 +429,23 @@ namespace Tenor.Services.AuthServives
             List<DeviceAccess> result = new List<DeviceAccess>();
             foreach (var t in tenantAccList)
             {
-                var data = _dbcontext.Tenants.Where(x=>x.Name==t.tenantName).Include(x => x.TenantDevices).ThenInclude(x => x.Device).ToList();
+                var data = _dbcontext.Tenants.Where(x=>x.Name==t.tenantName).Include(x => x.TenantDevices).ThenInclude(x => x.Device).ThenInclude(x=>x.Childs).ToList();
                 foreach(var d in data)
                 {
                     List<DeviceAccess> da = new List<DeviceAccess>();
                     da = d.TenantDevices.Select(x => new DeviceAccess() { DeviceId = x.DeviceId, DeviceName = x.Device.Name }).ToList();
                     result.AddRange(da);
+
+                    
+                    if(d.TenantDevices.Any(x=>x.Device.Childs.Count() > 0))
+                    {
+                        foreach(var s in d.TenantDevices.Select(x=>x.Device.Childs))
+                        {
+                            List<DeviceAccess> daChilds = new List<DeviceAccess>();
+                            daChilds = s.Select(x => new DeviceAccess() { DeviceId = x.Id, DeviceName = x.Name }).ToList();
+                            result.AddRange(daChilds);
+                        }
+                    }
                 }
             }
             return result.DistinctBy(x => x.DeviceName).ToList(); ;
