@@ -346,7 +346,7 @@ namespace Tenor.Services.ReportService
                 IsPublic = x.IsPublic,
                 CreatedBy = x.CreatedBy,
                 CreatedDate = x.CreatedDate,
-               // CanEdit = checkEditValidation(authUser,x.DeviceId,x,_jwtService)
+                CanEdit = checkEditValidation(authUser,x.DeviceId,x,_jwtService)
             });
 
            
