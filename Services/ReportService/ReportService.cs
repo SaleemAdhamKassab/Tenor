@@ -1103,7 +1103,7 @@ namespace Tenor.Services.ReportService
                 }
                 return false;
             }
-            return false;
+            return true;
         }
 
         public async Task<ResultWithMessage> getReportSqlById(int id, int pageSize, int pageIndex, List<ContainerOfFilter> filters)
