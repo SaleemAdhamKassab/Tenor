@@ -67,7 +67,7 @@ builder.Services.AddTransient<ClaimsPrincipal>(s =>
 builder.Services.AddMemoryCache();
 
 //-------------------------------------
-builder.Services.AddDbContext<TenorDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<TenorDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("RemoteConnection")));
 //builder.Services.AddDbContext<TenorDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("RemoteConnection")));
 builder.Services.AddDbContext<DataContext>(options =>options.UseOracle(builder.Configuration.GetConnectionString("DataConnection")));
 

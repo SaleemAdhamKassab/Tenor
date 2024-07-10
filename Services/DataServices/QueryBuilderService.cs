@@ -282,12 +282,12 @@ namespace Tenor.Services.DataServices
                         whereQuery += $"{filter.LogicalOperator} {filter.FilterTableName}.{filter.FilterColumnName} in ";
                         whereQuery += $"({String.Join(",", filter.FilterValues.Select(x => "'" + x + "'"))}) ";
                     }
-                    else if (filter.Type.ToLower() == "date")
+                    else if (filter.Type.ToLower() == "date" && !filter.FilterTableName.ToLower().EndsWith("_min"))
                     {
                         whereQuery += $"{filter.LogicalOperator} {filter.FilterTableName}.{filter.FilterColumnName} between ";
                         whereQuery += $"TO_DATE('{filter.FilterValues?[0]}00', 'YYYYMMDDHH24') AND TO_DATE('{filter.FilterValues?[1]}23', 'YYYYMMDDHH24') ";
                     }
-                    else if (filter.Type.ToLower() == "date_min")
+                    else if (filter.Type.ToLower() == "date" && filter.FilterTableName.ToLower().EndsWith("_min"))
                     {
                         whereQuery += $"{filter.LogicalOperator} {filter.FilterTableName}.{filter.FilterColumnName} between ";
                         whereQuery += $"TO_DATE('{filter.FilterValues?[0]}0000', 'YYYYMMDDHH24MI') AND TO_DATE('{filter.FilterValues?[1]}2359', 'YYYYMMDDHH24MI') ";
