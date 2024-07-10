@@ -349,9 +349,9 @@ namespace Tenor.Services.DevicesService
 
 			if (!string.IsNullOrEmpty(searchQuery))
 			{
-				query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower()) || x.SupplierId.StartsWith(searchQuery)
-					  || x.Subsets.Any(y => y.Id.ToString() == searchQuery || y.Name.ToLower().Contains(searchQuery.ToLower()) || y.SupplierId.StartsWith(searchQuery))
-					  || x.Subsets.Any(z => z.Counters.Any(e => e.Id.ToString() == searchQuery || e.Name.ToLower().Contains(searchQuery.ToLower()) || e.Code.ToLower() == searchQuery.ToLower() || e.SupplierId.StartsWith(searchQuery)))
+				query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower()) || x.SupplierId.ToLower().Contains(searchQuery.ToLower())
+					  || x.Subsets.Any(y => y.Id.ToString() == searchQuery || y.Name.ToLower().Contains(searchQuery.ToLower()) || y.SupplierId.ToLower().Contains(searchQuery.ToLower()))
+					  || x.Subsets.Any(z => z.Counters.Any(e => e.Id.ToString() == searchQuery || e.Name.ToLower().Contains(searchQuery.ToLower()) || e.Code.ToLower() == searchQuery.ToLower() || e.SupplierId.ToLower().Contains(searchQuery.ToLower())))
 					  );
 			}
 			var result = query.Select(x => new TreeNodeViewModel
@@ -425,20 +425,20 @@ namespace Tenor.Services.DevicesService
 
             if (!string.IsNullOrEmpty(searchQuery))
             {
-				query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower()) || x.Parent.Name.ToLower().Contains(searchQuery.ToLower())
-					  || x.Subsets.Any(y => y.Id.ToString() == searchQuery || y.Name.ToLower().Contains(searchQuery.ToLower()))
-					  || x.Subsets.Any(z => z.Counters.Any(e => e.Id.ToString() == searchQuery || e.Name.ToLower().Contains(searchQuery.ToLower()) || e.Code.ToLower() == searchQuery.ToLower()))
-					  || x.Childs.Any(y => y.Name.ToLower().Contains(searchQuery.ToLower()) || y.Parent.Name.ToLower().Contains(searchQuery.ToLower())
-                         || y.Subsets.Any(z => z.Name.ToLower().Contains(searchQuery.ToLower()))
-						 || y.Subsets.Any(d => d.Counters.Any(b => b.Name.ToLower().Contains(searchQuery.ToLower())))
+				query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower()) || x.Parent.Name.ToLower().Contains(searchQuery.ToLower()) || x.SupplierId.ToLower().Contains(searchQuery.ToLower())
+					  || x.Subsets.Any(y => y.Id.ToString() == searchQuery || y.Name.ToLower().Contains(searchQuery.ToLower()) || y.SupplierId.ToLower().Contains(searchQuery.ToLower()))
+					  || x.Subsets.Any(z => z.Counters.Any(e => e.Id.ToString() == searchQuery || e.Name.ToLower().Contains(searchQuery.ToLower()) || e.Code.ToLower() == searchQuery.ToLower() || e.SupplierId.ToLower().Contains(searchQuery.ToLower())))
+					  || x.Childs.Any(y => y.Name.ToLower().Contains(searchQuery.ToLower()) || y.Parent.Name.ToLower().Contains(searchQuery.ToLower()) || y.SupplierId.ToLower().Contains(searchQuery.ToLower())
+                         || y.Subsets.Any(z => z.Name.ToLower().Contains(searchQuery.ToLower()) || z.SupplierId.ToLower().Contains(searchQuery.ToLower()))
+						 || y.Subsets.Any(d => d.Counters.Any(b => b.Name.ToLower().Contains(searchQuery.ToLower()) || b.SupplierId.ToLower().Contains(searchQuery.ToLower()) || b.SupplierId.ToLower().Contains(searchQuery.ToLower())))
 						 
-                         || y.Childs.Any(k => k.Name.ToLower().Contains(searchQuery.ToLower()) || k.Parent.Name.ToLower().Contains(searchQuery.ToLower())
-                         || k.Subsets.Any(z => z.Name.ToLower().Contains(searchQuery.ToLower()))
-                         || k.Subsets.Any(d => d.Counters.Any(b => b.Name.ToLower().Contains(searchQuery.ToLower())))
+                         || y.Childs.Any(k => k.Name.ToLower().Contains(searchQuery.ToLower()) || k.Parent.Name.ToLower().Contains(searchQuery.ToLower()) || k.SupplierId.ToLower().Contains(searchQuery.ToLower())
+                         || k.Subsets.Any(z => z.Name.ToLower().Contains(searchQuery.ToLower()) || z.SupplierId.ToLower().Contains(searchQuery.ToLower()))
+                         || k.Subsets.Any(d => d.Counters.Any(b => b.Name.ToLower().Contains(searchQuery.ToLower()) || b.SupplierId.ToLower().Contains(searchQuery.ToLower())))
 						 
-						 || k.Childs.Any(q => q.Name.ToLower().Contains(searchQuery.ToLower()) || q.Parent.Name.ToLower().Contains(searchQuery.ToLower())
-                         || q.Subsets.Any(z => z.Name.ToLower().Contains(searchQuery.ToLower()))
-                         || q.Subsets.Any(d => d.Counters.Any(b => b.Name.ToLower().Contains(searchQuery.ToLower())))))
+						 || k.Childs.Any(q => q.Name.ToLower().Contains(searchQuery.ToLower()) || q.Parent.Name.ToLower().Contains(searchQuery.ToLower()) || q.SupplierId.ToLower().Contains(searchQuery.ToLower())
+                         || q.Subsets.Any(z => z.Name.ToLower().Contains(searchQuery.ToLower()) || z.SupplierId.ToLower().Contains(searchQuery.ToLower()))
+                         || q.Subsets.Any(d => d.Counters.Any(b => b.Name.ToLower().Contains(searchQuery.ToLower()) || b.SupplierId.ToLower().Contains(searchQuery.ToLower())))))
 						  
 						 )
                       );
@@ -464,10 +464,10 @@ namespace Tenor.Services.DevicesService
 				if(!string.IsNullOrEmpty(searchQuery))
 				{
                     subsetQuery = _db.Subsets.Where(x => x.DeviceId == parentid && 
-					(x.Name.ToLower().Contains(searchQuery.ToLower()) ||
-					x.Counters.Any(y=>y.Name.ToLower().Contains(searchQuery.ToLower()) || y.SupplierId.StartsWith(searchQuery))			
+					(x.Name.ToLower().Contains(searchQuery.ToLower()) || x.SupplierId.ToLower().Contains(searchQuery.ToLower())||
+					x.Counters.Any(y=>y.Name.ToLower().Contains(searchQuery.ToLower()) || y.SupplierId.ToLower().Contains(searchQuery.ToLower()))			
 					|| x.Device.Parent.Name.ToLower().Contains(searchQuery.ToLower())
-					|| x.SupplierId.StartsWith(searchQuery)
+					|| x.SupplierId.ToLower().Contains(searchQuery.ToLower())
 					));
 
                 }

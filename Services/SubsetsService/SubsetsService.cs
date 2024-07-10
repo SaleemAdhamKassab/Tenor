@@ -827,8 +827,8 @@ namespace Tenor.Services.SubsetsService
             }
             if (!string.IsNullOrEmpty(searchQuery))
             {
-                query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower()) || x.SupplierId.StartsWith(searchQuery)
-                        || x.Counters.Any(z=>z.Id.ToString()==searchQuery || z.Name.ToLower().Contains(searchQuery.ToLower()) || z.Code.ToLower()==searchQuery.ToLower() || z.SupplierId.StartsWith(searchQuery))
+                query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower()) || x.SupplierId.ToLower().Contains(searchQuery.ToLower())
+                        || x.Counters.Any(z=>z.Id.ToString()==searchQuery || z.Name.ToLower().Contains(searchQuery.ToLower()) || z.Code.ToLower()==searchQuery.ToLower() || z.SupplierId.ToLower().Contains(searchQuery.ToLower()))
                         || x.Device.Name.ToLower().Contains(searchQuery.ToLower())
                       );
 
