@@ -410,7 +410,7 @@ namespace Tenor.Services.DevicesService
 			List<TreeNodeViewModel> resultDevice = new List<TreeNodeViewModel>();
             List<TreeNodeViewModel> resultSubset = new List<TreeNodeViewModel>();
 
-            query = _db.Devices.Where(e => e.ParentId == parentid && !e.IsDeleted).AsQueryable();
+            query = _db.Devices.Include(x=>x.Childs).Include(x=>x.Parent).Where(e => e.ParentId == parentid && !e.IsDeleted).AsQueryable();
 
             if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
             {
@@ -419,7 +419,10 @@ namespace Tenor.Services.DevicesService
             }
             else
             {
-                query = query.Where(e => authUser.deviceAccesses.Select(x=>x.DeviceId).ToList().Contains(e.Id));
+                query = query.Where(e => authUser.deviceAccesses.Select(x=>x.DeviceId).ToList().Contains(e.Id) ||
+                authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains(e.Parent.Id) ||
+                authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Any(z => e.Childs.Select(x=>x.Id).Contains(z))
+                );
 
             }
 
