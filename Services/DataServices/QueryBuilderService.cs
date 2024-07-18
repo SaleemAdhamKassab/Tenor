@@ -312,6 +312,10 @@ namespace Tenor.Services.DataServices
         }
         private string getMeasureQuery(OperationDto rootOperation)
         {
+            if(rootOperation.Id == 317)
+            {
+                var sssss = 0;
+            }
             var sql = "";
             foreach (OperationDto operation in rootOperation.Childs)
             {
@@ -323,8 +327,8 @@ namespace Tenor.Services.DataServices
                             break;
                         }
                     case (enOPerationTypes.voidFunction):
-                        {
-                            sql += $"({operation.Childs.Select(x => getMeasureQuery(x))})";
+                        {                            
+                            sql += $"({getMeasureQuery(operation)})";
                             break;
                         }
                     case (enOPerationTypes.kpi):
@@ -368,6 +372,10 @@ namespace Tenor.Services.DataServices
         }
         private string getMeasureQuery(OperationBinding rootOperation)
         {
+            if (rootOperation.Id == 317)
+            {
+                var sssss = 0;
+            }
             var sql = "";
             foreach (OperationBinding operation in rootOperation.Childs)
             {
@@ -380,7 +388,7 @@ namespace Tenor.Services.DataServices
                         }
                     case (enOPerationTypes.voidFunction):
                         {
-                            sql += $"({operation.Childs.Select(x => getMeasureQuery(x))})";
+                            sql += $"({getMeasureQuery(operation)})";
                             break;
                         }
                     case (enOPerationTypes.kpi):
@@ -424,6 +432,10 @@ namespace Tenor.Services.DataServices
         }
         private string getMeasureQuery(Operation rootOperation)
         {
+            if (rootOperation.Id == 317)
+            {
+                var sssss = 0;
+            }
             var sql = "";
             var operationChilds = _db.Operations.Include(x => x.Operator).Include(x => x.Function).Where(x => x.ParentId == rootOperation.Id);
             foreach (var operation in operationChilds.ToList() ?? [])
@@ -436,10 +448,14 @@ namespace Tenor.Services.DataServices
                             break;
                         }
                     case(enOPerationTypes.voidFunction):
+                        {
+                            sql += $"({getMeasureQuery(operation)})";
+                            break;
+                        }
                     case (enOPerationTypes.kpi):
                         {
-                            var childs = _db.Operations.Where(x => x.ParentId == operation.Id).ToList();
-                            sql += $"({childs.Select(x => getMeasureQuery(x))})";
+                            var item = _db.Kpis.Include(x => x.Operation).FirstOrDefault(x => x.Id == operation.KpiId);
+                            sql += $"({getMeasureQuery(item.Operation)})";
                             break;
                         }
                     case (enOPerationTypes.number):

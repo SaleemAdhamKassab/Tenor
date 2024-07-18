@@ -273,7 +273,7 @@ namespace Tenor.Services.SharedService
                 .Include(x => x.Kpi)
                 .Include(x => x.Operator)
                 .Include(x => x.Function)
-                .Where(x => x.Id == operationId);
+                .Where(x => x.Id == operationId).ToList();
             foreach (var op in operations)
             {
                 prev = current;
@@ -511,10 +511,7 @@ namespace Tenor.Services.SharedService
                 else if (operation.Type == enOPerationTypes.voidFunction ||
                         operation.Type == enOPerationTypes.function)
                 {
-                    foreach (var item in operation.Childs ?? [])
-                    {
-                        reportSubqueries.AddRange(getOperationSubqueryModel(item));
-                    }
+                        reportSubqueries.AddRange(getOperationSubqueryModel(operation));   
                 }
                 else if (operation.Type == enOPerationTypes.kpi)
                 {
@@ -578,11 +575,9 @@ namespace Tenor.Services.SharedService
                 else if (operation.Type == enOPerationTypes.voidFunction ||
                         operation.Type == enOPerationTypes.function)
                 {
-                    var operations = _db.Operations.Where(x => x.ParentId == operation.Id);
-                    foreach (var item in operations.ToList() ?? [])
-                    {
-                        reportSubqueries.AddRange(getOperationSubqueryModel(item));
-                    }
+                    
+                        reportSubqueries.AddRange(getOperationSubqueryModel(operation));
+                    
                 }
                 else if (operation.Type == enOPerationTypes.kpi)
                 {
