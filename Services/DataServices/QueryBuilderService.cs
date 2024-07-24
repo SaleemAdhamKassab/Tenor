@@ -23,6 +23,12 @@ namespace Tenor.Services.DataServices
     {
         private readonly TenorDbContext _db;
         private readonly ISharedService _sharedService;
+        private Operation prev = null;
+        private Operation current = null;
+        private OperationDto prev2 = null;
+        private OperationDto current2 = null;
+        private OperationBinding prev3 = null;
+        private OperationBinding current3 = null;
         public QueryBuilderService(TenorDbContext db, ISharedService sharedService)
         {
             _db = db;
@@ -319,6 +325,8 @@ namespace Tenor.Services.DataServices
             var sql = "";
             foreach (OperationDto operation in rootOperation.Childs)
             {
+                prev2 = current2;
+                current2 = operation;
                 switch (operation.Type)
                 {
                     case (enOPerationTypes.counter):
@@ -327,9 +335,15 @@ namespace Tenor.Services.DataServices
                             break;
                         }
                     case (enOPerationTypes.voidFunction):
-                        {                            
-                            sql += $"({getMeasureQuery(operation)})";
+                        {
+                            if ((prev != null && prev.Operator != null) ? prev.Operator.Name == "/" : false)
+                                sql += $"NoZero({getMeasureQuery(operation)})";
+                            else
+                                sql += $"({getMeasureQuery(operation)})";
+
                             break;
+
+                          
                         }
                     case (enOPerationTypes.kpi):
                         {
@@ -379,7 +393,9 @@ namespace Tenor.Services.DataServices
             var sql = "";
             foreach (OperationBinding operation in rootOperation.Childs)
             {
-                switch(operation.Type)
+                prev3 = current3;
+                current3 = operation;
+                switch (operation.Type)
                 {
                     case (enOPerationTypes.counter):
                         {
@@ -388,7 +404,11 @@ namespace Tenor.Services.DataServices
                         }
                     case (enOPerationTypes.voidFunction):
                         {
-                            sql += $"({getMeasureQuery(operation)})";
+                            if ((prev != null && prev.Operator != null) ? prev.Operator.Name == "/" : false)
+                                sql += $"NoZero({getMeasureQuery(operation)})";
+                            else
+                                sql += $"({getMeasureQuery(operation)})";
+
                             break;
                         }
                     case (enOPerationTypes.kpi):
@@ -432,6 +452,7 @@ namespace Tenor.Services.DataServices
         }
         private string getMeasureQuery(Operation rootOperation)
         {
+           
             if (rootOperation.Id == 317)
             {
                 var sssss = 0;
@@ -440,7 +461,9 @@ namespace Tenor.Services.DataServices
             var operationChilds = _db.Operations.Include(x => x.Operator).Include(x => x.Function).Where(x => x.ParentId == rootOperation.Id);
             foreach (var operation in operationChilds.ToList() ?? [])
             {
-                switch(operation.Type)
+                prev = current;
+                current = operation;
+                switch (operation.Type)
                 {
                     case(enOPerationTypes.counter):
                         {
@@ -449,7 +472,11 @@ namespace Tenor.Services.DataServices
                         }
                     case(enOPerationTypes.voidFunction):
                         {
-                            sql += $"({getMeasureQuery(operation)})";
+                            if ((prev != null && prev.Operator != null) ? prev.Operator.Name == "/" : false)
+                                sql += $"NoZero({getMeasureQuery(operation)})";
+                            else
+                                sql += $"({getMeasureQuery(operation)})";
+
                             break;
                         }
                     case (enOPerationTypes.kpi):

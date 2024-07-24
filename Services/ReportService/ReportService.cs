@@ -240,7 +240,7 @@ namespace Tenor.Services.ReportService
             }
             else
             {
-                report = _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == authUser.userName && (x.IsPublic || authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains((int)x.DeviceId)))
+                report = _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == authUser.userName || (x.IsPublic || authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains((int)x.DeviceId)))
                 .Include(x => x.Device).Include(x => x.Measures).ThenInclude(x => x.Havings).ThenInclude(x => x.Operator)
                .Include(x => x.Levels).ThenInclude(x => x.Level).Include(x => x.FilterContainers).ThenInclude(x => x.ReportFilters).ThenInclude(x => x.Level)
                .Include(x => x.ReportFieldValues).ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField)
@@ -300,7 +300,7 @@ namespace Tenor.Services.ReportService
             }
             else
             {
-                query = _db.Reports.Where(x => !x.IsDeleted && (x.CreatedBy == authUser.userName || x.IsPublic || authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains((int)x.DeviceId)))
+                query = _db.Reports.Where(x => !x.IsDeleted && (x.CreatedBy == authUser.userName || x.IsPublic || (authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains((int)x.DeviceId)) && x.IsPublic))
                .Include(x => x.ReportFieldValues).ThenInclude(x => x.ReportField)
                .ThenInclude(x => x.ExtraField).AsQueryable();
             }
@@ -1012,7 +1012,7 @@ namespace Tenor.Services.ReportService
             }
             else
             {
-                x = await _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == authUser.userName && (x.IsPublic || authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains((int)x.DeviceId)))
+                x = await _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == authUser.userName || (x.IsPublic || (authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains((int)x.DeviceId) && x.IsPublic)))
                 .Include(x => x.Device)
                 .Include(x => x.Measures)
                 .Include(x => x.Levels).ThenInclude(x => x.Level)
