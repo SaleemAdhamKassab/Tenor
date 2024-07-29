@@ -26,6 +26,7 @@ using CsvHelper;
 using System.Composition;
 using System.Threading.Tasks;
 using Microsoft.Identity.Client;
+using System.Text;
 
 namespace Tenor.Services.ReportService
 {
@@ -1077,7 +1078,7 @@ namespace Tenor.Services.ReportService
             var data = _dataProvider.fetchData(queryWithSize.Sql);
             using (var memoryStream = new MemoryStream())
             {
-                using (var streamWriter = new StreamWriter(memoryStream))
+                using (var streamWriter = new StreamWriter(memoryStream, Encoding.UTF8))
                 using (var csvWriter = new CsvWriter(streamWriter, CultureInfo.InvariantCulture))
                 {
                     csvWriter.WriteRecords(data);
