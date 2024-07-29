@@ -445,10 +445,7 @@ namespace Tenor.Services.SharedService
                 else if (operation.Type == enOPerationTypes.voidFunction ||
                         operation.Type == enOPerationTypes.function)
                 {
-                    foreach (var item in operation.Childs ?? [])
-                    {
-                        reportSubqueries.AddRange(getOperationSubqueryModel(item));
-                    }
+                    reportSubqueries.AddRange(getOperationSubqueryModel(operation));
                 }
                 else if (operation.Type == enOPerationTypes.kpi)
                 {
