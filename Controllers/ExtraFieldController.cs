@@ -16,7 +16,7 @@ public class ExtraFieldController:BaseController
     }
 
     [HttpPost("add")]
-    [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "SuperAdmin" })]
+    [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "SuperAdmin,Admin" })]
 
     public IActionResult add(CreateExtraFieldViewModel input)
     {
@@ -25,7 +25,7 @@ public class ExtraFieldController:BaseController
 
 
     [HttpPut("edit")]
-    [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "SuperAdmin" })]
+    [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "SuperAdmin,Admin" })]
 
     public IActionResult edit(int id, CreateExtraFieldViewModel input)
     {
@@ -34,7 +34,7 @@ public class ExtraFieldController:BaseController
 
 
     [HttpDelete("delete")]
-    [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "SuperAdmin" })]
+    [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "SuperAdmin,Admin" })]
 
     public IActionResult delete(int id)
     {
@@ -42,7 +42,7 @@ public class ExtraFieldController:BaseController
     }
 
     [HttpPost("GetAll")]
-    [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "SuperAdmin" })]
+    [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "SuperAdmin,Admin" })]
 
     public IActionResult GetAll(ExtraFieldFilter input)
     {
@@ -50,7 +50,7 @@ public class ExtraFieldController:BaseController
     }
 
     [HttpGet("GetById")]
-    [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "SuperAdmin" })]
+    [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "SuperAdmin,Admin" })]
 
     public IActionResult GetById(int id)
     {
