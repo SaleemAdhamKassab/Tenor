@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Tenor.Models;
 
 namespace Tenor.Services.AuthServives.ViewModels
 {
@@ -14,6 +15,7 @@ namespace Tenor.Services.AuthServives.ViewModels
         public class GroupTenantDto
         {
             public string groupName { get; set; }
+            public int tenantId { get; set; }
             public string TenantName { get; set; }
             public string RoleName { get; set; }
         }
@@ -32,12 +34,13 @@ namespace Tenor.Services.AuthServives.ViewModels
             public string profileUrl { get; set; }
             public string thumbnailUrl { get; set; }
             public List<TenantAccess> tenantAccesses { get; set; }
-            public List<DeviceAccess> deviceAccesses { get; set; }
+            public List<DeviceRole> deviceAccesses { get; set; }
 
         }
 
         public class TenantAccess
         {
+            public int tenantId { get; set; }
             public string tenantName { get; set; }
             public List<string> RoleList { get; set; } = new List<string>();
         }
@@ -61,6 +64,7 @@ namespace Tenor.Services.AuthServives.ViewModels
         public class UserTenantDto
         {
             public string userName { get; set; }
+            public int tenantId { get; set; }
             public string TenantName { get; set; }
             public string RoleName { get; set; }
 
@@ -68,7 +72,7 @@ namespace Tenor.Services.AuthServives.ViewModels
 
         public class RevokeTokenDto
         {
-            public string ? token { get; set; }
+            public string? token { get; set; }
         }
 
         public class RefreshTokenDto
@@ -80,6 +84,21 @@ namespace Tenor.Services.AuthServives.ViewModels
         {
             public int DeviceId { get; set; }
             public string DeviceName { get; set; }
+        }
+
+        public class DevicesRoles
+        {
+            public string RoleName { get; set; }
+            public List<DeviceAccess> Devices { get; set; }
+        }
+
+        public class DeviceRole
+        {
+            public int DeviceId { get; set; }
+            public string DeviceName { get; set; }
+            public List<string> Roles { get; set; }
+
+
         }
     }
 }

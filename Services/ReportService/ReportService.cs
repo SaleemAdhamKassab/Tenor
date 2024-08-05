@@ -46,7 +46,7 @@ namespace Tenor.Services.ReportService
         ResultWithMessage getFilterOptions(int levelId, string? searchQuery, int pageIndex, int pageSize);
         Task<ResultWithMessage> GetExtraFields(int? deviceId);
         ResultWithMessage ValidateReport(int? deviceId, string reportName);
-        ResultWithMessage getReportDataByCreateReport(CreateReport report, int pageSize, int pageIndex);
+        ResultWithMessage getReportDataByCreateReport(CreateReport report, int pageSize, int pageIndex, TenantDto authUser);
         Task<ResultWithMessage> getReportDataById(int id, int pageSize, int pageIndex, List<ContainerOfFilter> filters, TenantDto authUser);
         Task<ResultWithMessage> getReportSqlById(int id, int pageSize, int pageIndex, List<ContainerOfFilter> filters);
         Task<ResultWithMessage> Update(int id, CreateReport input, TenantDto authUser);
@@ -75,15 +75,10 @@ namespace Tenor.Services.ReportService
         public async Task<ResultWithMessage> Add(CreateReport input, TenantDto authUser)
         {
             //---------------------General Validations---------------------------------
-            string accessResult = _jwtService.checkUserTenantPermission(authUser, input.DeviceId);
-            if (accessResult == enAccessType.denied.GetDisplayName())
+            if(authUser.deviceAccesses.FirstOrDefault(x => x.DeviceId == input.DeviceId) == null ||
+                !authUser.deviceAccesses.FirstOrDefault(x => x.DeviceId == input.DeviceId).Roles.Any(r => r == "Admin" || r == "Editor"))
             {
-                return new ResultWithMessage(null, "Access Denied");
-            }
-            if (_sharedService.IsExist(0, input.DeviceId, null, null, input.Name))
-            {
-                return new ResultWithMessage(null, "This Report name alraedy exsit on the same device");
-
+                return new ResultWithMessage(null,"Can not have access");
             }
             foreach (var s in input.Measures)
             {
@@ -180,16 +175,13 @@ namespace Tenor.Services.ReportService
             {
                 return new ResultWithMessage(null, "Cannot find report");
             }
-            string accessResult = _jwtService.checkUserTenantPermission(authUser, report.DeviceId);
-            if (accessResult == enAccessType.denied.GetDisplayName())
-            {
-                return new ResultWithMessage(null, "Access Denied");
-            }
 
-            if (accessResult == enAccessType.allOnlyMe.GetDisplayName() && report.CreatedBy != authUser.userName)
+            if(tryReadReport(report,authUser,out bool canEdit))
             {
-                return new ResultWithMessage(null, "Access Denied");
-
+                 if(!canEdit)
+                {
+                    return new ResultWithMessage(null,"Can not have access");
+                }
             }
 
             //Delete measures operation 
@@ -210,16 +202,12 @@ namespace Tenor.Services.ReportService
             {
                 return new ResultWithMessage(null, "Cannot find report");
             }
-            string accessResult = _jwtService.checkUserTenantPermission(authUser, report.DeviceId);
-            if (accessResult == enAccessType.denied.GetDisplayName())
+            if (tryReadReport(report, authUser, out bool canEdit))
             {
-                return new ResultWithMessage(null, "Access Denied");
-            }
-
-            if (accessResult == enAccessType.allOnlyMe.GetDisplayName() && report.CreatedBy != authUser.userName)
-            {
-                return new ResultWithMessage(null, "Access Denied");
-
+                if (!canEdit)
+                {
+                    return new ResultWithMessage(null, "Can not have access");
+                }
             }
 
             report.IsDeleted = true;
@@ -230,30 +218,17 @@ namespace Tenor.Services.ReportService
         }
         public async Task<ResultWithMessage> GetById(int id, TenantDto authUser)
         {
-            
-            Report report = null;
-            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
-            {
-                report = _db.Reports.Include(x => x.Device).Include(x => x.Measures).ThenInclude(x => x.Havings).ThenInclude(x => x.Operator)
-                .Include(x => x.Levels).ThenInclude(x => x.Level).Include(x => x.FilterContainers).ThenInclude(x => x.ReportFilters).ThenInclude(x => x.Level)
-                .Include(x => x.ReportFieldValues).ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField)
-                .FirstOrDefault(x => x.Id == id);
-            }
-            else
-            {
-                report = _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == authUser.userName || (x.IsPublic || authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains((int)x.DeviceId)))
-                .Include(x => x.Device).Include(x => x.Measures).ThenInclude(x => x.Havings).ThenInclude(x => x.Operator)
-               .Include(x => x.Levels).ThenInclude(x => x.Level).Include(x => x.FilterContainers).ThenInclude(x => x.ReportFilters).ThenInclude(x => x.Level)
-               .Include(x => x.ReportFieldValues).ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField)
-               .FirstOrDefault(x => x.Id == id);
 
-               
-            }
 
+            var report = _db.Reports.FirstOrDefault(x => !x.IsDeleted && x.Id == id);
             if (report is null)
             {
                 return new ResultWithMessage(null, "Cannot find report");
 
+            }
+            if (!tryReadReport(report, authUser, out bool canEdit))
+            {
+                return new ResultWithMessage(null, "Cannot access this report");
             }
             var result = ConvertToViewModel(report);
             result.CanEdit = checkEditValidation(authUser, report.DeviceId, report, _jwtService);
@@ -290,21 +265,8 @@ namespace Tenor.Services.ReportService
         }
         public async Task<ResultWithMessage> GetByFilter(ReportListFilter input, TenantDto authUser)
         {
-            IQueryable<Report> query = null;
-            //------------------------------Data source--------------------------------------------
-            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
-            {
-                query = _db.Reports.Where(x => !x.IsDeleted).Include(x => x.Device).Include(x => x.ReportFieldValues)
-                    .ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField).AsQueryable();
-
-                var xx = _db.Reports.ToList();
-            }
-            else
-            {
-                query = _db.Reports.Where(x => !x.IsDeleted && (x.CreatedBy == authUser.userName || x.IsPublic || (authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains((int)x.DeviceId)) && x.IsPublic))
-               .Include(x => x.ReportFieldValues).ThenInclude(x => x.ReportField)
-               .ThenInclude(x => x.ExtraField).AsQueryable();
-            }
+            IQueryable<Report> query = GetEligibleReport(authUser);
+           
             //------------------------------Data filter-------------------------------------------
             if (!string.IsNullOrEmpty(input.SearchQuery))
             {
@@ -358,19 +320,7 @@ namespace Tenor.Services.ReportService
         }
         public async Task<ResultWithMessage> GetReportTreeUserNames(ReportTreeFilter input, TenantDto authUser)
         {
-            IQueryable<Report> query = null;
-            //------------------------------Data source--------------------------------------------
-            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
-            {
-                query = _db.Reports.Where(x => !x.IsDeleted).Include(x => x.Device).Include(x => x.ReportFieldValues)
-                    .ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField).AsQueryable();
-            }
-            else
-            {
-                query = _db.Reports.Where(x => !x.IsDeleted && (x.CreatedBy == authUser.userName || x.IsPublic || authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains((int)x.DeviceId)))
-               .Include(x => x.ReportFieldValues).ThenInclude(x => x.ReportField)
-               .ThenInclude(x => x.ExtraField).AsQueryable();
-            }
+            IQueryable<Report> query = GetEligibleReport(authUser);
 
             //------------------------------Data filter-------------------------------------------
             if (!string.IsNullOrEmpty(input.SearchQuery))
@@ -423,19 +373,8 @@ namespace Tenor.Services.ReportService
         }
         public async Task<ResultWithMessage> GetReportTreeDevicesByUserName(ReportTreeFilter input, TenantDto authUser)
         {
-            IQueryable<Report> query = null;
-            //------------------------------Data source--------------------------------------------
-            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
-            {
-                query = _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == input.userName).Include(x => x.Device).Include(x => x.ReportFieldValues)
-                    .ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField).AsQueryable();
-            }
-            else
-            {
-                query = _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == input.userName && (x.IsPublic || authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains((int)x.DeviceId)))
-               .Include(x => x.ReportFieldValues).ThenInclude(x => x.ReportField)
-               .ThenInclude(x => x.ExtraField).AsQueryable();
-            }
+            IQueryable<Report> query = GetEligibleReport(authUser);
+            
             //------------------------------Data filter-------------------------------------------
             if (!string.IsNullOrEmpty(input.SearchQuery))
             {
@@ -489,7 +428,7 @@ namespace Tenor.Services.ReportService
         }
         public async Task<ResultWithMessage> GetReportTreeByUserNameDevice(ReportTreeFilter input, TenantDto authUser)
         {
-            IQueryable<Report> query = null;
+            IQueryable<Report> query = GetEligibleReport(authUser);
             //------------------------------Data source--------------------------------------------
             query = _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == input.userName && x.DeviceId == input.deviceId).Include(x => x.Device).Include(x => x.ReportFieldValues)
                     .ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField).AsQueryable();
@@ -536,7 +475,7 @@ namespace Tenor.Services.ReportService
         }
         public async Task<ResultWithMessage> GetReportTreeByUserName(ReportTreeFilter input, TenantDto authUser)
         {
-            IQueryable<Report> query = null;
+            IQueryable<Report> query = GetEligibleReport(authUser);
             //------------------------------Data source--------------------------------------------
             query = _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == input.userName).Include(x => x.Device).Include(x => x.ReportFieldValues)
                    .ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField).AsQueryable();
@@ -800,8 +739,14 @@ namespace Tenor.Services.ReportService
             }
             return new ResultWithMessage(true, null);
         }
-        public ResultWithMessage getReportDataByCreateReport(CreateReport report, int pageSize, int pageIndex)
+
+        public ResultWithMessage getReportDataByCreateReport(CreateReport report, int pageSize, int pageIndex , TenantDto authUser)
         {
+            if (!tryReadReport(report, authUser, out bool canEdit))
+            {
+                return new ResultWithMessage(null, "Cannot access this report");
+            }
+
             var sql = _queryBuilder.getReportQueryByCreateReport(report, pageSize, pageIndex);
             return new ResultWithMessage(sql, "");
         }
@@ -812,11 +757,7 @@ namespace Tenor.Services.ReportService
                 return new ResultWithMessage(null, "Miss match in report Id");
             }
             //---------------------General Validations---------------------------------
-            string accessResult = _jwtService.checkUserTenantPermission(authUser, input.DeviceId);
-            if (accessResult == enAccessType.denied.GetDisplayName())
-            {
-                return new ResultWithMessage(null, "Access Denied");
-            }
+           
             if (_sharedService.IsExist(input.Id, input.DeviceId, null, null, input.Name))
             {
                 return new ResultWithMessage(null, "This Report name alraedy exsit on the same device");
@@ -837,22 +778,13 @@ namespace Tenor.Services.ReportService
             {
                 try
                 {
-                    Report oldReport = null;
-                    if (accessResult == enAccessType.allOnlyMe.GetDisplayName())
+                    Report oldReport = _db.Reports.FirstOrDefault(x=>x.Id == id);
+                    if (tryReadReport(oldReport, authUser, out bool canEdit))
                     {
-                        oldReport = _db.Reports.AsNoTracking().Include(x => x.Measures).Include(x => x.Levels).Include(x => x.FilterContainers)
-                            .Include(x => x.ReportFieldValues).FirstOrDefault(x => x.Id == input.Id && x.CreatedBy == authUser.userName);
-
-                    }
-                    else
-                    {
-                        oldReport = _db.Reports.AsNoTracking().Include(x => x.Measures).Include(x => x.Levels).Include(x => x.FilterContainers)
-                            .Include(x => x.ReportFieldValues).FirstOrDefault(x => x.Id == input.Id);
-
-                    }
-                    if (oldReport == null)
-                    {
-                        return new ResultWithMessage(null, "This Id is invalid or Access denied");
+                        if (!canEdit)
+                        {
+                            return new ResultWithMessage(null, "Can not have access");
+                        }
                     }
                     //------------------------Edit report prop----------------------------------
                     input.CreatedBy = oldReport.CreatedBy;
@@ -1113,5 +1045,68 @@ namespace Tenor.Services.ReportService
             var queryWithSize = _queryBuilder.getReportQueryByViewModel(report, pageSize, pageIndex, filters);
             return new ResultWithMessage(queryWithSize, "");
         }
+
+
+        private IQueryable<Report> GetEligibleReport(TenantDto authUser)
+        {
+            IQueryable<Report> query = null;
+            //------------------------------Data source--------------------------------------------
+            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
+            {
+                query = _db.Reports.Where(x => !x.IsDeleted);
+            }
+            else
+            {
+                query = _db.Reports.Where(x => !x.IsDeleted
+                && (
+
+                (authUser.deviceAccesses.Where(r => r.Roles.Contains("Admin")).Select(c => c.DeviceId).Contains(x.DeviceId))
+                || (authUser.deviceAccesses.Select(c => c.DeviceId).Contains(x.DeviceId)
+                  && x.IsPublic)
+                || x.CreatedBy == authUser.userName));
+            }
+            return query;
+        }
+        private bool tryReadReport(Report report, TenantDto authUser, out bool canEdit)
+        {
+            canEdit = false;
+            if(authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
+            {
+                canEdit = true;
+                return true;
+            }
+            else
+            {
+                var deviceAccess = authUser.deviceAccesses.FirstOrDefault(x => x.DeviceId == report.DeviceId);
+                if(deviceAccess == null)
+                {
+                    canEdit = false;
+                    return false;
+                }
+                canEdit = report.CreatedBy == authUser.userName || deviceAccess.Roles.Contains("Admin");
+                return true;
+            }
+        }
+        private bool tryReadReport(CreateReport report, TenantDto authUser, out bool canEdit)
+        {
+            canEdit = false;
+            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
+            {
+                canEdit = true;
+                return true;
+            }
+            else
+            {
+                var deviceAccess = authUser.deviceAccesses.FirstOrDefault(x => x.DeviceId == report.DeviceId);
+                if (deviceAccess == null)
+                {
+                    canEdit = false;
+                    return false;
+                }
+                canEdit = report.CreatedBy == authUser.userName || deviceAccess.Roles.Contains("Admin");
+                return true;
+            }
+        }
+
     }
 }

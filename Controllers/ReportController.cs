@@ -159,7 +159,9 @@ namespace Tenor.Controllers
 
         public IActionResult getReportData(int pageSize, int pageIndex, CreateReport report)
 		{
-			return _returnResult(_reportService.getReportDataByCreateReport(report, pageSize, pageIndex));
+            var authData = AuthUser();
+
+            return _returnResult(_reportService.getReportDataByCreateReport(report, pageSize, pageIndex, authData));
 		}
 
         [HttpPost("getReportDataById")]

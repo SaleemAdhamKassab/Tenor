@@ -21,13 +21,14 @@ namespace Tenor.Mapper
                 .ForMember(dest => dest.userName, opt => opt.MapFrom(src => src.UserName))
                 .ForMember(dest => dest.TenantName, opt => opt.MapFrom(src => src.Tenant.Name))
                 .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.Role.Name))
-
+                .ForMember(dest => dest.tenantId, opt => opt.MapFrom(src => src.TenantId))
                 .ReverseMap();
 
             CreateMap<GroupTenantRole, GroupTenantDto>()
                 .ForMember(dest => dest.groupName, opt => opt.MapFrom(src => src.GroupName))
                 .ForMember(dest => dest.TenantName, opt => opt.MapFrom(src => src.Tenant.Name))
                 .ForMember(dest => dest.RoleName, opt => opt.MapFrom(src => src.Role.Name))
+                 .ForMember(dest => dest.tenantId, opt => opt.MapFrom(src => src.TenantId))
                 .ReverseMap();
 
 
