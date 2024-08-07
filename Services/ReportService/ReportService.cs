@@ -235,7 +235,7 @@ namespace Tenor.Services.ReportService
                 return new ResultWithMessage(null, "Cannot access this report");
             }
             var result = ConvertToViewModel(report);
-            result.CanEdit = checkEditValidation(authUser, report.DeviceId, report, _jwtService);
+            result.CanEdit = canEdit;
 
 
             //--------------------------Build Mapping---------------------------------
@@ -941,22 +941,14 @@ namespace Tenor.Services.ReportService
         public async Task<ResultWithMessage> GetReportRehearsal(int id, TenantDto authUser)
         {
 
-            Report x = null;
-            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
+            var x = GetEligibleReport(authUser).FirstOrDefault(x=>x.Id == id);
+           
+            if (tryReadReport(x, authUser, out bool canEdit))
             {
-                x = await _db.Reports.Where(x => !x.IsDeleted).Include(x => x.Device)
-                .Include(x => x.Measures)
-                .Include(x => x.Levels).ThenInclude(x => x.Level)
-                .Include(x => x.FilterContainers).ThenInclude(x => x.ReportFilters).ThenInclude(x => x.Level).FirstOrDefaultAsync(x => x.Id == id);
-            }
-            else
-            {
-                x = await _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == authUser.userName || (x.IsPublic || (authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains((int)x.DeviceId) && x.IsPublic)))
-                .Include(x => x.Device)
-                .Include(x => x.Measures)
-                .Include(x => x.Levels).ThenInclude(x => x.Level)
-                .Include(x => x.FilterContainers).ThenInclude(x => x.ReportFilters).ThenInclude(x => x.Level)
-               .FirstOrDefaultAsync(x => x.Id == id);
+                if (!canEdit)
+                {
+                    return new ResultWithMessage(null, "Can not have access");
+                }
             }
 
 
