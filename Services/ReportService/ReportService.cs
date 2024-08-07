@@ -941,37 +941,36 @@ namespace Tenor.Services.ReportService
         public async Task<ResultWithMessage> GetReportRehearsal(int id, TenantDto authUser)
         {
 
-            var x = GetEligibleReport(authUser).FirstOrDefault(x=>x.Id == id);
-           
-            if (tryReadReport(x, authUser, out bool canEdit))
-            {
-                if (!canEdit)
-                {
-                    return new ResultWithMessage(null, "Can not have access");
-                }
-            }
+            var report = _db.Reports.Include(x => x.Device).Include(x => x.Measures).ThenInclude(x => x.Havings).ThenInclude(x => x.Operator)
+                            .Include(x => x.Levels).ThenInclude(x => x.Level).Include(x => x.FilterContainers).ThenInclude(x => x.ReportFilters).ThenInclude(x => x.Level)
+                            .Include(x => x.ReportFieldValues).ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField)
+                            .FirstOrDefault(x => x.Id == id);
 
-
-            if (x == null)
+            if (report is null)
             {
                 return new ResultWithMessage(null, "Cannot find report");
+
+            }
+            if (!tryReadReport(report, authUser, out bool canEdit))
+            {
+                return new ResultWithMessage(null, "Cannot access this report");
             }
             var reportRehearsal = new ReportRehearsalModel
             {
-                Name = x.Name,
-                canEdit = checkEditValidation(authUser, x.DeviceId, x, _jwtService),
-                Columns = x.Levels.OrderBy(l => l.DisplayOrder).Select(l => new ReportPreviewColumnModel
+                Name = report.Name,
+                canEdit = canEdit,
+                Columns = report.Levels.OrderBy(l => l.DisplayOrder).Select(l => new ReportPreviewColumnModel
                 {
                     Name = l.Level.Name,
                     Type = l.Level.DataType == "Date" ? "Date" : "String"
                 }).Concat(
-                        x.Measures.Select(m => new ReportPreviewColumnModel
+                        report.Measures.Select(m => new ReportPreviewColumnModel
                         {
                             Name = m.DisplayName,
                             Type = "Number"
                         })
                         ).ToList(),
-                ContainerOfFilters = x.FilterContainers.Select(fc => new ContainerOfFilter
+                ContainerOfFilters = report.FilterContainers.Select(fc => new ContainerOfFilter
                 {
                     Id = fc.Id,
                     LogicalOperator = fc.LogicalOperator,
