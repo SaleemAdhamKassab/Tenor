@@ -37,6 +37,7 @@ using static Tenor.Helper.Constant;
 using static Tenor.Services.AuthServives.ViewModels.AuthModels;
 using Tenor.Services.AuthServives;
 using Tenor.Services.SharedService;
+using System.Composition;
 
 namespace Tenor.Services.KpisService
 {
@@ -79,6 +80,7 @@ namespace Tenor.Services.KpisService
             _jwtService = jwtService;
             _sharedService = sharedService;
         }
+        //Not used
         public ResultWithMessage GetListAsync(object kpiFilterM)
         {
             try
@@ -139,11 +141,13 @@ namespace Tenor.Services.KpisService
         }
         public async Task<ResultWithMessage> Add(CreateKpi kpi, TenantDto authUser)
         {
-            string accessResult = _jwtService.checkUserTenantPermission(authUser,(int)kpi.DeviceId);
-            if(accessResult== enAccessType.denied.GetDisplayName())
+            if (tryReadKPI(kpi, authUser, out bool canEdit))
             {
-                return new ResultWithMessage(null,"Access Denied");
-            }          
+                if (!canEdit)
+                {
+                    return new ResultWithMessage(null, "Can not have access");
+                }
+            }
             if (_sharedService.IsExist(0, kpi.DeviceId, kpi.Name,null,null))
             {
                 return new ResultWithMessage(null, "This Kpi name alraedy exsit on the same device");
@@ -183,10 +187,12 @@ namespace Tenor.Services.KpisService
         }
         public async Task<ResultWithMessage> Update(int id, CreateKpi Kpi, TenantDto authUser)
         {
-            string accessResult = _jwtService.checkUserTenantPermission(authUser, (int)Kpi.DeviceId);
-            if (accessResult == enAccessType.denied.GetDisplayName() || accessResult == enAccessType.viewOnlyMe.GetDisplayName())
+            if (tryReadKPI(Kpi, authUser, out bool canEdit))
             {
-                return new ResultWithMessage(null, "Access Denied");
+                if (!canEdit)
+                {
+                    return new ResultWithMessage(null, "Can not have access");
+                }
             }
 
             if (id != Kpi.Id)
@@ -208,16 +214,10 @@ namespace Tenor.Services.KpisService
                 try
                 {
                     Kpi oldKpi = null;
-                    if (accessResult==enAccessType.allOnlyMe.GetDisplayName())
-                    {
-                         oldKpi = _db.Kpis.AsNoTracking().FirstOrDefault(x => (x.Id == Kpi.Id && x.CreatedBy == Kpi.ModifyBy));
+                   
+                   oldKpi = _db.Kpis.AsNoTracking().FirstOrDefault(x => x.Id == Kpi.Id);
 
-                    }
-                    else
-                    {
-                         oldKpi = _db.Kpis.AsNoTracking().FirstOrDefault(x => x.Id == Kpi.Id);
-
-                    }
+                    
                     if (oldKpi == null)
                     {
                         return new ResultWithMessage(null, "This Id is invalid or Access denied");
@@ -259,18 +259,13 @@ namespace Tenor.Services.KpisService
             {
                 return new ResultWithMessage(null, "Cannot find KPI");
             }
-            string accessResult = _jwtService.checkUserTenantPermission(authUser, (int)currentKpi.DeviceId);
-            if (accessResult == enAccessType.denied.GetDisplayName())
+            if (tryReadKPI(currentKpi, authUser, out bool canEdit))
             {
-                return new ResultWithMessage(null, "Access Denied");
+                if (!canEdit)
+                {
+                    return new ResultWithMessage(null, "Can not have access");
+                }
             }
-            
-            if(accessResult== enAccessType.allOnlyMe.GetDisplayName() && currentKpi.CreatedBy!= authUser.userName)
-            {
-                return new ResultWithMessage(null, "Access Denied");
-
-            }
-
             var hasLinkedOperation = _db.Operations.Any(x => x.KpiId == id);
             if(hasLinkedOperation)
             {
@@ -379,18 +374,7 @@ namespace Tenor.Services.KpisService
         {
             try
             {
-                 IQueryable<Kpi> query = null;
-                //------------------------------Data source------------------------------------------------
-                   if(authUser.tenantAccesses.Any(x=>x.RoleList.Contains("SuperAdmin")))
-                   {
-                    query = _db.Kpis.Include(x => x.KpiFieldValues).ThenInclude(x => x.KpiField).ThenInclude(x => x.ExtraField).AsQueryable();
-                   }
-                   else
-                   {
-                    query = _db.Kpis.Where(x => x.CreatedBy == authUser.userName || x.IsPublic || authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains((int)x.DeviceId))
-                   .Include(x => x.KpiFieldValues).ThenInclude(x => x.KpiField)
-                   .ThenInclude(x => x.ExtraField).AsQueryable();
-                   }
+                 IQueryable<Kpi> query = GetEligibleKPI(authUser);                  
                                                           
                 //------------------------------Data filter-----------------------------------------------------------
 
@@ -1181,7 +1165,72 @@ namespace Tenor.Services.KpisService
             input.Childs=data;
             return input;
         }
-       
+        private IQueryable<Kpi> GetEligibleKPI(TenantDto authUser)
+        {
+            IQueryable<Kpi> query = null;
+            //------------------------------Data source--------------------------------------------
+            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
+            {
+                query = _db.Kpis.AsQueryable();
+            }
+
+            else
+            {
+                var adminDevices = authUser.deviceAccesses.Where(r => r.Roles.Any(x => x == "Admin")).Select(c => c.DeviceId).ToList();
+                var userDevices = authUser.deviceAccesses.Select(c => c.DeviceId).ToList();
+
+                query = _db.Kpis.Where(x =>
+              
+                 (adminDevices.Contains((int)x.DeviceId))
+                || (userDevices.Contains((int)x.DeviceId)
+                 && x.IsPublic)
+                || x.CreatedBy == authUser.userName);
+
+            }
+
+            return query;
+        }
+        private bool tryReadKPI(Kpi kpi, TenantDto authUser, out bool canEdit)
+        {
+            canEdit = false;
+            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
+            {
+                canEdit = true;
+                return true;
+            }
+            else
+            {
+                var deviceAccess = authUser.deviceAccesses.FirstOrDefault(x => x.DeviceId == kpi.DeviceId);
+                if (deviceAccess == null)
+                {
+                    canEdit = false;
+                    return false;
+                }
+                canEdit = kpi.CreatedBy == authUser.userName || deviceAccess.Roles.Contains("Admin");
+                return true;
+            }
+        }
+        private bool tryReadKPI(CreateKpi kpi, TenantDto authUser, out bool canEdit)
+        {
+            canEdit = false;
+            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
+            {
+                canEdit = true;
+                return true;
+            }
+            else
+            {
+                var deviceAccess = authUser.deviceAccesses.FirstOrDefault(x => x.DeviceId == kpi.DeviceId);
+                if (deviceAccess == null)
+                {
+                    canEdit = false;
+                    return false;
+                }
+                canEdit = kpi.CreatedBy == authUser.userName || deviceAccess.Roles.Contains("Admin");
+                return true;
+            }
+        }
+
     }
 }
     
