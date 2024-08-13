@@ -132,7 +132,7 @@ namespace Tenor.Services.SharedService
                 if (input.Type.GetDisplayName() == "function")
                 {
                     Function func = _db.Functions.FirstOrDefault(x => x.Id == (int)input.FunctionId);
-                    if (func.ArgumentsCount != input.Childs.Count())
+                    if (func.ArgumentsCount != input.Childs.Count()  && func.Name.ToLower() != "maxvalue")
                     {
                         checkResult = false;
                         return checkResult;

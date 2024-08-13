@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.OpenApi.Extensions;
+using System;
 using System.Reflection;
 using Tenor.Data;
 using Tenor.Dtos;
@@ -368,6 +369,13 @@ namespace Tenor.Services.DataServices
                             {
                                 sql += $"(CASE WHEN ({getMeasureQuery(operation.Childs[0])}) THEN ({getMeasureQuery(operation.Childs[1])}) ELSE ({getMeasureQuery(operation.Childs[2])}) END)";
                             }
+
+                            if(fun.Name.ToLower() == "maxvalue")
+                            {
+                                sql += $" {fun.Name}(number_table({String.Join(", ", operation.Childs.Select(x => getMeasureQuery(x)))}))";
+                            }
+
+
                             else
                             {
                                 sql += $" {fun.Name}({String.Join(", ", operation.Childs.Select(x => getMeasureQuery(x)))}) ";
@@ -433,6 +441,10 @@ namespace Tenor.Services.DataServices
                             if (fun.Name.ToLower() == "if")
                             {
                                 sql += $"(CASE WHEN ({getMeasureQuery(operation.Childs[0])}) THEN ({getMeasureQuery(operation.Childs[1])}) ELSE ({getMeasureQuery(operation.Childs[2])}) END)";
+                            }
+                            if (fun.Name.ToLower() == "maxvalue")
+                            {
+                                sql += $" {fun.Name}(number_table({String.Join(", ", operation.Childs.Select(x => getMeasureQuery(x)))}))";
                             }
                             else
                             {
@@ -501,7 +513,13 @@ namespace Tenor.Services.DataServices
                             if(operation.Function.Name.ToLower() == "if")
                             {
                                 sql += $"(CASE WHEN ({getMeasureQuery(childs[0])}) THEN ({getMeasureQuery(childs[1])}) ELSE ({getMeasureQuery(childs[2])}) END)";
-                            } else
+                            }
+                            if (operation.Function.Name.ToLower() == "maxvalue")
+                            {
+                                sql += $" {operation.Function.Name}(number_table({String.Join(", ", operation.Childs.Select(x => getMeasureQuery(x)))}))";
+                            }
+
+                            else
                             {
                                 sql += $" {operation.Function.Name}({String.Join(", ", childs.Select(x => getMeasureQuery(x)))}) ";
                             }

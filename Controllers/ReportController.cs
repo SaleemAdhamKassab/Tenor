@@ -178,7 +178,6 @@ namespace Tenor.Controllers
 
         public async Task<IActionResult> getReportSqlById(int reportId, int pageSize, int pageIndex, List<ContainerOfFilter> filters)
         {
-            // var authData = AuthUser();
 
             return _returnResult(await _reportService.getReportSqlById(reportId, pageSize, pageIndex, filters));
         }
