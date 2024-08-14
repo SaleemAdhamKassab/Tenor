@@ -8,5 +8,7 @@
 		public enum enSortDirection { asc, desc }
 		public enum enAccessType { all, allOnlyMe, viewOnlyMe, denied }
 		public enum enLogicalOperator { AND, OR, NOT }
-	}
+        public enum enOracleFun { iff, OR, NOT }
+
+    }
 }
