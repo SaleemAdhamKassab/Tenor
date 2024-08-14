@@ -375,6 +375,15 @@ namespace Tenor.Services.DataServices
                                 sql += $" {fun.Name}(number_table({String.Join(", ", operation.Childs.Select(x => getMeasureQuery(x)))}))";
                             }
 
+                            if (fun.Name.ToLower() == "minvalue")
+                            {
+                                sql += $" {fun.Name}(number_table({String.Join(", ", operation.Childs.Select(x => getMeasureQuery(x)))}))";
+                            }
+
+                            if (fun.Name.ToLower() == "avgvalue")
+                            {
+                                sql += $"{fun.Name}(number_table({String.Join(", ", operation.Childs.Select(x => getMeasureQuery(x)))}))";
+                            }
 
                             else
                             {
@@ -445,6 +454,15 @@ namespace Tenor.Services.DataServices
                             if (fun.Name.ToLower() == "maxvalue")
                             {
                                 sql += $" {fun.Name}(number_table({String.Join(", ", operation.Childs.Select(x => getMeasureQuery(x)))}))";
+                            }
+                            if (fun.Name.ToLower() == "minvalue")
+                            {
+                                sql += $" {fun.Name}(number_table({String.Join(", ", operation.Childs.Select(x => getMeasureQuery(x)))}))";
+                            }
+
+                            if (fun.Name.ToLower() == "avgvalue")
+                            {
+                                sql += $"{fun.Name}(number_table({String.Join(", ", operation.Childs.Select(x => getMeasureQuery(x)))}))";
                             }
                             else
                             {
@@ -517,6 +535,15 @@ namespace Tenor.Services.DataServices
                             if (operation.Function.Name.ToLower() == "maxvalue")
                             {
                                 sql += $" {operation.Function.Name}(number_table({String.Join(", ", operation.Childs.Select(x => getMeasureQuery(x)))}))";
+                            }
+                            if (operation.Function.Name.ToLower() == "minvalue")
+                            {
+                                sql += $" {operation.Function.Name}(number_table({String.Join(", ", operation.Childs.Select(x => getMeasureQuery(x)))}))";
+                            }
+
+                            if (operation.Function.Name.ToLower() == "avgvalue")
+                            {
+                                sql += $"{operation.Function.Name}(number_table({String.Join(", ", operation.Childs.Select(x => getMeasureQuery(x)))}))";
                             }
 
                             else
