@@ -34,7 +34,7 @@ namespace Tenor.Services.SubsetsService
         ResultWithMessage validateSubset(int deviceId, string name);
 
         ResultWithMessage GetSubsetByDeviceId(int deviceid, string searchQuery, TenantDto authUser);
-
+        ResultWithMessage GetSubsetBySetId(int setId, string searchQuery, TenantDto authUser);
     }
 
     public class SubsetsService : ISubsetsService
@@ -830,6 +830,51 @@ namespace Tenor.Services.SubsetsService
                 query = query.Where(x => x.Id.ToString() == searchQuery || x.Name.ToLower().Contains(searchQuery.ToLower()) || x.SupplierId.ToLower().Contains(searchQuery.ToLower())
                         || x.Counters.Any(z=>z.Id.ToString()==searchQuery || z.Name.ToLower().Contains(searchQuery.ToLower()) || z.Code.ToLower()==searchQuery.ToLower() || z.SupplierId.ToLower().Contains(searchQuery.ToLower()))
                         || x.Device.Name.ToLower().Contains(searchQuery.ToLower())
+                      );
+
+            }
+            //var queryViewModel = convertSubsetsToListViewModel(query);
+            //return new ResultWithMessage(new DataWithSize(queryViewModel.Count(), queryViewModel.ToList()), null);
+            var result = query.Select(x => new TreeNodeViewModel
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Type = "subset",
+                HasChild = x.Counters.Count() > 0
+            }).ToList();
+            return new ResultWithMessage(result, "");
+        }
+        public ResultWithMessage GetSubsetBySetId(int setId, string searchQuery, TenantDto authUser)
+        {
+            IQueryable<Subset> query = null;
+            if (authUser.tenantAccesses.Any(x => x.RoleList.Contains("SuperAdmin")))
+            {
+                query = _db.Subsets.Where(e => e.SetId == setId);
+
+            }
+            else
+            {
+                query = _db.Subsets.Where(e => e.SetId == setId && authUser.deviceAccesses.Select(x => x.DeviceId).ToList().Contains(e.Device.ParentId ?? 0));
+
+            }
+
+            if (query == null || query.Count() == 0)
+            {
+                return new ResultWithMessage(new DataWithSize(0, null), "Access denied to this Device or Device is invalid");
+
+            }
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                query = query.Where(x => x.Id.ToString() == searchQuery ||
+                        x.Name.ToLower().Contains(searchQuery.ToLower()) || 
+                        x.SupplierId.ToLower().Contains(searchQuery.ToLower()) ||
+                        x.SetName.ToLower().Contains(searchQuery.ToLower()) ||
+                        x.SetId.ToString().Contains(searchQuery.ToLower()) ||
+                        x.Counters.Any(z => z.Id.ToString() == searchQuery || 
+                        z.Name.ToLower().Contains(searchQuery.ToLower()) || 
+                        z.Code.ToLower() == searchQuery.ToLower() ||
+                        z.SupplierId.ToLower().Contains(searchQuery.ToLower())) ||
+                        x.Device.Name.ToLower().Contains(searchQuery.ToLower())
                       );
 
             }

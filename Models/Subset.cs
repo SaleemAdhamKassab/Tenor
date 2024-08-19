@@ -37,10 +37,13 @@ namespace Tenor.Models
         public string? SummaryType { get; set; }
         public bool IsDeleted { get; set; }
 
+        public int? SetId { get; set; }
+        public string? SetName { get; set; }
+
         [ForeignKey("Device")]
         public int DeviceId { get; set; }
 
-
+        
         public virtual Device Device { get; set; }
         public virtual ICollection<Counter> Counters { get; set; }
         public virtual ICollection<SubsetFieldValue> SubsetFieldValues { get; set; }

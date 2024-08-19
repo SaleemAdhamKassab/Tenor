@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tenor.Data;
 
@@ -11,9 +12,11 @@ using Tenor.Data;
 namespace Tenor.Migrations
 {
     [DbContext(typeof(TenorDbContext))]
-    partial class TenorDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240818063138_Add_Is_Hidden_To_Device")]
+    partial class Add_Is_Hidden_To_Device
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1001,12 +1004,6 @@ namespace Tenor.Migrations
 
                     b.Property<string>("SchemaName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("SetId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("SetName")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("StartChar")

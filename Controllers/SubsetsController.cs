@@ -67,5 +67,14 @@ namespace Tenor.Controllers
             return _returnResult(_subsetservice.GetSubsetByDeviceId(deviceid, searchQuery, authData));
         }
 
+        [HttpGet("GetSubsetBySet")]
+        [TypeFilter(typeof(AuthTenant), Arguments = new object[] { "Admin,User,Editor,SuperAdmin" })]
+
+        public IActionResult GetSubsetBySet(int setId, string? searchQuery)
+        {
+            var authData = AuthUser();
+            return _returnResult(_subsetservice.GetSubsetBySetId(setId, searchQuery, authData));
+        }
+
     }
 }

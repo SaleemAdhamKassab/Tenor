@@ -15,6 +15,7 @@ namespace Tenor.Models
 
         public bool IsDeleted { get; set; } //Without Gloable filter
 
+        public bool IsHidden { get; set; } = false;
 
         [Required]
         public string SupplierId { get; set; } //set Id from Hawawi
@@ -22,7 +23,7 @@ namespace Tenor.Models
 
         [ForeignKey("Parent")]
         public int? ParentId { get; set; }
-        public virtual Device Parent { get; set; }
+        public virtual Device? Parent { get; set; }
 
 
         public virtual ICollection<Subset> Subsets { get; set; }           
