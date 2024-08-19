@@ -28,6 +28,7 @@ using System.Threading.Tasks;
 using Microsoft.Identity.Client;
 using System.Text;
 using System.Linq;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace Tenor.Services.ReportService
 {
@@ -76,10 +77,12 @@ namespace Tenor.Services.ReportService
         public async Task<ResultWithMessage> Add(CreateReport input, TenantDto authUser)
         {
             //---------------------General Validations---------------------------------
-            if (authUser.deviceAccesses.FirstOrDefault(x => x.DeviceId == input.DeviceId) == null ||
-                !authUser.deviceAccesses.FirstOrDefault(x => x.DeviceId == input.DeviceId).Roles.Any(r => r == "Admin" || r == "Editor"))
+            if (tryReadReport(input, authUser, out bool canEdit))
             {
-                return new ResultWithMessage(null, "Can not have access");
+                if (!canEdit)
+                {
+                    return new ResultWithMessage(null, "Can not have access");
+                }
             }
             foreach (var s in input.Measures)
             {
