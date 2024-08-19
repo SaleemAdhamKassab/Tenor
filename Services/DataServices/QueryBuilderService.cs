@@ -319,10 +319,7 @@ namespace Tenor.Services.DataServices
         }
         private string getMeasureQuery(OperationDto rootOperation)
         {
-            if(rootOperation.Id == 317)
-            {
-                var sssss = 0;
-            }
+            
             var sql = "";
             foreach (OperationDto operation in rootOperation.Childs)
             {
@@ -332,7 +329,12 @@ namespace Tenor.Services.DataServices
                 {
                     case (enOPerationTypes.counter):
                         {
-                            sql += $" {operation.Aggregation.GetDisplayName()}_{operation.CounterId} ";
+                            if ((prev != null && prev.Operator != null) ? prev.Operator.Name == "/" : false)
+                                sql += $" NoZero({operation.Aggregation.GetDisplayName()}_{operation.CounterId}) ";
+                            else
+                                sql += $" {operation.Aggregation.GetDisplayName()}_{operation.CounterId} ";
+
+
                             break;
                         }
                     case (enOPerationTypes.voidFunction):
@@ -349,12 +351,25 @@ namespace Tenor.Services.DataServices
                     case (enOPerationTypes.kpi):
                         {
                             var item = _db.Kpis.Include(x => x.Operation).FirstOrDefault(x => x.Id == operation.KpiId);
-                            sql += $" ({getMeasureQuery(item.Operation)}) ";
+                            if ((prev != null && prev.Operator != null) ? prev.Operator.Name == "/" : false)
+                                sql += $"NoZero(({getMeasureQuery(item.Operation)})) ";
+
+                            else
+                                sql += $" ({getMeasureQuery(item.Operation)}) ";
+
+
+
                             break;
                         }
                     case (enOPerationTypes.number):
                         {
-                            sql += $" ({operation.Value}) ";
+                            if ((prev != null && prev.Operator != null) ? prev.Operator.Name == "/" : false)
+                                sql += $"NoZero(({operation.Value}))";
+
+                            else
+                                sql += $" ({operation.Value}) ";
+
+
                             break;
                         }
                     case (enOPerationTypes.opt):
@@ -397,10 +412,7 @@ namespace Tenor.Services.DataServices
         }
         private string getMeasureQuery(OperationBinding rootOperation)
         {
-            if (rootOperation.Id == 317)
-            {
-                var sssss = 0;
-            }
+            
             var sql = "";
             foreach (OperationBinding operation in rootOperation.Childs)
             {
@@ -410,7 +422,12 @@ namespace Tenor.Services.DataServices
                 {
                     case (enOPerationTypes.counter):
                         {
-                            sql += $" {operation.Aggregation.GetDisplayName()}_{operation.CounterId} ";
+                            if ((prev != null && prev.Operator != null) ? prev.Operator.Name == "/" : false)
+                                sql += $" NoZero({operation.Aggregation.GetDisplayName()}_{operation.CounterId}) ";
+                            else
+                                sql += $" {operation.Aggregation.GetDisplayName()}_{operation.CounterId} ";
+
+
                             break;
                         }
                     case (enOPerationTypes.voidFunction):
@@ -421,16 +438,31 @@ namespace Tenor.Services.DataServices
                                 sql += $"({getMeasureQuery(operation)})";
 
                             break;
+
+
                         }
                     case (enOPerationTypes.kpi):
                         {
                             var item = _db.Kpis.Include(x => x.Operation).FirstOrDefault(x => x.Id == operation.KpiId);
-                            sql += $" ({getMeasureQuery(item.Operation)}) ";
+                            if ((prev != null && prev.Operator != null) ? prev.Operator.Name == "/" : false)
+                                sql += $"NoZero(({getMeasureQuery(item.Operation)})) ";
+
+                            else
+                                sql += $" ({getMeasureQuery(item.Operation)}) ";
+
+
+
                             break;
                         }
                     case (enOPerationTypes.number):
                         {
-                            sql += $" ({operation.Value}) ";
+                            if ((prev != null && prev.Operator != null) ? prev.Operator.Name == "/" : false)
+                                sql += $"NoZero(({operation.Value}))";
+
+                            else
+                                sql += $" ({operation.Value}) ";
+
+
                             break;
                         }
                     case (enOPerationTypes.opt):
@@ -441,6 +473,7 @@ namespace Tenor.Services.DataServices
                     case (enOPerationTypes.function):
                         {
                             var fun = _db.Functions.FirstOrDefault(x => x.Id == operation.FunctionId);
+
                             if (fun.Name.ToLower() == "if")
                             {
                                 sql += $"(CASE WHEN ({getMeasureQuery(operation.Childs[0])}) THEN ({getMeasureQuery(operation.Childs[1])}) ELSE ({getMeasureQuery(operation.Childs[2])}) END)";
@@ -456,6 +489,8 @@ namespace Tenor.Services.DataServices
                             {
                                 sql += $" {fun.Name}({String.Join(", ", operation.Childs.Select(x => getMeasureQuery(x)))}) ";
                             }
+
+
                             break;
                         }
                     default:
@@ -464,17 +499,14 @@ namespace Tenor.Services.DataServices
                             break;
                         }
                 }
-                
+
             }
             return sql;
         }
         private string getMeasureQuery(Operation rootOperation)
         {
            
-            if (rootOperation.Id == 317)
-            {
-                var sssss = 0;
-            }
+           
             var sql = "";
             var operationChilds = _db.Operations.Include(x => x.Operator).Include(x => x.Function).Where(x => x.ParentId == rootOperation.Id);
             foreach (var operation in operationChilds.ToList() ?? [])
@@ -483,12 +515,17 @@ namespace Tenor.Services.DataServices
                 current = operation;
                 switch (operation.Type)
                 {
-                    case(enOPerationTypes.counter):
+                    case (enOPerationTypes.counter):
                         {
-                            sql += $" {operation.Aggregation.GetDisplayName()}_{operation.CounterId} ";
+                            if ((prev != null && prev.Operator != null) ? prev.Operator.Name == "/" : false)
+                                sql += $" NoZero({operation.Aggregation.GetDisplayName()}_{operation.CounterId}) ";
+                            else
+                                sql += $" {operation.Aggregation.GetDisplayName()}_{operation.CounterId} ";
+
+
                             break;
                         }
-                    case(enOPerationTypes.voidFunction):
+                    case (enOPerationTypes.voidFunction):
                         {
                             if ((prev != null && prev.Operator != null) ? prev.Operator.Name == "/" : false)
                                 sql += $"NoZero({getMeasureQuery(operation)})";
@@ -496,21 +533,36 @@ namespace Tenor.Services.DataServices
                                 sql += $"({getMeasureQuery(operation)})";
 
                             break;
+
+
                         }
                     case (enOPerationTypes.kpi):
                         {
                             var item = _db.Kpis.Include(x => x.Operation).FirstOrDefault(x => x.Id == operation.KpiId);
-                            sql += $"({getMeasureQuery(item.Operation)})";
+                            if ((prev != null && prev.Operator != null) ? prev.Operator.Name == "/" : false)
+                                sql += $"NoZero(({getMeasureQuery(item.Operation)})) ";
+
+                            else
+                                sql += $" ({getMeasureQuery(item.Operation)}) ";
+
+
+
                             break;
                         }
                     case (enOPerationTypes.number):
                         {
-                            sql += $" ({operation.Value}) ";
+                            if ((prev != null && prev.Operator != null) ? prev.Operator.Name == "/" : false)
+                                sql += $"NoZero(({operation.Value}))";
+
+                            else
+                                sql += $" ({operation.Value}) ";
+
+
                             break;
                         }
                     case (enOPerationTypes.opt):
                         {
-                            sql += $" {operation.Operator?.Name} ";
+                            sql += $" {operation.Value} ";
                             break;
                         }
                     case (enOPerationTypes.function):

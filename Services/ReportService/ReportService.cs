@@ -436,9 +436,9 @@ namespace Tenor.Services.ReportService
         public async Task<ResultWithMessage> GetReportTreeByUserNameDevice(ReportTreeFilter input, TenantDto authUser)
         {
             IQueryable<Report> query = GetEligibleReport(authUser);
-            //------------------------------Data source--------------------------------------------
-            query = _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == input.userName && x.DeviceId == input.deviceId).Include(x => x.Device).Include(x => x.ReportFieldValues)
-                    .ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField).AsQueryable();
+            ////------------------------------Data source--------------------------------------------
+            //query = _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == input.userName && x.DeviceId == input.deviceId).Include(x => x.Device).Include(x => x.ReportFieldValues)
+            //        .ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField).AsQueryable();
 
             //------------------------------Data filter-------------------------------------------
             if (!string.IsNullOrEmpty(input.SearchQuery))
@@ -484,8 +484,8 @@ namespace Tenor.Services.ReportService
         {
             IQueryable<Report> query = GetEligibleReport(authUser);
             //------------------------------Data source--------------------------------------------
-            query = _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == input.userName).Include(x => x.Device).Include(x => x.ReportFieldValues)
-                   .ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField).AsQueryable();
+            //query = _db.Reports.Where(x => !x.IsDeleted && x.CreatedBy == input.userName).Include(x => x.Device).Include(x => x.ReportFieldValues)
+            //       .ThenInclude(x => x.ReportField).ThenInclude(x => x.ExtraField).AsQueryable();
 
             //------------------------------Data filter-------------------------------------------
             if (!string.IsNullOrEmpty(input.SearchQuery))
