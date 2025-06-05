@@ -242,11 +242,12 @@ namespace Tenor.Services.DataServices
             var havingSelectSql = String.Join(" ", report.Measures
                 .SelectMany(m => m.Havings
                     .Select(h => $"{h.LogicOpt.GetDisplayName()} {getMeasureQuery(m.Operation)} {_db.Operators.FirstOrDefault(o => o.Id == h.OperatorId).Name} {h.Value}")));
+            var countSql = "SELECT COUNT(*) FROM " + sql + havingSelectSql;
             sql = levelSelectSql + ", " +
                     measureSelectSql +
                 " FROM " + sql + " WHERE 1 = 1 " +
                 havingSelectSql + levelOrderBySql;
-            var countSql = $"SELECT COUNT(*) FROM ({sql})";
+            // var countSql = $"SELECT COUNT(*) FROM ({sql})";
             sql = sql
                 + $" OFFSET {pageIndex * pageSize}"
                 + $" ROWS FETCH NEXT {pageSize} ROWS ONLY";
